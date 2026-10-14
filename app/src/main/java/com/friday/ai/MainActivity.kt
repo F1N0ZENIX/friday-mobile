@@ -2,6 +2,8 @@ package com.friday.ai
 
 import android.content.Intent
 import android.os.Bundle
+import androidx.compose.foundation.layout.fillMaxSize
+import com.friday.ai.ui.voice.InAppVoiceLayer
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -29,7 +31,11 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             FridayTheme {
-                FridayNavGraph(activity = this)
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
+                    FridayNavGraph(activity = this@MainActivity)
+                    // A spoken exchange while Friday is open shows here, not in a window over her.
+                    InAppVoiceLayer()
+                }
             }
         }
     }

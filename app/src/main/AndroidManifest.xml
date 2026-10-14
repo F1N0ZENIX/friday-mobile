@@ -36,6 +36,10 @@
     <!-- A dictated SMS is read back and sent only after a spoken "да"
          (SmsConfirmation); without this grant the SMS app opens with the text. -->
     <uses-permission android:name="android.permission.SEND_SMS" />
+    <!-- Friday's panel over the lock screen, and Android's unlock screen on request:
+         a background service can bring an activity there only through a full-screen
+         notification, as alarms and calls do (LockScreen). -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <!-- The real name: "android.permission.SET_ALARM" does not exist, and
          Samsung's Clock refuses ACTION_SET_ALARM without this one. -->
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
@@ -82,6 +86,15 @@
         <!-- "The assistant": side button (Samsung: press and hold → Digital assistant), assist
              gesture, a headset's voice button. Declaring it makes Friday selectable as the
              phone's digital assistant. No screen of its own: it starts a conversation and closes. -->
+        <activity
+            android:name=".service.lock.LockScreenActivity"
+            android:exported="false"
+            android:showWhenLocked="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity="com.friday.ai.lockscreen"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.FridayMobile.LockPanel" />
+
         <activity
             android:name=".AssistActivity"
             android:exported="true"

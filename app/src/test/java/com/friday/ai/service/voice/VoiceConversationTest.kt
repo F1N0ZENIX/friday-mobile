@@ -266,7 +266,7 @@ class VoiceConversationTest {
         advanceUntilIdle()
         finishSpeaking(0)
 
-        verify { overlay.showResult("API key not set", any()) }
+        verify { overlay.error("Не задан ключ Groq — откройте настройки Friday", any()) }
         coVerify(exactly = 0) { transcriber.recordAndTranscribe(any(), any()) }
     }
 

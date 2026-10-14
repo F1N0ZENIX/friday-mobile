@@ -94,6 +94,8 @@ class VoiceConversation(
      */
     fun onWake(heard: String, continuing: Boolean = false, lead: FloatArray? = null) {
         scope.launch {
+            // The owner called: their session, which may light the lock screen.
+            io.overlay.begin(userInitiated = true)
             val mine = ++turn
             language = transcriptionLanguage(heard)
             // Music stops before anything is said or heard: the recording is
@@ -110,7 +112,7 @@ class VoiceConversation(
             // Cutting Friday off and then being greeted would be absurd —
             // that user already knows they were heard.
             if (bargedIn || continuing) {
-                io.overlay.show(FridayOverlayManager.State.LISTENING)
+                io.overlay.listening()
                 listen(mine, isFollowUp = false, lead = lead.takeIf { continuing })
                 return@launch
             }
@@ -118,13 +120,13 @@ class VoiceConversation(
             val greeting = acknowledgements.next(WakePhrases.detectLanguage(heard))
             // Shown before it is spoken: the panel appears at once, while the
             // voice still needs a round-trip.
-            io.overlay.show(FridayOverlayManager.State.SPEAKING, greeting)
+            io.overlay.greet(greeting)
             speaking = true
             io.speaker.speak(greeting) {
                 scope.launch {
                     if (mine != turn) return@launch
                     speaking = false
-                    io.overlay.show(FridayOverlayManager.State.LISTENING)
+                    io.overlay.listening()
                     // Only now is the microphone opened. Under the greeting it
                     // would have Friday transcribing her own voice.
                     listen(mine, isFollowUp = false)
@@ -145,6 +147,8 @@ class VoiceConversation(
                 Log.i(TAG, "Busy; announcement skipped")
                 return@launch
             }
+            // Friday's own announcement: shown where allowed, never lights the screen.
+            io.overlay.begin(userInitiated = false)
             val mine = ++turn
             // Only when an answer is awaited: a ringing phone keeps its ringtone.
             if (listenAfter) io.focus?.take()
@@ -171,7 +175,7 @@ class VoiceConversation(
         }
         val apiKey = session.apiKey()
         if (apiKey.isBlank()) {
-            io.overlay.showResult("API key not set", ERROR_MS)
+            io.overlay.error("Не задан ключ Groq — откройте настройки Friday", ERROR_MS)
             return
         }
 
@@ -209,7 +213,7 @@ class VoiceConversation(
             VoiceTurn.Next.PROCESS -> heard(mine, command ?: (outcome as VoiceTurn.Outcome.Heard).text)
             VoiceTurn.Next.LISTEN_AGAIN -> {
                 Log.i(TAG, "Attempt $attempt gave $outcome; listening again")
-                io.overlay.show(FridayOverlayManager.State.LISTENING)
+                io.overlay.listening()
                 listen(mine, isFollowUp = false, attempt = attempt + 1)
             }
             VoiceTurn.Next.END_QUIETLY -> {
@@ -258,7 +262,7 @@ class VoiceConversation(
             return
         }
         io.notifier.update("Processing...")
-        io.overlay.show(FridayOverlayManager.State.PROCESSING, "\"$text\"")
+        io.overlay.processing(text)
         io.overlay.source(sourceLabel(command, commands.lastRouteLearned, russian))
         val outcome = commands.execute(command, russian)
         if (outcome is CommandExecutor.Outcome.Conversation) {
@@ -285,7 +289,7 @@ class VoiceConversation(
             speakAndContinue(mine, OfflineCommands.offlineRefusal(true), allowFollowUp = false)
             return
         }
-        io.overlay.show(FridayOverlayManager.State.LISTENING)
+        io.overlay.listening()
         val heard = io.offline.listenForCommand(modelPath)
         when {
             mine != turn -> Unit
@@ -295,7 +299,7 @@ class VoiceConversation(
     }
 
     private suspend fun runOffline(mine: Int, heard: String) {
-        io.overlay.show(FridayOverlayManager.State.PROCESSING, "\"$heard\"")
+        io.overlay.processing(heard)
         val command = commands.route(heard)
         if (!OfflineCommands.isOfflineCapable(command)) {
             speakAndContinue(mine, OfflineCommands.offlineRefusal(true), allowFollowUp = false)
@@ -320,7 +324,7 @@ class VoiceConversation(
             io.overlay.showResult(text, RESULT_LINGER_MS)
             return
         }
-        io.overlay.show(FridayOverlayManager.State.SPEAKING, text)
+        io.overlay.speaking(text)
         speaking = true
         io.wake.listen()
         io.speaker.speak(text) {
@@ -333,7 +337,7 @@ class VoiceConversation(
         speaking = false
         // Never open the microphone for a follow-up during a call.
         if (allowFollowUp && !io.inCall()) {
-            io.overlay.show(FridayOverlayManager.State.LISTENING)
+            io.overlay.listening()
             listen(mine, isFollowUp = true)
         } else {
             io.overlay.showResult(spokenText, RESULT_LINGER_MS)
@@ -344,6 +348,14 @@ class VoiceConversation(
      * The user said they are done: stop talking and get out of the way. No
      * goodbye is spoken — the fastest way out of their way is to just go.
      */
+    /** The owner closed the panel: stop talking and listening; what was done stays done. */
+    fun close() {
+        scope.launch {
+            io.transcriber.requestStop()
+            endConversation()
+        }
+    }
+
     private fun endConversation() {
         Log.i(TAG, "User ended the conversation")
         turn++
@@ -352,11 +364,10 @@ class VoiceConversation(
     }
 
     private val overlayFeedback = object : WhisperTranscriber.Listener {
-        override fun onRecordingStarted() = io.overlay.updateText("")
-        override fun onSpeechDetected() = io.overlay.updateText("Hearing you...")
-        override fun onRecordingFinished() =
-            io.overlay.show(FridayOverlayManager.State.PROCESSING, "Transcribing...")
-        override fun onError(message: String) = io.overlay.showResult("Error: $message", ERROR_MS)
+        override fun onRecordingStarted() = io.overlay.hearing(false)
+        override fun onSpeechDetected() = io.overlay.hearing(true)
+        override fun onRecordingFinished() = io.overlay.processing(null)
+        override fun onError(message: String) = io.overlay.error(message, ERROR_MS)
     }
 }
 

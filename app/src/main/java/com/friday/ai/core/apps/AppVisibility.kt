@@ -1,6 +1,9 @@
 package com.friday.ai.core.apps
 
 import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Whether Friday has a window on screen right now — what Android 10+ looks
@@ -16,12 +19,17 @@ object AppVisibility {
 
     @Volatile private var overlayShown = false
 
+    private val _foreground = MutableStateFlow(false)
+
+    /** One of Friday's own screens is in front: the voice panel lives inside it then. */
+    val foreground: StateFlow<Boolean> = _foreground.asStateFlow()
+
     fun activityResumed() {
-        resumedActivities.incrementAndGet()
+        _foreground.value = resumedActivities.incrementAndGet() > 0
     }
 
     fun activityPaused() {
-        resumedActivities.updateAndGet { (it - 1).coerceAtLeast(0) }
+        _foreground.value = resumedActivities.updateAndGet { (it - 1).coerceAtLeast(0) } > 0
     }
 
     fun overlay(shown: Boolean) {

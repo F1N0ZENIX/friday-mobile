@@ -42,7 +42,11 @@ class CommandExecutor(
     private val links: QuickLinkStore? = null,
     private val opener: LinkOpener? = null,
     /** Whether the phone is locked, and whether the owner's voice is verified ([LockPolicy]). */
-    private val lock: suspend () -> Pair<Boolean, Boolean> = { false to true }
+    private val lock: suspend () -> Pair<Boolean, Boolean> = { false to true },
+    /** What the owner allows on a locked phone (settings). */
+    private val lockLevel: suspend () -> LockPolicy.Level = { LockPolicy.Level.VOICE },
+    /** Android's own unlock screen, when a command needs the phone unlocked. */
+    private val unlocker: Unlocker = Unlocker { Unlocker.Result.CANNOT_ASK }
 ) {
 
     /** What came of a command. Most are a reply; three need the caller. */
@@ -159,8 +163,9 @@ class CommandExecutor(
 
     private suspend fun single(command: CommandResult, russian: Boolean): Outcome {
         val (locked, verified) = lock()
-        if (LockPolicy.needsUnlock(command, locked, verified)) return Outcome.Reply(LockPolicy.reply(russian))
-        return carryOut(command, russian)
+        val decision = LockPolicy.decide(command, locked, verified, lockLevel())
+        val refusal = LockPolicy.refusal(decision, unlocker, russian)
+        return refusal?.let { Outcome.Reply(it) } ?: carryOut(command, russian)
     }
 
     private suspend fun carryOut(command: CommandResult, russian: Boolean): Outcome = try {

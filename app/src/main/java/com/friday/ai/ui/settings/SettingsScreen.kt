@@ -144,6 +144,7 @@ fun SettingsScreen(
                 HudPanel("Перенос на другой телефон", index = 11) { TransferSection() }
                 LocationPanel()
                 QuickLinksPanel()
+                LockPanel()
                 Spacer(Modifier.height(24.dp))
             }
         }
