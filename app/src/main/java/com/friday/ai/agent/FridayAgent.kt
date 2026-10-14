@@ -16,7 +16,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * Friday answering with her hands free: the model may use [AgentTools] while
@@ -126,7 +128,7 @@ class FridayAgent(
             conversation += ApiMessage(role = "assistant", content = "", toolCalls = calls)
             val own = mutableListOf<String>()
             calls.forEach { call ->
-                val blocked = unavailable(call, caps)
+                val blocked = unavailable(call, caps) ?: ungrounded(call, said)
                 val (result, ok) = blocked?.let { it to false } ?: carryOut(call, russian)
                 done += call to ok
                 if (blocked == null && call.function.name in SAYS_ITSELF && !result.startsWith("Error:")) own += result
@@ -220,6 +222,17 @@ class FridayAgent(
         if (gaps.isEmpty()) return null
         return "Error: unavailable right now — ${gaps.joinToString { it.en }}. Nothing was done; " +
             "tell the user what to enable."
+    }
+
+    /** A message whose text is not what the owner just said (an earlier one, say) is not sent. */
+    private fun ungrounded(call: ToolCall, said: String): String? {
+        if (call.function.name !in SAYS_ITSELF || said.isBlank()) return null
+        val text = runCatching {
+            groqJson.parseToJsonElement(call.function.arguments).jsonObject["text"]?.jsonPrimitive?.contentOrNull
+        }.getOrNull() ?: return null
+        if (MessageGrounding.isOwnWords(text, said)) return null
+        Log.w(TAG, "Message text not from this request; sent back to the model")
+        return MessageGrounding.refusal(said)
     }
 
     private suspend fun carryOut(call: ToolCall, russian: Boolean): Pair<String, Boolean> {

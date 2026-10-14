@@ -23,7 +23,8 @@ object MessageRequest {
 
     private const val VERB = """(?:напиши|отправь|скинь|пошли|send|text|message)"""
     // ", что" before a bare ",": otherwise "что" ends up in the message.
-    private const val SEPARATOR = """\s*(?::|,?\s+(?:что|чтобы|текст(?:ом)?|с\s+текстом|saying|that)\s+|,)\s*"""
+    // A full stop too: "Напиши смс Фирдавсу Геттиспургу. Это сообщение…" — Whisper ends the name with one.
+    private const val SEPARATOR = """\s*(?::|,?\s+(?:что|чтобы|текст(?:ом)?|с\s+текстом|saying|that)\s+|,|\.\s+)\s*"""
     private val withBody = Regex("""^$VERB\s+(\p{L}+(?:\s+\p{L}+)?)$SEPARATOR(.+)$""", I)
     private val withoutBody = Regex("""^$VERB\s+(\p{L}+(?:\s+\p{L}+)?)[.!]*$""", I)
 

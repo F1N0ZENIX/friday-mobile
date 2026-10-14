@@ -280,6 +280,20 @@ class FridayAgentTest {
     }
 
     @Test
+    fun `a message text from an earlier request goes back to the model, which sends what was said`() = runTest {
+        replies(
+            calls("send_message" to """{"contact":"Фирдавс","text":"я свободен"}"""),
+            calls("send_message" to """{"contact":"Фирдавс","text":"буду поздно вечером"}""")
+        )
+        coEvery { commands.execute(any(), any()) } returns CommandExecutor.Outcome.Reply("Отправить SMS? Да или нет.")
+
+        assertEquals("Отправить SMS? Да или нет.", ask("Напиши Фердавсу, что буду поздно вечером"))
+        coVerify(exactly = 0) { commands.execute(CommandResult.SendMessage("Фирдавс", "я свободен"), any()) }
+        coVerify { commands.execute(CommandResult.SendMessage("Фирдавс", "буду поздно вечером"), true) }
+        assertTrue(sent[1].last().content.startsWith("Error: \"text\" must be the message the user dictated"))
+    }
+
+    @Test
     fun `a message tool that could not even be read is still explained by the model`() = runTest {
         replies(calls("send_message" to "not json"), text("Не поняла, кому написать."))
         assertEquals("Не поняла, кому написать.", ask("Напиши"))
