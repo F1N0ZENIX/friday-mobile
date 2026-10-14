@@ -1,6 +1,5 @@
 package com.friday.ai.service
 
-import java.security.MessageDigest
 
 /**
  * Pure protocol logic for Microsoft Edge's "read aloud" TTS websocket, kept
@@ -17,7 +16,9 @@ object EdgeTtsProtocol {
     const val TRUSTED_TOKEN = "6A5AA1D4EAFF4E9FB37E23D68491D6F4"
 
     private const val CHROMIUM_MAJOR = "143"
-    const val SEC_MS_GEC_VERSION = "1-143.0.3650.75"
+
+    /** "2-": the v2 token ([EdgeTtsToken]); Microsoft answers a "1-" token with 403 since late 2026. */
+    const val SEC_MS_GEC_VERSION = "2-143.0.3650.75"
 
     /**
      * Must impersonate a current Edge build. Verified empirically 2026-07-30:
@@ -43,18 +44,21 @@ object EdgeTtsProtocol {
     const val VOICE_EN = "en-IE-EmilyNeural"
 
     /**
-     * SHA-256 of (Windows "ticks" floored to a 5-minute window + the trusted
-     * client token), uppercase hex. Integer math throughout: the tick value
-     * exceeds the exactly-representable range of a Double.
+     * The v2 token ([EdgeTtsToken]) of (Windows "ticks" floored to a
+     * 5-minute window + the trusted client token). Integer math throughout:
+     * the tick value exceeds the exactly-representable range of a Double.
      */
     fun calcSecMsGec(nowMillis: Long): String {
         var seconds = (nowMillis / 1000L) + WIN_EPOCH_SECONDS
         seconds -= seconds % 300L
         val ticks = seconds * 10_000_000L
-        val digest = MessageDigest.getInstance("SHA-256")
-            .digest((ticks.toString() + TRUSTED_TOKEN).toByteArray(Charsets.US_ASCII))
-        return digest.joinToString("") { "%02X".format(it) }
+        return EdgeTtsToken.of((ticks.toString() + TRUSTED_TOKEN).toByteArray(Charsets.US_ASCII))
     }
+
+    /** A fresh "muid" cookie, as the Edge client sends one per connection. */
+    fun muidCookie(): String =
+        "muid=" + java.util.UUID.randomUUID().toString().replace("-", "").uppercase() + ";"
+
 
     fun buildUrl(connectionId: String, nowMillis: Long): String =
         "$WSS_URL?TrustedClientToken=$TRUSTED_TOKEN" +
