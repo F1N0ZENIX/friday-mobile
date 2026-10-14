@@ -43,7 +43,12 @@ class PeopleDirectory(
             ORDINALS.indexOfFirst { forms -> forms.any { lowered.contains(it) } }
                 .takeIf { it in candidates.indices }
                 ?.let { return candidates[it] }
-            val ranked = ContactMatcher.ranked(answer, candidates) { it.name }
+            return byName(answer, candidates)
+        }
+
+        /** The one of [candidates] whose name [words] match best, by name only; null on a tie or none. */
+        fun byName(words: String, candidates: List<Person>): Person? {
+            val ranked = ContactMatcher.ranked(words, candidates) { it.name }
             val best = ranked.firstOrNull() ?: return null
             return best.first.takeIf { ranked.getOrNull(1)?.second != best.second }
         }
@@ -52,6 +57,9 @@ class PeopleDirectory(
     private class Pending(val candidates: List<Person>, val at: Long, val then: suspend (Person) -> String)
 
     @Volatile private var pending: Pending? = null
+
+    /** Forgets a "кого именно?"; true when there was one. */
+    fun drop(): Boolean = pending.also { pending = null } != null
 
     /** After "кого именно?": [then] runs for the person the next answer names. */
     fun ask(candidates: List<Person>, then: suspend (Person) -> String) {
@@ -120,6 +128,9 @@ class Messenger(
     /** The yes or no to "Отправить SMS…?", carried out; null when nothing was asked. */
     suspend fun answerPending(text: String, russian: Boolean): String? = sms?.answer(text, russian)
 
+    /** Forgets an unanswered "Отправить SMS…?"; true when there was one. */
+    fun dropPending(): Boolean = sms?.drop() == true
+
     private companion object {
         const val TAG = "Messenger"
         const val PREF_FAVOURITE = "favourite_messenger"
@@ -128,6 +139,12 @@ class Messenger(
 
     suspend fun message(target: String, text: String?, requested: Channel?, russian: Boolean): String {
         val found = people.find(target)
+        // "Фирдавс, Геттиспург, что …": the surname slipped into the text. If the text's first
+        // word names exactly one of the candidates, that is who is meant — as a person would read it.
+        val bySurname = (found as? PeopleResolver.Result.Ambiguous)?.let { a ->
+            text?.trim()?.split(Regex("\\s+"))?.firstOrNull()?.let { PeopleDirectory.byName(it, a.candidates) }
+        }
+        if (bySurname != null) return send(bySurname, text, requested, russian)
         if (found is PeopleResolver.Result.Ambiguous) {
             people.ask(found.candidates) { send(it, text, requested, russian) }
         }
@@ -136,7 +153,9 @@ class Messenger(
         return send(person, text, requested, russian)
     }
 
-    private suspend fun send(person: Person, text: String?, requested: Channel?, russian: Boolean): String {
+    private suspend fun send(person: Person, said: String?, requested: Channel?, russian: Boolean): String {
+        // What a person would actually send: not their own name or the "что" that introduced it.
+        val text = said?.let { MessageText.tidy(it, person.name) }
         val choice = choose(person, requested)
             ?: return if (russian) "У «${person.name}» нет номера" else "${person.name} has no number"
 

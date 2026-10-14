@@ -140,7 +140,13 @@ class WhisperTranscriber(
     }
 
     /** One utterance as recorded: the PCM for Whisper and, if asked, the voice for checking. */
-    private class Capture(val pcm: List<ByteArray>, val voice: FloatArray?, val usable: Boolean)
+    private class Capture(
+        val pcm: List<ByteArray>,
+        val voice: FloatArray?,
+        val usable: Boolean,
+        /** What the on-device decoder heard; the fallback when Whisper hears nothing. */
+        val words: String?
+    )
 
     private suspend fun capture(
         record: AudioRecord,
@@ -155,6 +161,7 @@ class WhisperTranscriber(
         val leadMs = (lead?.size ?: 0) * MS_PER_SECOND / SAMPLE_RATE
         val endpointer = SpeechEndpointer(ceiling = silenceThreshold, leadMs = leadMs)
         val words = endpointModel()?.let(WordFollower::open)
+        var onDevice: String? = null
         stopRequested = false
         lead?.let(::toPcm16)?.let { samples ->
             pcm.add(PcmAudio.toLittleEndian(samples, samples.size))
@@ -181,6 +188,7 @@ class WhisperTranscriber(
                     withContext(Dispatchers.Main) { listener?.onSpeechDetected() }
                 }
             }
+            onDevice = words?.heard()
         } finally {
             words?.close()
         }
@@ -189,7 +197,7 @@ class WhisperTranscriber(
         val how = if (endpointer.endedByWords) "by words (${words?.wordCount})" else "by sound"
         Log.i(TAG, "Recording ended: ${endpointer.end} $how, ${endpointer.speechMs} ms of speech")
         withContext(Dispatchers.Main) { listener?.onRecordingFinished() }
-        return Capture(pcm, voice?.snapshot(), endpointer.usable)
+        return Capture(pcm, voice?.snapshot(), endpointer.usable, onDevice)
     }
 
     /**
@@ -231,9 +239,13 @@ class WhisperTranscriber(
         val text = WhisperArtifacts.clean(heard)
         if (text != heard.trim()) Log.i(TAG, "Dropped made-up text from the transcript")
 
+        val whisperHeard = text.isNotBlank() && !NameHints.isEcho(text, prompt)
+        val fallback = capture.words?.takeIf { !whisperHeard && it.isNotBlank() }
+        if (fallback != null) Log.i(TAG, "Whisper heard nothing; using the on-device words")
         when {
             verdict?.await() == false -> VoiceTurn.Outcome.Stranger
-            text.isBlank() || NameHints.isEcho(text, prompt) -> VoiceTurn.Outcome.Nothing
+            fallback != null -> VoiceTurn.Outcome.Heard(fallback)
+            !whisperHeard -> VoiceTurn.Outcome.Nothing
             else -> {
                 withContext(Dispatchers.Main) { listener?.onTranscriptionResult(text) }
                 VoiceTurn.Outcome.Heard(text)

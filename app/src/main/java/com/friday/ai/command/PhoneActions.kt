@@ -37,6 +37,12 @@ class PhoneActions(
     suspend fun answerPending(text: String, russian: Boolean): String? =
         people?.answerPending(text) ?: messenger.answerPending(text, russian)
 
+    /** Forgets questions that got no answer; true when one was waiting. */
+    fun dropPending(): Boolean {
+        val asked = people?.drop() == true
+        return messenger.dropPending() || asked
+    }
+
     suspend fun run(c: CommandResult.Phone, russian: Boolean): String = when (c) {
         is CommandResult.OpenApp -> apps.openApp(c.packageHint, c.appName, russian)
         is CommandResult.CloseApp -> apps.closeApp(c.packageHint, c.appName)

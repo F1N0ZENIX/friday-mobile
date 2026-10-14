@@ -68,8 +68,11 @@ class SpokenEnd {
         return nowMs - closed >= patience()
     }
 
-    /** What was said, as the decoder heard it (for the log's word count only). */
+    /** How many words the decoder has closed so far. */
     val wordCount: Int get() = words.size
+
+    /** The words closed so far, as the decoder heard them. */
+    val text: String get() = words.joinToString(" ")
 
     private fun patience(): Long = when {
         words.lastOrNull() in CONTINUES -> OPEN_PHRASE_MS

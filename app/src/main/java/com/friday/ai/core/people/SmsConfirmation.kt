@@ -52,6 +52,9 @@ class SmsConfirmation(
         else "Send an SMS to $name: \"$text\"? Yes or no."
     }
 
+    /** Forgets the draft; true when there was one. */
+    fun drop(): Boolean = draft.also { draft = null } != null
+
     /** The answer to [ask], carried out; null when nothing was asked or [text] is a new request. */
     suspend fun answer(text: String, russian: Boolean): String? {
         val d = draft ?: return null

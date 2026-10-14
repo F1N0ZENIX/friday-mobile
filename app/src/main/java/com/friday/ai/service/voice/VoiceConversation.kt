@@ -214,7 +214,12 @@ class VoiceConversation(
             }
             VoiceTurn.Next.END_QUIETLY -> {
                 if (outcome is VoiceTurn.Outcome.Stranger) Log.i(TAG, "Follow-up from another voice ignored")
-                io.overlay.dismiss()
+                // "Отправить?" with no answer heard: it does not wait for a "да" said later.
+                if (commands.dropPending()) {
+                    io.overlay.showResult("Не расслышала ответ — ничего не отправила", NOTICE_MS)
+                } else {
+                    io.overlay.dismiss()
+                }
             }
             // On screen only: saying it aloud adds noise to a turn that
             // already went nowhere.

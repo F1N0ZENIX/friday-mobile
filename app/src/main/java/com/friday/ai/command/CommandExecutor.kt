@@ -109,6 +109,12 @@ class CommandExecutor(
             ?: messages?.answerPending(text, russian)
             ?: phone.answerPending(text, russian)
 
+    /**
+     * The answer to a question that would send something was not heard:
+     * nothing is sent on a later "да". True when such a question was waiting.
+     */
+    fun dropPending(): Boolean = phone.dropPending()
+
     /** After an answer to [answerPending]: keep listening, the owner has more to say. */
     fun awaitsMore(): Boolean = messages?.takeFollowUp() == true
 

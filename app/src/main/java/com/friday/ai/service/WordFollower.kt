@@ -40,5 +40,14 @@ class WordFollower private constructor(private val decoder: Recognizer) : AutoCl
         if (spoken.finished(end.elapsedMs)) end.endByWords()
     }
 
+    /**
+     * Everything the decoder heard, the unfinished end included. Whisper is
+     * the better ear, but on one short word — "да", "нет", "второй" — it
+     * often returns nothing, or the names it was prompted with; these words
+     * are what was said then.
+     */
+    fun heard(): String =
+        listOf(spoken.text, VoskResults.text(decoder.finalResult)).filter { it.isNotBlank() }.joinToString(" ")
+
     override fun close() = decoder.close()
 }
