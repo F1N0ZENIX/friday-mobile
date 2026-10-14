@@ -49,6 +49,15 @@ class FridayAgent(
         fun toolLog(tool: String, done: Boolean): String = "Tool $tool: ${if (done) "done" else "not done"}"
 
         /**
+         * Tools whose own reply is the answer, word for word. A model retelling
+         * them once said "Сообщение отправлено" for a message that never left —
+         * the contact had not even been found. Their replies are already in the
+         * user's language and say exactly what happened ("кого именно?",
+         * "готово — нажмите «Отправить»"), so nothing is lost by not retelling.
+         */
+        private val SAYS_ITSELF = setOf("send_message", "call", "reply_message")
+
+        /**
          * Model turns per answer. Two cover "do it, then say so"; the rest are
          * for a request with several steps or a corrected argument. The last
          * turn is offered no tools, so it has to answer in words.
@@ -115,10 +124,19 @@ class FridayAgent(
                 return@repeat
             }
             conversation += ApiMessage(role = "assistant", content = "", toolCalls = calls)
+            val own = mutableListOf<String>()
             calls.forEach { call ->
-                val (result, ok) = unavailable(call, caps)?.let { it to false } ?: carryOut(call, russian)
+                val blocked = unavailable(call, caps)
+                val (result, ok) = blocked?.let { it to false } ?: carryOut(call, russian)
                 done += call to ok
+                if (blocked == null && call.function.name in SAYS_ITSELF && !result.startsWith("Error:")) own += result
                 conversation += ApiMessage(role = "tool", content = result + languageNote, toolCallId = call.id)
+            }
+            // What was done to or for someone else is said exactly as it happened.
+            if (own.size == calls.size) {
+                emit(own.joinToString(" "))
+                learnFrom(said, done)
+                return@flow
             }
         }
     }

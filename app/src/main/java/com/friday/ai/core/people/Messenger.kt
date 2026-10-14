@@ -12,12 +12,62 @@ import com.friday.ai.core.DeviceContext
 import com.friday.ai.data.local.dao.UserPreferenceDao
 import com.friday.ai.data.local.entity.UserPreferenceEntity
 
-/** Finds people in the phone book, digits and spoken names alike. */
-class PeopleDirectory(private val contacts: ContactsReader, private val device: DeviceContext) {
+/**
+ * Finds people in the phone book, digits and spoken names alike — and
+ * remembers a "кого именно?" so the answer picks from the people just named.
+ */
+class PeopleDirectory(
+    private val contacts: ContactsReader,
+    private val device: DeviceContext,
+    private val clock: () -> Long = System::currentTimeMillis
+) {
 
-    private companion object {
+    companion object {
         /** Fewer digits than this is a name with a number in it, not a phone number. */
-        const val MIN_NUMBER_DIGITS = 5
+        private const val MIN_NUMBER_DIGITS = 5
+
+        /** An answer to "кого именно?" comes within this, or it is something else. */
+        const val CHOICE_TTL_MS = 60_000L
+
+        private val ORDINALS = listOf(
+            listOf("перв", "first", "1"), listOf("втор", "second", "2"), listOf("трет", "third", "3")
+        )
+
+        /**
+         * Which of [candidates] [answer] names: "первый"/"second", or the name
+         * matched against these few people only. Null when it names none of
+         * them, or two equally.
+         */
+        fun pick(answer: String, candidates: List<Person>): Person? {
+            val lowered = answer.lowercase()
+            ORDINALS.indexOfFirst { forms -> forms.any { lowered.contains(it) } }
+                .takeIf { it in candidates.indices }
+                ?.let { return candidates[it] }
+            val ranked = ContactMatcher.ranked(answer, candidates) { it.name }
+            val best = ranked.firstOrNull() ?: return null
+            return best.first.takeIf { ranked.getOrNull(1)?.second != best.second }
+        }
+    }
+
+    private class Pending(val candidates: List<Person>, val at: Long, val then: suspend (Person) -> String)
+
+    @Volatile private var pending: Pending? = null
+
+    /** After "кого именно?": [then] runs for the person the next answer names. */
+    fun ask(candidates: List<Person>, then: suspend (Person) -> String) {
+        pending = Pending(candidates, clock(), then)
+    }
+
+    /**
+     * The answer to the last "кого именно?", carried out — or null when
+     * [text] is not one. One answer only: whatever comes next, the question
+     * is closed, so a later sentence with the name in it sends nothing.
+     */
+    suspend fun answerPending(text: String): String? {
+        val asked = pending ?: return null
+        pending = null
+        if (clock() - asked.at > CHOICE_TTL_MS) return null
+        return pick(text, asked.candidates)?.let { asked.then(it) }
     }
 
     val hasPermission: Boolean get() = contacts.hasPermission()
@@ -73,8 +123,15 @@ class Messenger(
 
     suspend fun message(target: String, text: String?, requested: Channel?, russian: Boolean): String {
         val found = people.find(target)
+        if (found is PeopleResolver.Result.Ambiguous) {
+            people.ask(found.candidates) { send(it, text, requested, russian) }
+        }
         val person = (found as? PeopleResolver.Result.Found)?.person
             ?: return people.notFound(target, found, russian)
+        return send(person, text, requested, russian)
+    }
+
+    private suspend fun send(person: Person, text: String?, requested: Channel?, russian: Boolean): String {
         val choice = choose(person, requested)
             ?: return if (russian) "У «${person.name}» нет номера" else "${person.name} has no number"
 

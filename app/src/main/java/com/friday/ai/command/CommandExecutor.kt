@@ -107,6 +107,7 @@ class CommandExecutor(
         modes?.answerPending(text, russian)
             ?: mail.answerPending(text, russian)
             ?: messages?.answerPending(text, russian)
+            ?: phone.answerPending(text)
 
     /** After an answer to [answerPending]: keep listening, the owner has more to say. */
     fun awaitsMore(): Boolean = messages?.takeFollowUp() == true

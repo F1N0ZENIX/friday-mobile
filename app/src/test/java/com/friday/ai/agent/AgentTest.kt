@@ -269,6 +269,24 @@ class FridayAgentTest {
     }
 
     @Test
+    fun `a message is reported as it went, never retold by the model`() = runTest {
+        // The model once said "отправлено" for a message whose contact was never found.
+        replies(calls("send_message" to """{"contact":"Фердавс","text":"я свободен"}"""), text("Сообщение отправлено."))
+        coEvery { commands.execute(any(), any()) } returns
+            CommandExecutor.Outcome.Reply("Кого именно: Firdavs Yakubov или Firdavs Gettysburg?")
+
+        assertEquals("Кого именно: Firdavs Yakubov или Firdavs Gettysburg?", ask("Напиши Фердавсу, что я свободен"))
+        assertEquals("the model is not asked to retell it", 1, sent.size)
+    }
+
+    @Test
+    fun `a message tool that could not even be read is still explained by the model`() = runTest {
+        replies(calls("send_message" to "not json"), text("Не поняла, кому написать."))
+        assertEquals("Не поняла, кому написать.", ask("Напиши"))
+        assertEquals(2, sent.size)
+    }
+
+    @Test
     fun `arithmetic never reaches the phone`() = runTest {
         replies(calls("calculate" to """{"expression":"17*23"}"""), text("391."))
         assertEquals("391.", ask("Сколько будет 17 на 23"))

@@ -77,8 +77,13 @@ class Caller(
 
     suspend fun call(target: String, requested: Channel?, russian: Boolean): String {
         val found = people.find(target)
+        if (found is PeopleResolver.Result.Ambiguous) people.ask(found.candidates) { ring(it, requested, russian) }
         val person = (found as? PeopleResolver.Result.Found)?.person
             ?: return people.notFound(target, found, russian)
+        return ring(person, requested, russian)
+    }
+
+    private suspend fun ring(person: Person, requested: Channel?, russian: Boolean): String {
         // "По телефону" is an order, unlike "смс" in a message: the user
         // knows it is international and wants the ordinary line anyway.
         val choice = if (requested == Channel.SMS) {

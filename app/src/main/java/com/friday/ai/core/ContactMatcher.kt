@@ -158,6 +158,14 @@ object ContactMatcher {
     // How sure a match is; only the order matters.
     private const val EXACT = 100
     private const val WHOLE_NAME = 90
+
+    /**
+     * Every word said matches a word of this one name, some only spelled
+     * alike: "Фердавс Гетисбург" for "Firdavs Gettysburg". Name and surname
+     * both fitting is not a guess, unlike one look-alike word ([FUZZY]),
+     * which "Firdavs Yakubov" matches too.
+     */
+    private const val FULL_NAME_SPELLED = 85
     private const val PET_FORM = 80
     private const val ONE_WORD = 70
     private const val PREFIX = 50
@@ -203,6 +211,7 @@ object ContactMatcher {
             contactStems.size == 1 && contactStems.single() in queryStems -> WHOLE_NAME
             // Split or joined differently: "Абдул Азиз" for Абдулазиз.
             joined(contactName).let { it.length >= FUZZY_MIN && it == joined(rawQuery) } -> WHOLE_NAME
+            everyWordFits(rawQuery, contactStems) -> FULL_NAME_SPELLED
             petForm -> PET_FORM
             // One word of a multi-word contact matches, e.g. "Иван Петров".
             contactStems.any { it in queryStems } -> ONE_WORD
@@ -214,26 +223,25 @@ object ContactMatcher {
 
     private fun joined(name: String): String = stem(name.filter { it.isLetter() })
 
+    /** Two or more words said, each matching its own word of the name, exactly or one or two letters off. */
+    private fun everyWordFits(rawQuery: String, contactStems: List<String>): Boolean {
+        val said = rawQuery.split(Regex("[^\\p{L}\\p{N}]+")).filter { it.isNotBlank() }.map { stem(it) }
+        if (said.size < 2 || said.size > contactStems.size) return false
+        val free = contactStems.toMutableList()
+        return said.all { word ->
+            val i = free.indexOfFirst { it == word || close(word, it) }
+            if (i >= 0) free.removeAt(i)
+            i >= 0
+        }
+    }
+
     /** One letter off for an ordinary name, two for a long one. */
     private fun close(a: String, b: String): Boolean {
         val shorter = minOf(a.length, b.length)
         if (shorter < FUZZY_MIN) return false
         val allowed = if (shorter >= FUZZY_LONG) 2 else 1
-        return kotlin.math.abs(a.length - b.length) <= allowed && distance(a, b) <= allowed
+        return kotlin.math.abs(a.length - b.length) <= allowed &&
+            com.friday.ai.core.apps.Spelling.distance(a, b) <= allowed
     }
 
-    /** Levenshtein distance. */
-    private fun distance(a: String, b: String): Int {
-        var previous = IntArray(b.length + 1) { it }
-        for (i in a.indices) {
-            val current = IntArray(b.length + 1)
-            current[0] = i + 1
-            for (j in b.indices) {
-                val cost = if (a[i] == b[j]) 0 else 1
-                current[j + 1] = minOf(current[j] + 1, previous[j + 1] + 1, previous[j] + cost)
-            }
-            previous = current
-        }
-        return previous[b.length]
-    }
 }

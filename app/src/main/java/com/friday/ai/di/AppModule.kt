@@ -117,7 +117,11 @@ val appModule = module {
         val summarizer = get<com.friday.ai.service.messages.MessageSummarizer>()
         com.friday.ai.service.messages.MessageAssistant(androidContext(), get(), get(), summarizer::summarize)
     }
-    single { com.friday.ai.command.PhoneActions(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    single {
+        com.friday.ai.command.PhoneActions(
+            get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), people = get()
+        )
+    }
     single {
         com.friday.ai.command.PlannerActions(get(), get(), get(), watchErrands = {
             com.friday.ai.service.ErrandWatchWorker.schedule(androidContext())
