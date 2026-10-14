@@ -3,6 +3,7 @@ package com.friday.ai.service
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.util.Log
+import org.vosk.Model
 import com.friday.ai.core.PcmAudio
 import com.friday.ai.core.RollingAudio
 import com.friday.ai.core.VoiceTurn
@@ -64,6 +65,13 @@ class WhisperTranscriber(
 
     /** The calibrated speech level: the most a voice ever has to reach (see [SpeechEndpointer]). */
     var silenceThreshold: Double = DEFAULT_SILENCE_THRESHOLD
+
+    /**
+     * The on-device model, when the wake word has loaded it: it follows the
+     * command word by word so the turn ends when the sentence does
+     * ([SpokenEnd]). Null leaves the sound-based end alone.
+     */
+    var endpointModel: () -> Model? = { null }
 
     /**
      * The language to transcribe in: "ru", or null to let Whisper guess.
@@ -146,6 +154,7 @@ class WhisperTranscriber(
         val voice = if (keepVoice) RollingAudio(MAX_RECORD_SAMPLES) else null
         val leadMs = (lead?.size ?: 0) * MS_PER_SECOND / SAMPLE_RATE
         val endpointer = SpeechEndpointer(ceiling = silenceThreshold, leadMs = leadMs)
+        val words = endpointModel()?.let(WordFollower::open)
         stopRequested = false
         lead?.let(::toPcm16)?.let { samples ->
             pcm.add(PcmAudio.toLittleEndian(samples, samples.size))
@@ -155,22 +164,30 @@ class WhisperTranscriber(
         record.startRecording()
         withContext(Dispatchers.Main) { listener?.onRecordingStarted() }
 
-        while (true) {
-            if (stopRequested) endpointer.stop()
-            if (endpointer.end != null) break
-            val read = record.read(buffer, 0, buffer.size)
-            if (read <= 0) break
-            pcm.add(PcmAudio.toLittleEndian(buffer, read))
-            onLevel?.invoke(normaliseLevel(PcmAudio.rms(buffer, read)))
+        try {
+            while (true) {
+                if (stopRequested) endpointer.stop()
+                if (endpointer.end != null) break
+                val read = record.read(buffer, 0, buffer.size)
+                if (read <= 0) break
+                pcm.add(PcmAudio.toLittleEndian(buffer, read))
+                onLevel?.invoke(normaliseLevel(PcmAudio.rms(buffer, read)))
 
-            val wasSpeaking = endpointer.speechStarted
-            endpointer.push(buffer, read)
-            voice?.let { keepForCheck(it, buffer, read, speaking = endpointer.speechStarted) }
-            if (!wasSpeaking && endpointer.speechStarted) withContext(Dispatchers.Main) { listener?.onSpeechDetected() }
+                val wasSpeaking = endpointer.speechStarted
+                endpointer.push(buffer, read)
+                words?.feed(buffer, read, endpointer)
+                voice?.let { keepForCheck(it, buffer, read, speaking = endpointer.speechStarted) }
+                if (!wasSpeaking && endpointer.speechStarted) {
+                    withContext(Dispatchers.Main) { listener?.onSpeechDetected() }
+                }
+            }
+        } finally {
+            words?.close()
         }
 
         record.stop()
-        Log.i(TAG, "Recording ended: ${endpointer.end}, ${endpointer.speechMs} ms of speech")
+        val how = if (endpointer.endedByWords) "by words (${words?.wordCount})" else "by sound"
+        Log.i(TAG, "Recording ended: ${endpointer.end} $how, ${endpointer.speechMs} ms of speech")
         withContext(Dispatchers.Main) { listener?.onRecordingFinished() }
         return Capture(pcm, voice?.snapshot(), endpointer.usable)
     }

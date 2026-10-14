@@ -205,6 +205,8 @@ class FridayWakeWordService : Service() {
             // stores the value and redraws on its own vsync, so no hop needed.
             onLevel = { overlay.level(it) }
             hints = get<SpeechHints>(SpeechHints::class.java)::prompt
+            // The wake word's model hears where a sentence ends.
+            endpointModel = { if (::wake.isInitialized) wake.voskModel else null }
         }
         val session = VoiceSession(
             prefDao, get(FridayMemory::class.java), get(ChatMessageDao::class.java), get(ModelCatalog::class.java)

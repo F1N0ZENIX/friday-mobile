@@ -180,6 +180,9 @@ class WakeListener(
     /** Whether the model is loaded; false after a failed [initialise]. */
     val ready: Boolean get() = source != null
 
+    /** The Vosk model, for following a command word by word; null when none is loaded. */
+    val voskModel: org.vosk.Model? get() = (source as? WakeWordEngine)?.vosk
+
     /**
      * Starts listening unless a capture is already running — two calls close
      * together still open one recorder.
