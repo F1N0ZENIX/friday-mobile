@@ -167,6 +167,12 @@ internal fun CalibrationPanel(viewModel: SettingsViewModel) {
     val energy by viewModel.calibrationEnergy.collectAsStateWithLifecycle()
     val isCalibrated by viewModel.isCalibrated.collectAsStateWithLifecycle()
     val result by viewModel.calibrationResult.collectAsStateWithLifecycle()
+    val message by viewModel.calibrationMessage.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    // Without the microphone the run would only report it unavailable; asking first is kinder.
+    val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        viewModel.startCalibration()
+    }
 
     HudPanel("Калибровка", index = 3) {
         HudNote("Подстраивает Пятницу под ваш голос и шум вокруг, чтобы слово срабатывало надёжно.")
@@ -175,9 +181,20 @@ internal fun CalibrationPanel(viewModel: SettingsViewModel) {
             Text(phaseText(current), style = MaterialTheme.typography.titleMedium, color = ArcCyan)
             LinearProgressIndicator(progress = { phaseProgress(current) }, modifier = Modifier.fillMaxWidth())
             HudReadout("Уровень", "%.0f".format(energy))
+            HudOutlinedButton(onClick = viewModel::cancelCalibration, modifier = Modifier.fillMaxWidth()) {
+                Text("Отменить")
+            }
         } else {
-            HudButton(onClick = viewModel::startCalibration, modifier = Modifier.fillMaxWidth()) {
-                Text(if (isCalibrated) "Откалибровать заново" else "Откалибровать")
+            message?.let { HudNote(it) }
+            HudButton(
+                onClick = {
+                    val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+                        PackageManager.PERMISSION_GRANTED
+                    if (granted) viewModel.startCalibration() else micLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (isCalibrated || message != null) "Откалибровать заново" else "Откалибровать")
             }
         }
         val r = result

@@ -220,17 +220,14 @@ class SettingsViewModel(
     private val modelManager = VoskModelManager(appContext)
     val modelDownloadState = modelManager.downloadState
 
-    private val _calibrationPhase = MutableStateFlow<VoiceCalibrator.Phase?>(null)
-    val calibrationPhase: StateFlow<VoiceCalibrator.Phase?> = _calibrationPhase.asStateFlow()
-
-    private val _calibrationEnergy = MutableStateFlow(0.0)
-    val calibrationEnergy: StateFlow<Double> = _calibrationEnergy.asStateFlow()
-
     private val _isCalibrated = MutableStateFlow(false)
     val isCalibrated: StateFlow<Boolean> = _isCalibrated.asStateFlow()
 
-    private val _calibrationResult = MutableStateFlow<VoiceCalibrator.CalibrationResult?>(null)
-    val calibrationResult: StateFlow<VoiceCalibrator.CalibrationResult?> = _calibrationResult.asStateFlow()
+    private val calibration = Calibration(viewModelScope, ::VoiceCalibrator, ::saveCalibration)
+    val calibrationPhase: StateFlow<VoiceCalibrator.Phase?> = calibration.phase
+    val calibrationEnergy: StateFlow<Double> = calibration.energy
+    val calibrationResult: StateFlow<VoiceCalibrator.CalibrationResult?> = calibration.result
+    val calibrationMessage: StateFlow<String?> = calibration.message
 
     private val _lazuriUrl = MutableStateFlow("")
     val lazuriUrl: StateFlow<String> = _lazuriUrl.asStateFlow()
@@ -363,34 +360,26 @@ class SettingsViewModel(
         }
     }
 
+    /** The screen asks for the microphone first; a refusal still ends in a clear message, not a hang. */
     fun startCalibration() {
-        val calibrator = VoiceCalibrator()
-        calibrator.listener = object : VoiceCalibrator.Listener {
-            override fun onPhase(phase: VoiceCalibrator.Phase) {
-                _calibrationPhase.value = phase
-            }
-            override fun onEnergyUpdate(energy: Double) {
-                _calibrationEnergy.value = energy
-            }
-        }
+        calibration.start()
+    }
 
-        viewModelScope.launch {
-            _calibrationPhase.value = VoiceCalibrator.Phase.MEASURING_SILENCE
-            val result = calibrator.calibrate()
-            _calibrationResult.value = result
+    fun cancelCalibration() {
+        calibration.cancel()
+    }
 
-            prefDao.set(UserPreferenceEntity(VoiceCalibrator.PREF_WAKE, result.wakeWordThreshold.toString()))
-            prefDao.set(UserPreferenceEntity(VoiceCalibrator.PREF_WHISPER, result.whisperThreshold.toString()))
-            prefDao.set(UserPreferenceEntity("ambient_noise", result.ambientNoise.toString()))
-            prefDao.set(UserPreferenceEntity("speech_energy", result.speechEnergy.toString()))
+    /** Only complete measurements get here ([Calibration]). */
+    private suspend fun saveCalibration(result: VoiceCalibrator.CalibrationResult) {
+        prefDao.set(UserPreferenceEntity(VoiceCalibrator.PREF_WAKE, result.wakeWordThreshold.toString()))
+        prefDao.set(UserPreferenceEntity(VoiceCalibrator.PREF_WHISPER, result.whisperThreshold.toString()))
+        prefDao.set(UserPreferenceEntity("ambient_noise", result.ambientNoise.toString()))
+        prefDao.set(UserPreferenceEntity("speech_energy", result.speechEnergy.toString()))
+        _isCalibrated.value = true
 
-            _isCalibrated.value = true
-            _calibrationPhase.value = null
-
-            if (_wakeWordEnabled.value) {
-                FridayWakeWordService.stop(appContext)
-                FridayWakeWordService.start(appContext)
-            }
+        if (_wakeWordEnabled.value) {
+            FridayWakeWordService.stop(appContext)
+            FridayWakeWordService.start(appContext)
         }
     }
 
