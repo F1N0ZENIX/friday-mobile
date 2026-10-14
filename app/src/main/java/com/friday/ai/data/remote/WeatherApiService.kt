@@ -71,7 +71,7 @@ class WeatherApiService private constructor(
                     ?: return@withContext null
             )
         } catch (e: Exception) {
-            Log.w(TAG, "Geocoding failed for '$name': ${e.message}")
+            Log.w(TAG, "Geocoding failed: ${e.javaClass.simpleName}")
             null
         }
     }
@@ -199,7 +199,7 @@ class WeatherApiService private constructor(
             .build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                Log.w(TAG, "HTTP ${response.code} for $url")
+                Log.w(TAG, "HTTP ${response.code} from Open-Meteo")
                 return null
             }
             return response.body?.string()

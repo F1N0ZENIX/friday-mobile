@@ -183,7 +183,7 @@ class LinkWatcher(
         val now = System.currentTimeMillis()
         last?.let { (k, at) -> if (k == key && now - at < REPEAT_MS) return }
         last = key to now
-        Log.i(TAG, "${trigger.key} ${if (connected) "connected" else "disconnected"}: $value")
+        Log.i(TAG, "${trigger.key} ${if (connected) "connected" else "disconnected"}")
         runCatching { onChange(trigger, value, connected) }.onFailure { Log.e(TAG, "Mode event failed: ${it.message}") }
     }
 

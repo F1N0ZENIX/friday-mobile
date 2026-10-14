@@ -11,6 +11,7 @@ import com.friday.ai.core.audio.SpeechEndpointer
 import com.friday.ai.core.audio.WhisperArtifacts
 import com.friday.ai.core.people.NameHints
 import com.friday.ai.data.remote.GroqApiService
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -120,6 +121,9 @@ class WhisperTranscriber(
             )
             if (!capture.usable) VoiceTurn.Outcome.Nothing
             else transcribe(apiKey, capture, speakerCheck)
+        } catch (e: CancellationException) {
+            // The turn was abandoned: the upload is cancelled with it, and that is no error to show.
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Transcription error: ${e.message}")
             withContext(Dispatchers.Main) { listener?.onError(e.message ?: "Transcription failed") }

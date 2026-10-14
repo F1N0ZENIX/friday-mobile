@@ -107,7 +107,7 @@ class ModeStore(private val dao: ModeDao, private val clock: () -> Long = System
             lastRunAt = e.lastRunAt,
             runCount = e.runCount
         )
-    }.onFailure { Log.w(TAG, "Unreadable mode ${e.name}: ${it.message}") }.getOrNull()
+    }.onFailure { Log.w(TAG, "Unreadable mode: ${it.message}") }.getOrNull()
 
     /** Steps written by an older Friday are brought up to date; unreadable ones are dropped. */
     private fun envelopes(json: String): List<ActionEnvelope> =

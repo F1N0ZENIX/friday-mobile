@@ -96,7 +96,7 @@ class EdgeTtsSpeaker(private val context: Context) {
                     if (audio != null && audio.isNotEmpty()) {
                         readyAudio.send(Playable.Audio(audio))
                     } else {
-                        Log.w(TAG, "Edge gave no audio; using on-device voice for: ${text.take(40)}")
+                        Log.w(TAG, "Edge gave no audio; using the on-device voice")
                         readyAudio.send(Playable.Fallback(text))
                     }
                 }
@@ -335,7 +335,7 @@ private class PhraseCache(private val dir: File) {
         runCatching {
             dir.mkdirs()
             file(text).writeBytes(audio)
-        }.onFailure { Log.w("PhraseCache", "Could not cache '$text': ${it.message}") }
+        }.onFailure { Log.w("PhraseCache", "Could not cache a phrase: ${it.message}") }
     }
 
     private fun file(text: String) = File(dir, EdgeTtsProtocol.cacheKey(EdgeTtsProtocol.detectVoice(text), text))

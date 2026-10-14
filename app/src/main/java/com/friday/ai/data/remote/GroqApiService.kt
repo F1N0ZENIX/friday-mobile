@@ -5,12 +5,15 @@ import com.friday.ai.data.remote.dto.ApiMessage
 import com.friday.ai.data.remote.dto.ChatCompletionChunk
 import com.friday.ai.data.remote.dto.ChatCompletionRequest
 import com.friday.ai.data.remote.dto.ToolDefinition
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -18,15 +21,21 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.BufferedReader
 import java.io.File
+import java.io.IOException
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 class GroqApiService private constructor(
     private val client: OkHttpClient,
@@ -57,6 +66,9 @@ class GroqApiService private constructor(
 
             return GroqApiService(client, groqJson)
         }
+
+        /** With a client of the test's own (a fake server behind an interceptor). */
+        internal fun create(client: OkHttpClient): GroqApiService = GroqApiService(client, groqJson)
     }
 
     fun streamCompletion(
@@ -78,7 +90,7 @@ class GroqApiService private constructor(
         model: String = GroqModels.fallback(GroqModels.Role.CHAT),
         maxTokens: Int = DEFAULT_MAX_TOKENS,
         tools: List<ToolDefinition>? = null
-    ): Flow<ChatEvent> = flow {
+    ): Flow<ChatEvent> {
         val offered = tools?.takeIf { it.isNotEmpty() }
         val thorough = offered != null
         val request = ChatCompletionRequest(
@@ -102,35 +114,69 @@ class GroqApiService private constructor(
             .post(requestBody)
             .build()
 
-        val response = client.newCall(httpRequest).execute()
-
-        if (!response.isSuccessful) {
-            val errorBody = response.body?.string() ?: "Unknown error"
-            throw GroqApiException(
-                code = response.code,
-                message = parseErrorMessage(response.code, errorBody),
-                retryAfterMs = GroqApiException.retryAfterMs(errorBody)
-            )
-        }
-
-        val reader: BufferedReader = response.body?.byteStream()?.bufferedReader()
-            ?: throw GroqApiException(code = 0, message = "Empty response body")
-
-        val toolCalls = ToolCallAssembler()
-        reader.use { buffered ->
-            buffered.lineSequence().forEach { line ->
-                if (!line.startsWith("data: ")) return@forEach
-                val data = line.removePrefix("data: ").trim()
-                if (data == "[DONE]") return@forEach
-
+        return streamed(httpRequest) { reader ->
+            val toolCalls = ToolCallAssembler()
+            for (data in events(reader)) {
                 val delta = json.decodeFromString(ChatCompletionChunk.serializer(), data)
-                    .choices.firstOrNull()?.delta ?: return@forEach
-                delta.content?.takeIf { it.isNotEmpty() }?.let { emit(ChatEvent.Text(it)) }
+                    .choices.firstOrNull()?.delta ?: continue
+                delta.content?.takeIf { it.isNotEmpty() }?.let { send(ChatEvent.Text(it)) }
                 delta.toolCalls?.let { toolCalls.add(it) }
             }
+            toolCalls.calls().takeIf { it.isNotEmpty() }?.let { send(ChatEvent.ToolCalls(it)) }
         }
-        toolCalls.calls().takeIf { it.isNotEmpty() }?.let { emit(ChatEvent.ToolCalls(it)) }
-    }.flowOn(Dispatchers.IO)
+    }
+
+    /**
+     * A streamed reply that stops with its caller. The call is made once;
+     * when the collector goes away — cancelled, or simply done — the HTTP
+     * call is cancelled too, so a stalled socket isn't left reading for up
+     * to the two-minute timeout. The response is closed on every path.
+     */
+    private fun <T> streamed(request: Request, read: suspend ProducerScope<T>.(BufferedReader) -> Unit): Flow<T> =
+        channelFlow {
+            val call = client.newCall(request)
+            val reading = launch(Dispatchers.IO) {
+                try {
+                    call.execute().use { response ->
+                        if (!response.isSuccessful) throw failure(response)
+                        val body = response.body ?: throw GroqApiException(code = 0, message = "Empty response body")
+                        body.charStream().buffered().use { read(it) }
+                    }
+                } catch (e: IOException) {
+                    // Our own cancel breaks the read; that is the caller leaving, not a network error.
+                    if (call.isCanceled()) throw CancellationException("Request cancelled").apply { initCause(e) }
+                    throw e
+                }
+            }
+            try {
+                reading.join()
+            } finally {
+                call.cancel()
+            }
+        }
+
+    /**
+     * Sends [request] and reads the reply with [read], cancelling the HTTP
+     * call when the caller is cancelled. The response is always closed.
+     */
+    private suspend fun <T> send(request: Request, read: (Response) -> T): T {
+        val call = client.newCall(request)
+        return suspendCancellableCoroutine { continuation ->
+            continuation.invokeOnCancellation { call.cancel() }
+            call.enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    continuation.resumeWithException(e)
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    // A late reply to a cancelled caller is dropped; the response is closed either way.
+                    response.use { runCatching { read(it) } }
+                        .onSuccess { continuation.resume(it) }
+                        .onFailure { continuation.resumeWithException(it) }
+                }
+            })
+        }
+    }
 
     fun analyzeImage(
         apiKey: String,
@@ -138,7 +184,7 @@ class GroqApiService private constructor(
         prompt: String = "Describe what you see on this screen in detail. " +
             "Answer in the same language as the user's question.",
         model: String = GroqModels.fallback(GroqModels.Role.VISION)
-    ): Flow<String> = flow {
+    ): Flow<String> {
         val messagesJson = JsonArray(listOf(
             JsonObject(mapOf(
                 "role" to JsonPrimitive("user"),
@@ -173,34 +219,14 @@ class GroqApiService private constructor(
             .post(requestBody)
             .build()
 
-        val response = client.newCall(httpRequest).execute()
-
-        if (!response.isSuccessful) {
-            val errorBody = response.body?.string() ?: "Unknown error"
-            throw GroqApiException(
-                code = response.code,
-                message = parseErrorMessage(response.code, errorBody)
-            )
-        }
-
-        val reader = response.body?.byteStream()?.bufferedReader()
-            ?: throw GroqApiException(code = 0, message = "Empty response body")
-
-        reader.use { buffered ->
-            buffered.lineSequence().forEach { line ->
-                if (line.startsWith("data: ")) {
-                    val data = line.removePrefix("data: ").trim()
-                    if (data == "[DONE]") return@forEach
-
-                    val parsed = json.parseToJsonElement(data).jsonObject
-                    val choices = parsed["choices"]?.jsonArray ?: return@forEach
-                    val delta = choices.firstOrNull()?.jsonObject?.get("delta")?.jsonObject
-                    val content = delta?.get("content")?.jsonPrimitive?.content
-                    if (content != null) emit(content)
-                }
+        return streamed(httpRequest) { reader ->
+            for (data in events(reader)) {
+                val choices = json.parseToJsonElement(data).jsonObject["choices"]?.jsonArray ?: continue
+                val delta = choices.firstOrNull()?.jsonObject?.get("delta")?.jsonObject
+                delta?.get("content")?.jsonPrimitive?.content?.let { send(it) }
             }
         }
-    }.flowOn(Dispatchers.IO)
+    }
 
     fun analyzeText(
         apiKey: String,
@@ -219,7 +245,7 @@ class GroqApiService private constructor(
      * built-in `browser_search` tool. Not streamed: the searching happens on
      * Groq's side and only the finished answer is worth having.
      */
-    fun browse(apiKey: String, model: String, system: String, question: String): String {
+    suspend fun browse(apiKey: String, model: String, system: String, question: String): String {
         val body = JsonObject(
             mapOf(
                 "model" to JsonPrimitive(model),
@@ -239,14 +265,9 @@ class GroqApiService private constructor(
             .addHeader("Authorization", "Bearer $apiKey")
             .post(body.toString().toRequestBody("application/json".toMediaType()))
             .build()
-        client.newCall(request).execute().use { response ->
-            val text = response.body?.string().orEmpty()
-            if (!response.isSuccessful) {
-                throw GroqApiException(
-                    response.code, parseErrorMessage(response.code, text), GroqApiException.retryAfterMs(text)
-                )
-            }
-            return json.parseToJsonElement(text).jsonObject["choices"]?.jsonArray?.firstOrNull()
+        return send(request) { response ->
+            if (!response.isSuccessful) throw failure(response)
+            json.parseToJsonElement(response.body?.string().orEmpty()).jsonObject["choices"]?.jsonArray?.firstOrNull()
                 ?.jsonObject?.get("message")?.jsonObject?.get("content")?.jsonPrimitive?.content.orEmpty()
                 .ifBlank { throw GroqApiException(0, "The search returned no answer") }
         }
@@ -264,7 +285,12 @@ class GroqApiService private constructor(
     }
 
     /** @param prompt words to expect — the owner's contacts — so names come back spelled right */
-    fun transcribeAudio(apiKey: String, audioFile: File, language: String? = null, prompt: String? = null): String {
+    suspend fun transcribeAudio(
+        apiKey: String,
+        audioFile: File,
+        language: String? = null,
+        prompt: String? = null
+    ): String {
         val fileBody = audioFile.asRequestBody("audio/wav".toMediaType())
 
         val multipartBuilder = MultipartBody.Builder()
@@ -286,27 +312,41 @@ class GroqApiService private constructor(
             .post(multipartBuilder.build())
             .build()
 
-        val response = client.newCall(httpRequest).execute()
-
-        if (!response.isSuccessful) {
-            val errorBody = response.body?.string() ?: "Unknown error"
-            throw GroqApiException(
-                code = response.code,
-                message = parseErrorMessage(response.code, errorBody)
-            )
+        return send(httpRequest) { response ->
+            if (!response.isSuccessful) throw failure(response)
+            val body = response.body?.string() ?: throw GroqApiException(0, "Empty response")
+            json.parseToJsonElement(body).jsonObject["text"]?.jsonPrimitive?.content ?: ""
         }
-
-        val body = response.body?.string() ?: throw GroqApiException(0, "Empty response")
-        val parsed = json.parseToJsonElement(body).jsonObject
-        return parsed["text"]?.jsonPrimitive?.content ?: ""
     }
 
-    private fun parseErrorMessage(code: Int, body: String): String = when (code) {
-        401 -> "Invalid API key. Check your Groq API key in Settings."
-        429 -> "Rate limit exceeded. Please wait a moment and try again."
-        503 -> "Groq service is temporarily unavailable. Try again later."
-        else -> "API error ($code): $body"
-    }
+}
+
+/** The payloads of a server-sent-events stream, up to "[DONE]". */
+private fun events(reader: BufferedReader): Sequence<String> =
+    reader.lineSequence()
+        .filter { it.startsWith("data: ") }
+        .map { it.removePrefix("data: ").trim() }
+        .takeWhile { it != "[DONE]" }
+
+/** What an unsuccessful reply means, read from its body. */
+private fun failure(response: Response): GroqApiException {
+    val errorBody = response.body?.string() ?: "Unknown error"
+    return GroqApiException(
+        code = response.code,
+        message = parseErrorMessage(response.code, errorBody),
+        retryAfterMs = GroqApiException.retryAfterMs(errorBody)
+    )
+}
+
+private const val HTTP_UNAUTHORIZED = 401
+private const val HTTP_RATE_LIMITED = 429
+private const val HTTP_UNAVAILABLE = 503
+
+private fun parseErrorMessage(code: Int, body: String): String = when (code) {
+    HTTP_UNAUTHORIZED -> "Invalid API key. Check your Groq API key in Settings."
+    HTTP_RATE_LIMITED -> "Rate limit exceeded. Please wait a moment and try again."
+    HTTP_UNAVAILABLE -> "Groq service is temporarily unavailable. Try again later."
+    else -> "API error ($code): $body"
 }
 
 /**

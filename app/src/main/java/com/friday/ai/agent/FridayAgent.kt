@@ -38,8 +38,15 @@ class FridayAgent(
     private val capabilities: suspend () -> FridayCapabilities? = { null }
 ) {
 
-    private companion object {
-        const val TAG = "FridayAgent"
+    internal companion object {
+        private const val TAG = "FridayAgent"
+
+        /**
+         * What a tool call leaves in logcat: the tool and whether it worked —
+         * never its arguments or result, which carry names, numbers and the
+         * text of messages.
+         */
+        fun toolLog(tool: String, done: Boolean): String = "Tool $tool: ${if (done) "done" else "not done"}"
 
         /**
          * Model turns per answer. Two cover "do it, then say so"; the rest are
@@ -216,7 +223,7 @@ class FridayAgent(
                 else -> "Nothing was done: this needs the app on screen." to false
             }
         }
-        Log.i(TAG, "${call.function.name}(${call.function.arguments}) -> ${result.first}")
+        Log.i(TAG, toolLog(call.function.name, result.second))
         return result
     }
 }

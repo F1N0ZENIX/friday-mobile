@@ -217,7 +217,7 @@ Rules:
                             if (FactFilter.isStorable(key, value)) {
                                 saveOrUpdate(category, key, value, "conversation")
                             } else {
-                                Log.d(TAG, "Rejected extracted fact: $key = $value")
+                                Log.d(TAG, "Rejected an extracted fact")
                             }
                         }
                     }

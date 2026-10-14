@@ -1,5 +1,9 @@
-// No secret is read here: an API key compiled into an APK can be read back
-// out of it by anyone who has the file. The user enters their own in Settings.
+import java.util.Properties
+
+// No API key is read here: one compiled into an APK can be read back out of
+// it by anyone who has the file. The user enters their own in Settings.
+// The only thing read from outside the repository is how to sign a release
+// (below), and that never ends up in the APK.
 
 plugins {
     id("com.android.application")
@@ -8,6 +12,28 @@ plugins {
     id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("io.gitlab.arturbosch.detekt")
+}
+
+/** How the owner's builds are signed; null when this machine has not been given the key. */
+data class OwnerSigning(val storeFile: File, val storePassword: String, val keyAlias: String, val keyPassword: String)
+
+val ownerSigning: OwnerSigning? = run {
+    val local = Properties().apply {
+        rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+    }
+    // local.properties for a developer machine, the environment for CI secrets.
+    fun value(key: String, env: String): String? =
+        local.getProperty("friday.signing.$key")?.takeIf { it.isNotBlank() }
+            ?: System.getenv(env)?.takeIf { it.isNotBlank() }
+    val store = value("storeFile", "FRIDAY_SIGNING_STORE_FILE")?.let { rootProject.file(it) }?.takeIf { it.exists() }
+    val storePassword = value("storePassword", "FRIDAY_SIGNING_STORE_PASSWORD")
+    val alias = value("keyAlias", "FRIDAY_SIGNING_KEY_ALIAS")
+    val keyPassword = value("keyPassword", "FRIDAY_SIGNING_KEY_PASSWORD")
+    if (store != null && storePassword != null && alias != null && keyPassword != null) {
+        OwnerSigning(store, storePassword, alias, keyPassword)
+    } else {
+        null
+    }
 }
 
 android {
@@ -35,29 +61,31 @@ android {
         ndk { abiFilters += "arm64-v8a" }
     }
 
-    // The owner's signing key lives in keystore/ and is never committed (see
-    // keystore/README.md). Builds made elsewhere fall back to the SDK's debug
-    // key — fine for trying Friday out, but such a build cannot update an
-    // install signed with the owner's key.
-    val ownerKey = rootProject.file("keystore/friday.keystore")
+    // The owner's signing key and its passwords are never committed: they come
+    // from local.properties or the environment (see keystore/README.md). With
+    // them, debug and release builds are signed as the owner's. Without them,
+    // a debug build uses this machine's SDK debug key (fine for trying Friday
+    // out) and a release build is left unsigned — it builds and passes the R8
+    // checks, but cannot be installed, so nothing ships signed by the wrong key.
+    // Installable releases come from ownerRelease, which fails without the key.
     signingConfigs {
-        if (ownerKey.exists()) {
+        ownerSigning?.let { owner ->
             create("friday") {
-                storeFile = ownerKey
-                storePassword = "android"
-                keyAlias = "androiddebugkey"
-                keyPassword = "android"
+                storeFile = owner.storeFile
+                storePassword = owner.storePassword
+                keyAlias = owner.keyAlias
+                keyPassword = owner.keyPassword
             }
         }
     }
-    val signing = signingConfigs.findByName("friday") ?: signingConfigs.getByName("debug")
+    val ownerSigned = signingConfigs.findByName("friday")
 
     buildTypes {
         debug {
-            signingConfig = signing
+            signingConfig = ownerSigned ?: signingConfigs.getByName("debug")
         }
         release {
-            signingConfig = signing
+            signingConfig = ownerSigned
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -261,5 +289,27 @@ val verifyReleaseKeepRules by tasks.registering {
                 renamed.joinToString { (from, to) -> "$from -> $to" } + ". See app/proguard-rules.pro."
         }
         logger.lifecycle("R8 keep rules OK: ${mustKeep.size} classes kept by name.")
+    }
+}
+
+/**
+ * The release APK to install or publish. It fails, before building, when
+ * the owner's signing key is not configured: a release signed with another
+ * key cannot update the installed app (Android would make the owner
+ * uninstall it, losing every setting and memory).
+ */
+val ownerRelease by tasks.registering {
+    group = "distribution"
+    description = "Builds the owner-signed release APK; fails if release signing is not configured."
+    dependsOn("assembleRelease", "verifyReleaseKeepRules")
+}
+
+gradle.taskGraph.whenReady {
+    if (hasTask(":app:ownerRelease") && ownerSigning == null) {
+        throw GradleException(
+            "Release signing is not configured. Set friday.signing.storeFile, storePassword, keyAlias and " +
+                "keyPassword in local.properties (or the FRIDAY_SIGNING_* environment variables) — see " +
+                "keystore/README.md. Refusing to build a release that cannot update the owner's install."
+        )
     }
 }
