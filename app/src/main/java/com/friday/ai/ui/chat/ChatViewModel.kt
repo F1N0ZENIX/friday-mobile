@@ -1,13 +1,15 @@
 package com.friday.ai.ui.chat
 
+import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.friday.ai.command.CommandExecutor
+import com.friday.ai.core.CorrectionDetector
 import com.friday.ai.core.FileAnalyzer
 import com.friday.ai.core.VoiceInputManager
-import com.friday.ai.core.CorrectionDetector
 import com.friday.ai.data.local.dao.ChatSessionSummary
-import com.friday.ai.service.FridayMemory
 import com.friday.ai.domain.model.AssistantMode
 import com.friday.ai.domain.model.ChatUiState
 import com.friday.ai.domain.model.CommandResult
@@ -16,7 +18,13 @@ import com.friday.ai.domain.model.MessageRole
 import com.friday.ai.domain.usecase.AnalyzeContentUseCase
 import com.friday.ai.domain.usecase.GetChatHistoryUseCase
 import com.friday.ai.domain.usecase.SendMessageUseCase
+import com.friday.ai.service.FridayMemory
+import com.friday.ai.service.capture.ScreenCapture
+import java.util.UUID
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -28,14 +36,28 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/**
+ * The chat screen.
+ *
+ * One request at a time: a send, a screen or a file while Friday is still
+ * answering is refused here, not only by a disabled button. Each request
+ * belongs to the conversation it began in, fixed when it starts — its
+ * prompt and its answer are saved there and its stream is drawn only while
+ * that conversation is the one on screen. Opening another conversation
+ * lets the answer finish out of sight, in its own; deleting the
+ * conversation cancels it, so nothing is written into a deleted thread.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
+@Suppress("LongParameterList") // Koin hands in each collaborator; grouping them would only hide that.
 class ChatViewModel(
     private val sendMessage: SendMessageUseCase,
     private val getChatHistory: GetChatHistoryUseCase,
     private val analyzeContent: AnalyzeContentUseCase,
     private val voiceInput: VoiceInputManager,
     private val commands: CommandExecutor,
-    private val memory: FridayMemory
+    private val memory: FridayMemory,
+    private val files: FileAnalyzer? = null,
+    private val screen: ScreenCapture? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChatUiState())
@@ -53,6 +75,17 @@ class ChatViewModel(
     /** Past conversations for the history drawer. */
     val sessions: StateFlow<List<ChatSessionSummary>> = getChatHistory.sessions()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /**
+     * One request: where it belongs, the history it was asked with, its job
+     * and the id of the answer being drawn. Touched on the main thread only.
+     */
+    private class Request(var sessionId: String?, val history: List<Message>) {
+        var job: Job? = null
+        var streamId: String? = null
+    }
+
+    private var active: Request? = null
 
     init {
         observeHistory()
@@ -78,9 +111,16 @@ class ChatViewModel(
                 .flatMapLatest { sessionId -> getChatHistory.session(sessionId) }
                 .catch { e -> _uiState.update { it.copy(error = e.message) } }
                 .collect { messages ->
-                    _uiState.update { it.copy(messages = messages) }
+                    _uiState.update { it.copy(messages = messages + streamingOf(it.messages)) }
                 }
         }
+    }
+
+    /** The answer still being drawn for the conversation on screen, kept across a database refresh. */
+    private fun streamingOf(shown: List<Message>): List<Message> {
+        val request = active ?: return emptyList()
+        if (request.sessionId != _currentSessionId.value) return emptyList()
+        return shown.filter { it.isStreaming && it.id == request.streamId }
     }
 
     /** Starts a fresh conversation, leaving the previous one in history. */
@@ -97,10 +137,14 @@ class ChatViewModel(
         viewModelScope.launch {
             memory.resumeSession(sessionId)
             _currentSessionId.value = sessionId
+            // An answer still being drawn belongs to the conversation left behind.
+            _uiState.update { it.copy(messages = it.messages.filterNot { m -> m.isStreaming }) }
         }
     }
 
     fun onDeleteSession(sessionId: String) {
+        // Its answer must not be written into a conversation that no longer exists.
+        active?.takeIf { it.sessionId == sessionId }?.let(::abandon)
         viewModelScope.launch {
             getChatHistory.deleteSession(sessionId)
             if (sessionId == _currentSessionId.value) {
@@ -128,26 +172,15 @@ class ChatViewModel(
         }
     }
 
-    /**
-     * Saves a message into the conversation currently open, so every turn —
-     * typed, spoken or a command result — lands in the same thread.
-     */
-    private suspend fun persist(content: String, role: MessageRole) {
-        val sessionId = _currentSessionId.value ?: memory.getOrCreateSessionId()
-            .also { _currentSessionId.value = it }
-        sendMessage.saveMessage(Message(content = content, role = role, sessionId = sessionId))
-    }
-
     fun onInputChange(text: String) {
         _inputText.value = text
     }
 
     fun onSend() {
         val text = _inputText.value.trim()
-        if (text.isBlank()) return
+        if (text.isBlank() || active != null) return
         _inputText.value = ""
-
-        viewModelScope.launch {
+        begin {
             // An answer to "Отправить?" is not a new request.
             val confirmed = commands.answerPending(text, isRussian(text))
             if (confirmed != null) {
@@ -164,34 +197,77 @@ class ChatViewModel(
      * the voice service; plain conversation streams from the model here,
      * where the reply can be drawn as it arrives.
      */
-    private fun dispatch(text: String) {
+    private suspend fun Request.dispatch(text: String) {
         val command = commands.route(text)
-        if (command is CommandResult.ChatMessage) {
-            handleChatMessage(command.text)
+        // A silent quick link leaves nothing in the chat, not even what was typed.
+        if (command is CommandResult.OpenLink && command.silent) {
+            commands.execute(command, isRussian(text))
             return
         }
-        viewModelScope.launch {
-            // A silent quick link leaves nothing in the chat, not even what was typed.
-            if (command is CommandResult.OpenLink && command.silent) {
-                commands.execute(command, isRussian(text))
-                return@launch
-            }
-            persist(text, MessageRole.USER)
-            when (val outcome = commands.execute(command, isRussian(text))) {
-                is CommandExecutor.Outcome.Reply -> persist(outcome.text, MessageRole.ASSISTANT)
-                is CommandExecutor.Outcome.Conversation -> streamReply(outcome.text)
-                CommandExecutor.Outcome.NeedsScreen -> onAnalyzeScreenRequested?.invoke()
-                is CommandExecutor.Outcome.NeedsFile -> onAnalyzeFileRequested?.invoke(outcome.hint)
-                CommandExecutor.Outcome.Silent -> Unit
-            }
+        persist(text, MessageRole.USER)
+        if (command is CommandResult.ChatMessage) {
+            reply(command.text)
+            return
+        }
+        when (val outcome = commands.execute(command, isRussian(text))) {
+            is CommandExecutor.Outcome.Reply -> persist(outcome.text, MessageRole.ASSISTANT)
+            is CommandExecutor.Outcome.Conversation -> reply(outcome.text)
+            CommandExecutor.Outcome.NeedsScreen -> onAnalyzeScreenRequested?.invoke()
+            is CommandExecutor.Outcome.NeedsFile -> onAnalyzeFileRequested?.invoke(outcome.hint)
+            CommandExecutor.Outcome.Silent -> Unit
         }
     }
 
     private fun isRussian(text: String): Boolean =
         text.any { it in 'а'..'я' || it in 'А'..'Я' }
 
-    fun onScreenCaptured(imageBase64: String) {
-        streamAssistantResponse { analyzeContent.analyzeImage(imageBase64) }
+    /** The owner answered the screen-capture consent screen. */
+    fun onScreenConsent(resultCode: Int, data: Intent?) {
+        val capture = screen ?: return
+        if (resultCode != Activity.RESULT_OK || data == null) {
+            showError("Доступ к экрану не дан — анализ отменён")
+            return
+        }
+        if (!begin {
+                when (val shot = capture.capture(resultCode, data)) {
+                    is ScreenCapture.Result.Image -> stream(analyzeContent.analyzeImage(shot.jpegBase64))
+                    is ScreenCapture.Result.Failed -> fail(shot.reason)
+                }
+            }
+        ) {
+            busy()
+        }
+    }
+
+    /** A file picked in the system picker; read off the main thread, within limits. */
+    fun onFilePicked(uri: Uri) {
+        val reader = files ?: return
+        if (!begin { analyse(reader.read(uri)) }) busy()
+    }
+
+    private suspend fun Request.analyse(file: FileAnalyzer.Outcome) {
+        when (file) {
+            is FileAnalyzer.Outcome.Image ->
+                stream(analyzeContent.analyzeImage(file.jpegBase64, "Analyze this image (${file.name}):"))
+            is FileAnalyzer.Outcome.Text -> {
+                val text = if (file.truncated) {
+                    file.text + "\n\n[…обрезано: показаны первые ${FileAnalyzer.MAX_TEXT_CHARS} символов]"
+                } else {
+                    file.text
+                }
+                stream(analyzeContent.analyzeText(text, "Analyze this file (${file.name}):"))
+            }
+            is FileAnalyzer.Outcome.Unsupported -> fail(
+                if (file.mimeType == "application/pdf") {
+                    "PDF пока не поддерживается — пришлите текст или снимок страницы"
+                } else {
+                    "Этот тип файла не поддерживается: «${file.name}»"
+                }
+            )
+            is FileAnalyzer.Outcome.TooLarge ->
+                fail("Файл «${file.name}» слишком большой (больше ${file.limitBytes / (1024 * 1024)} МБ)")
+            is FileAnalyzer.Outcome.Unreadable -> fail("Не удалось прочитать файл «${file.name}»")
+        }
     }
 
     /**
@@ -199,10 +275,11 @@ class ChatViewModel(
      * goes into the conversation, the page to the vision model.
      */
     fun onNotebook(page: com.friday.ai.ui.notebook.NotebookInbox.Page) {
-        viewModelScope.launch {
+        val started = begin {
             persist("[Блокнот] " + page.question.ifBlank { "что здесь написано?" }, MessageRole.USER)
-            streamAssistantResponse { analyzeContent.analyzeImage(page.imageBase64, notebookPrompt(page.question)) }
+            stream(analyzeContent.analyzeImage(page.imageBase64, notebookPrompt(page.question)))
         }
+        if (!started) busy()
     }
 
     private fun notebookPrompt(question: String): String {
@@ -216,105 +293,83 @@ class ChatViewModel(
             "Show the working for maths. Answer in the language of the writing or the question."
     }
 
-    fun onFileSelected(fileContent: FileAnalyzer.FileContent) {
-        if (fileContent.isImage && fileContent.base64Content != null) {
-            streamAssistantResponse {
-                analyzeContent.analyzeImage(fileContent.base64Content, "Analyze this image (${fileContent.name}):")
-            }
-        } else if (fileContent.textContent != null) {
-            streamAssistantResponse {
-                analyzeContent.analyzeText(fileContent.textContent, "Analyze this file (${fileContent.name}):")
-            }
-        } else {
-            _uiState.update { it.copy(error = "Cannot read file content") }
-        }
-    }
-
-    private fun handleChatMessage(text: String) {
-        viewModelScope.launch {
-            persist(text, MessageRole.USER)
-            streamReply(text)
-        }
-    }
-
-    private suspend fun streamReply(text: String) {
+    private suspend fun Request.reply(text: String) {
         // Catch a correction before the answer, so what the user just put
         // right is stored even if the reply goes wrong.
         CorrectionDetector.detect(
             text,
-            assistantSaidSomething = _uiState.value.messages.any { it.role == MessageRole.ASSISTANT }
+            assistantSaidSomething = history.any { it.role == MessageRole.ASSISTANT }
         )?.let { memory.recordCorrection(it) }
-
-        streamAssistantResponseInline {
-            sendMessage(prompt = text, history = _uiState.value.messages, mode = _uiState.value.currentMode)
-        }
+        stream(sendMessage(prompt = text, history = history, mode = _uiState.value.currentMode))
     }
 
-    private fun streamAssistantResponse(flowProvider: suspend () -> kotlinx.coroutines.flow.Flow<String>) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-
-            val assistantId = java.util.UUID.randomUUID().toString()
-            val responseBuilder = StringBuilder()
-            var hasContent = false
-
+    /**
+     * Starts [work] as the one request, if none is running. Its conversation
+     * is fixed now; loading is turned off only by the request that turned it on.
+     */
+    private fun begin(work: suspend Request.() -> Unit): Boolean {
+        if (active != null) return false
+        val request = Request(_currentSessionId.value, _uiState.value.messages.filterNot { it.isStreaming })
+        active = request
+        _uiState.update { it.copy(isLoading = true, error = null) }
+        request.job = viewModelScope.launch {
             try {
-                flowProvider()
-                    .catch { e ->
-                        _uiState.update { it.copy(isLoading = false, error = e.message) }
-                        removeStreamingMessage(assistantId)
-                    }
-                    .collect { token ->
-                        responseBuilder.append(token)
-                        hasContent = true
-                        updateStreamingMessage(assistantId, responseBuilder.toString())
-                    }
-
-                if (hasContent) {
-                    removeStreamingMessage(assistantId)
-                    persist(responseBuilder.toString(), MessageRole.ASSISTANT)
+                if (request.sessionId == null) {
+                    request.sessionId = memory.getOrCreateSessionId().also { _currentSessionId.value = it }
                 }
+                request.work()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
-                removeStreamingMessage(assistantId)
+                request.fail(e.message ?: "Ошибка")
+            } finally {
+                request.streamId?.let(::removeStreamingMessage)
+                if (active === request) finishLoading(request)
             }
-
-            _uiState.update { it.copy(isLoading = false) }
         }
+        return true
     }
 
-    private fun streamAssistantResponseInline(flowProvider: suspend () -> kotlinx.coroutines.flow.Flow<String>) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-
-            val assistantId = java.util.UUID.randomUUID().toString()
-            val responseBuilder = StringBuilder()
-            var hasContent = false
-
-            try {
-                flowProvider()
-                    .catch { e ->
-                        _uiState.update { it.copy(isLoading = false, error = e.message) }
-                        removeStreamingMessage(assistantId)
-                    }
-                    .collect { token ->
-                        responseBuilder.append(token)
-                        hasContent = true
-                        updateStreamingMessage(assistantId, responseBuilder.toString())
-                    }
-
-                if (hasContent) {
-                    removeStreamingMessage(assistantId)
-                    persist(responseBuilder.toString(), MessageRole.ASSISTANT)
-                }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
-                removeStreamingMessage(assistantId)
-            }
-
-            _uiState.update { it.copy(isLoading = false) }
-        }
+    /** Cancels [request]; a newer request is then free to start at once. */
+    private fun abandon(request: Request) {
+        request.job?.cancel()
+        finishLoading(request)
     }
+
+    private fun finishLoading(request: Request) {
+        if (active !== request) return
+        active = null
+        _uiState.update { it.copy(isLoading = false) }
+    }
+
+    /** Saves a message into the request's own conversation, whichever one is on screen now. */
+    private suspend fun Request.persist(content: String, role: MessageRole) {
+        val session = sessionId ?: return
+        sendMessage.saveMessage(Message(content = content, role = role, sessionId = session))
+    }
+
+    /** Draws [flow] as it arrives (when this conversation is on screen) and saves it to this conversation. */
+    private suspend fun Request.stream(flow: Flow<String>) {
+        val id = UUID.randomUUID().toString()
+        streamId = id
+        val text = StringBuilder()
+        flow.collect { token ->
+            text.append(token)
+            if (sessionId == _currentSessionId.value) updateStreamingMessage(id, text.toString())
+        }
+        if (text.isNotEmpty()) persist(text.toString(), MessageRole.ASSISTANT)
+    }
+
+    /** An error belongs to the conversation it happened in; another one on screen is left alone. */
+    private fun Request.fail(reason: String) {
+        if (sessionId == _currentSessionId.value) showError(reason)
+    }
+
+    private fun showError(reason: String) {
+        _uiState.update { it.copy(error = reason) }
+    }
+
+    private fun busy() = showError("Пятница ещё отвечает — подождите немного")
 
     private fun updateStreamingMessage(id: String, content: String) {
         _uiState.update { state ->
@@ -344,7 +399,6 @@ class ChatViewModel(
         if (voiceInput.isListening.value) voiceInput.stopListening()
         else voiceInput.startListening()
     }
-
 
     fun onDismissError() {
         _uiState.update { it.copy(error = null) }

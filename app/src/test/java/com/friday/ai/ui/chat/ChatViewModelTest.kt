@@ -1,6 +1,13 @@
 package com.friday.ai.ui.chat
 
+import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import com.friday.ai.command.CommandExecutor
+import com.friday.ai.core.FileAnalyzer
+import com.friday.ai.service.capture.ScreenCapture
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.flow
 import com.friday.ai.command.InfoActions
 import com.friday.ai.command.PhoneActions
 import com.friday.ai.command.PlannerActions
@@ -93,13 +100,15 @@ class ChatViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel() = ChatViewModel(
+    private fun createViewModel(files: FileAnalyzer? = null, screen: ScreenCapture? = null) = ChatViewModel(
         sendMessage = sendMessageUseCase,
         getChatHistory = getChatHistoryUseCase,
         analyzeContent = analyzeContentUseCase,
         voiceInput = voiceInputManager,
         commands = commands,
-        memory = memory
+        memory = memory,
+        files = files,
+        screen = screen
     )
 
     @Test
@@ -354,16 +363,163 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `onScreenCaptured streams analysis result`() = runTest {
+    fun `a granted screen capture is analysed`() = runTest {
+        val screen = mockk<ScreenCapture>()
+        coEvery { screen.capture(any(), any()) } returns ScreenCapture.Result.Image("base64data")
         coEvery { analyzeContentUseCase.analyzeImage(any(), any()) } returns flowOf("This is a screenshot of...")
-        viewModel = createViewModel()
+        viewModel = createViewModel(screen = screen)
         advanceUntilIdle()
 
-        viewModel.onScreenCaptured("base64data")
+        viewModel.onScreenConsent(Activity.RESULT_OK, mockk<Intent>())
         advanceUntilIdle()
 
         coVerify { analyzeContentUseCase.analyzeImage("base64data", any()) }
         coVerify { sendMessageUseCase.saveMessage(match { it.role == MessageRole.ASSISTANT }) }
+        assertFalse(viewModel.uiState.value.isLoading)
+    }
+
+    @Test
+    fun `a refused or failed capture says why instead of clearing the error`() = runTest {
+        val screen = mockk<ScreenCapture>()
+        coEvery { screen.capture(any(), any()) } returns ScreenCapture.Result.Failed("Снимок экрана остановлен")
+        viewModel = createViewModel(screen = screen)
+        advanceUntilIdle()
+
+        viewModel.onScreenConsent(Activity.RESULT_CANCELED, null)
+        assertEquals("Доступ к экрану не дан — анализ отменён", viewModel.uiState.value.error)
+
+        viewModel.onScreenConsent(Activity.RESULT_OK, mockk<Intent>())
+        advanceUntilIdle()
+        assertEquals("Снимок экрана остановлен", viewModel.uiState.value.error)
+        coVerify(exactly = 0) { analyzeContentUseCase.analyzeImage(any(), any()) }
+    }
+
+    @Test
+    fun `a file that is too large or a PDF is explained, not sent`() = runTest {
+        val files = mockk<FileAnalyzer>()
+        val uri = mockk<Uri>()
+        coEvery { files.read(uri) } returns FileAnalyzer.Outcome.TooLarge("photo.jpg", 30L * 1024 * 1024)
+        viewModel = createViewModel(files = files)
+        advanceUntilIdle()
+
+        viewModel.onFilePicked(uri)
+        advanceUntilIdle()
+        assertEquals("Файл «photo.jpg» слишком большой (больше 30 МБ)", viewModel.uiState.value.error)
+
+        coEvery { files.read(uri) } returns FileAnalyzer.Outcome.Unsupported("doc.pdf", "application/pdf")
+        viewModel.onFilePicked(uri)
+        advanceUntilIdle()
+        assertEquals("PDF пока не поддерживается — пришлите текст или снимок страницы", viewModel.uiState.value.error)
+        coVerify(exactly = 0) { analyzeContentUseCase.analyzeText(any(), any()) }
+    }
+
+    @Test
+    fun `a cut text file is sent with the cut marked`() = runTest {
+        val files = mockk<FileAnalyzer>()
+        val uri = mockk<Uri>()
+        coEvery { files.read(uri) } returns FileAnalyzer.Outcome.Text("notes.txt", "начало", truncated = true)
+        coEvery { analyzeContentUseCase.analyzeText(any(), any()) } returns flowOf("ok")
+        viewModel = createViewModel(files = files)
+        advanceUntilIdle()
+
+        viewModel.onFilePicked(uri)
+        advanceUntilIdle()
+
+        coVerify { analyzeContentUseCase.analyzeText(match { it.startsWith("начало") && "обрезано" in it }, any()) }
+    }
+
+    /** A reply that waits for [gate] before its last part. */
+    private fun heldReply(gate: CompletableDeferred<Unit>) = flow {
+        emit("часть ")
+        gate.await()
+        emit("конец")
+    }
+
+    @Test
+    fun `an answer begun in one conversation is saved there, not in the one opened meanwhile`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        every { router.route(any()) } returns CommandResult.ChatMessage("вопрос")
+        coEvery { sendMessageUseCase(any(), any(), any()) } returns heldReply(gate)
+        viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.onInputChange("вопрос")
+        viewModel.onSend()
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.messages.any { it.isStreaming })
+
+        viewModel.onOpenSession("session-b")
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.messages.none { it.isStreaming })
+
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        coVerify {
+            sendMessageUseCase.saveMessage(match {
+                it.role == MessageRole.ASSISTANT && it.content == "часть конец" && it.sessionId == ACTIVE_SESSION
+            })
+        }
+        coVerify(exactly = 0) { sendMessageUseCase.saveMessage(match { it.sessionId == "session-b" }) }
+        assertTrue(viewModel.uiState.value.messages.none { it.isStreaming })
+        assertFalse(viewModel.uiState.value.isLoading)
+    }
+
+    @Test
+    fun `a second send while answering is refused`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        every { router.route(any()) } returns CommandResult.ChatMessage("вопрос")
+        coEvery { sendMessageUseCase(any(), any(), any()) } returns heldReply(gate)
+        viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.onInputChange("вопрос")
+        viewModel.onSend()
+        viewModel.onInputChange("вопрос")
+        viewModel.onSend()
+        advanceUntilIdle()
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { sendMessageUseCase(any(), any(), any()) }
+        // The refused text stays in the field, to send once Friday has answered.
+        assertEquals("вопрос", viewModel.inputText.value)
+    }
+
+    @Test
+    fun `deleting the conversation cancels its answer, and a new one is not held up`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        every { router.route(any()) } returns CommandResult.ChatMessage("вопрос")
+        coEvery { sendMessageUseCase(any(), any(), any()) } returns heldReply(gate)
+        viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.onInputChange("вопрос")
+        viewModel.onSend()
+        advanceUntilIdle()
+        viewModel.onDeleteSession(ACTIVE_SESSION)
+        assertFalse(viewModel.uiState.value.isLoading)
+        advanceUntilIdle()
+
+        // The next request starts at once and its loading is its own.
+        val second = CompletableDeferred<Unit>()
+        coEvery { sendMessageUseCase(any(), any(), any()) } returns heldReply(second)
+        viewModel.onInputChange("ещё")
+        viewModel.onSend()
+        advanceUntilIdle()
+        gate.complete(Unit)
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.isLoading)
+
+        second.complete(Unit)
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.isLoading)
+        coVerify(exactly = 0) {
+            sendMessageUseCase.saveMessage(match { it.role == MessageRole.ASSISTANT && it.sessionId == ACTIVE_SESSION })
+        }
+        coVerify {
+            sendMessageUseCase.saveMessage(match { it.role == MessageRole.ASSISTANT && it.sessionId == "new-session" })
+        }
     }
 
     @Test

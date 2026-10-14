@@ -8,7 +8,6 @@ import com.friday.ai.core.CalendarWriter
 import com.friday.ai.core.DeviceController
 import com.friday.ai.core.ContactsReader
 import com.friday.ai.core.FileAnalyzer
-import com.friday.ai.core.ScreenAnalyzer
 import com.friday.ai.core.SystemPromptBuilder
 import com.friday.ai.core.VoiceInputManager
 import com.friday.ai.data.local.FridayDatabase
@@ -204,7 +203,7 @@ val appModule = module {
     single { SessionSummarizer(get(), get(), get(), get(), get()) }
     single { AppLauncher(androidContext(), get()) }
     single { FridayMemory(get(), get(), get(), get(), get(), get()) }
-    single { ScreenAnalyzer(androidContext()) }
+    single { com.friday.ai.service.capture.ScreenCapture(androidContext()) }
     single { FileAnalyzer(androidContext()) }
 
     // Repository
@@ -233,7 +232,9 @@ val appModule = module {
             analyzeContent = get(),
             voiceInput = get(),
             commands = get(),
-            memory = get()
+            memory = get(),
+            files = get(),
+            screen = get()
         )
     }
     viewModel { com.friday.ai.ui.diagnostics.DiagnosticsViewModel(get()) }

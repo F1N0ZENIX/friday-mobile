@@ -144,6 +144,13 @@
             android:exported="false"
             android:foregroundServiceType="microphone" />
 
+        <!-- One screenshot for analysis: Android 14+ requires a mediaProjection
+             foreground service around it. It lives for a single frame. -->
+        <service
+            android:name=".service.capture.ScreenCaptureService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+
         <!-- Lets Friday answer "what did I miss". The user must switch this on
              in system settings; declaring it is not enough to read anything. -->
         <!-- Time zone and manual clock changes are exempt from the implicit-

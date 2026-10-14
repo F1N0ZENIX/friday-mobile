@@ -11,7 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.friday.ai.MainActivity
 import com.friday.ai.core.FileAnalyzer
-import com.friday.ai.core.ScreenAnalyzer
+import com.friday.ai.service.capture.ScreenCapture
 import com.friday.ai.ui.chat.ChatScreen
 import com.friday.ai.ui.chat.ChatViewModel
 import com.friday.ai.ui.dashboard.LazuriDashboardScreen
@@ -27,33 +27,19 @@ fun FridayNavGraph(activity: MainActivity) {
     NavHost(navController = navController, startDestination = "chat") {
         composable("chat") {
             val viewModel: ChatViewModel = koinViewModel()
-            val screenAnalyzer: ScreenAnalyzer = koinInject()
+            val screenCapture: ScreenCapture = koinInject()
             val fileAnalyzer: FileAnalyzer = koinInject()
 
+            // Consent, denied or given, goes to the view model: it reports a refusal and runs the capture.
             val screenCaptureLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.StartActivityForResult()
-            ) { result ->
-                if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-                    screenAnalyzer.captureScreen(
-                        resultCode = result.resultCode,
-                        data = result.data!!,
-                        onCaptured = { base64 -> viewModel.onScreenCaptured(base64) },
-                        onError = { err -> viewModel.onDismissError() }
-                    )
-                }
-            }
+            ) { result -> viewModel.onScreenConsent(result.resultCode, result.data) }
 
+            // Only the URI is handled here; the file is read off the main thread by the view model.
             val filePickerLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.StartActivityForResult()
             ) { result ->
-                if (result.resultCode == Activity.RESULT_OK) {
-                    result.data?.data?.let { uri ->
-                        val fileContent = fileAnalyzer.readFile(uri)
-                        if (fileContent != null) {
-                            viewModel.onFileSelected(fileContent)
-                        }
-                    }
-                }
+                if (result.resultCode == Activity.RESULT_OK) result.data?.data?.let(viewModel::onFilePicked)
             }
 
             LaunchedEffect(Unit) {
@@ -61,7 +47,7 @@ fun FridayNavGraph(activity: MainActivity) {
                     viewModel.onMicClick()
                 }
                 viewModel.onAnalyzeScreenRequested = {
-                    val intent = screenAnalyzer.getProjectionIntent(activity)
+                    val intent = screenCapture.consentIntent(activity)
                     screenCaptureLauncher.launch(intent)
                 }
                 viewModel.onAnalyzeFileRequested = {
