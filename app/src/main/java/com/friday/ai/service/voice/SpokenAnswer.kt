@@ -80,7 +80,7 @@ class SpokenAnswer(
                 speech.cancel()
                 return Result.Failed(VoiceErrors.empty(russian))
             }
-            overlay.show(FridayOverlayManager.State.SPEAKING, response)
+            overlay.speaking(response)
             remember(userText, response, assistantSpokeBefore = history.isNotEmpty())
             speech.endInput()
             speech.awaitCompletion()
@@ -131,10 +131,7 @@ class SpokenAnswer(
                 val now = SystemClock.uptimeMillis()
                 if (now - lastRedraw >= OVERLAY_REFRESH_MS) {
                     lastRedraw = now
-                    overlay.show(
-                        if (speaking) FridayOverlayManager.State.SPEAKING else FridayOverlayManager.State.PROCESSING,
-                        response.toString()
-                    )
+                    overlay.streaming(response.toString(), speaking)
                 }
             }
         chunker.flush()?.let { speech.offer(it) }

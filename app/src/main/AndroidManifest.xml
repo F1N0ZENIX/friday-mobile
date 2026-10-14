@@ -90,11 +90,10 @@
             android:name=".service.lock.LockScreenActivity"
             android:exported="false"
             android:showWhenLocked="true"
-            android:turnScreenOn="true"
             android:excludeFromRecents="true"
             android:taskAffinity="com.friday.ai.lockscreen"
             android:launchMode="singleTask"
-            android:theme="@style/Theme.FridayMobile" />
+            android:theme="@style/Theme.FridayMobile.LockPanel" />
 
         <activity
             android:name=".AssistActivity"

@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.friday.ai.command.LockPolicy
@@ -46,9 +47,12 @@ private val choices = listOf(
 fun LockPanel(viewModel: LockLevelViewModel = koinViewModel()) {
     val context = LocalContext.current
     val level by viewModel.level.collectAsStateWithLifecycle()
-    var canAppear by remember { mutableStateOf(LockScreen.canAppear(context)) }
+    var fullScreen by remember { mutableStateOf(LockScreen.fullScreenAllowed(context)) }
+    var notifications by remember { mutableStateOf(NotificationManagerCompat.from(context).areNotificationsEnabled()) }
+    val outcome by LockScreen.lastOutcome.collectAsStateWithLifecycle()
     LifecycleResumeEffect(Unit) {
-        canAppear = LockScreen.canAppear(context)
+        fullScreen = LockScreen.fullScreenAllowed(context)
+        notifications = NotificationManagerCompat.from(context).areNotificationsEnabled()
         onPauseOrDispose { }
     }
 
@@ -66,12 +70,22 @@ fun LockPanel(viewModel: LockLevelViewModel = koinViewModel()) {
                 onChange = { on -> if (on) viewModel.choose(option) }
             )
         }
-        HudReadout(
-            "Ответы на экране блокировки",
-            if (canAppear) "ВКЛЮЧЕНЫ" else "НУЖНО РАЗРЕШЕНИЕ",
-            valueColor = if (canAppear) ArcCyan else ErrorColor
+        HudNote(
+            "На экране блокировки видно только, что Пятница делает: слушает, обрабатывает, отвечает. " +
+                "Ваши слова и ответ — после «Разблокировать для деталей»."
         )
-        if (!canAppear) {
+        HudReadout(
+            "Уведомления",
+            if (notifications) "РАЗРЕШЕНЫ" else "ВЫКЛЮЧЕНЫ",
+            valueColor = if (notifications) ArcCyan else ErrorColor
+        )
+        HudReadout(
+            "Полноэкранные уведомления",
+            if (fullScreen) "РАЗРЕШЕНЫ" else "НЕ РАЗРЕШЕНЫ",
+            valueColor = if (fullScreen) ArcCyan else ErrorColor
+        )
+        HudReadout("Последний показ", outcomeText(outcome))
+        if (!fullScreen || !notifications) {
             HudNote(
                 "Чтобы показывать ответы и экран разблокировки поверх блокировки, " +
                     "разрешите Friday полноэкранные уведомления."
@@ -81,6 +95,16 @@ fun LockPanel(viewModel: LockLevelViewModel = koinViewModel()) {
             }
         }
     }
+}
+
+/** What the last attempt really showed — an allowed permission alone proves nothing. */
+private fun outcomeText(outcome: LockScreen.Outcome?): String = when (outcome) {
+    null -> "ЕЩЁ НЕ БЫЛО"
+    LockScreen.Outcome.ACTIVITY_VISIBLE -> "ПАНЕЛЬ НА ЭКРАНЕ"
+    LockScreen.Outcome.NOTIFICATION_ONLY -> "ТОЛЬКО УВЕДОМЛЕНИЕ"
+    LockScreen.Outcome.FSI_DENIED -> "УВЕДОМЛЕНИЕ (НЕТ ПОЛНОЭКРАННЫХ)"
+    LockScreen.Outcome.NOTIFICATIONS_BLOCKED -> "ТОЛЬКО ГОЛОС"
+    LockScreen.Outcome.FAILED -> "НЕ УДАЛОСЬ"
 }
 
 private fun openFullScreenSettings(context: Context) {

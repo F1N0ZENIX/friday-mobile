@@ -11,4 +11,15 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
+
+    <!--
+        Friday's panel over the lock screen: see-through, over the owner's own
+        wallpaper, so the panel sits on their lock screen rather than replacing it.
+    -->
+    <style name="Theme.FridayMobile.LockPanel" parent="Theme.FridayMobile">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowShowWallpaper">true</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
 </resources>

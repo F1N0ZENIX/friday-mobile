@@ -226,6 +226,8 @@ class FridayWakeWordService : Service() {
             session = session
         )
         wake.onWake = { heard, continuing, audio -> conversation.onWake(heard, continuing, audio) }
+        // The panel's close button and the lock screen's "Завершить" end the conversation itself.
+        com.friday.ai.service.voice.VoiceUi.onClose = { conversation.close() }
         overlay.onDismissed = {
             // The conversation is over: give the audio back. A player that was
             // told to pause must not take that as its cue to play again.
@@ -358,6 +360,8 @@ class FridayWakeWordService : Service() {
             wake.destroy()
             speaker.destroy()
             overlay.dismiss()
+            overlay.release()
+            com.friday.ai.service.voice.VoiceUi.onClose = null
         }
         scope.cancel()
         super.onDestroy()
