@@ -2,16 +2,25 @@ package com.friday.ai.service
 
 import android.content.Context
 import android.util.Log
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
+import java.net.URL
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
-import java.net.URL
-import java.util.zip.ZipInputStream
 
+/**
+ * The offline wake-word model: downloaded once, verified, installed
+ * atomically ([ModelInstaller]).
+ */
 class VoskModelManager(private val context: Context) {
 
     companion object {
@@ -19,6 +28,21 @@ class VoskModelManager(private val context: Context) {
         private const val MODEL_DIR_NAME = "vosk-model"
         private const val MODEL_URL = "https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip"
         private const val MODEL_MARKER = "conf/model.conf"
+
+        /**
+         * vosk-model-small-ru-0.22.zip as published at [MODEL_URL]: 46,236,750
+         * bytes, this SHA-256 (measured 2026-10-13). A changed upstream file
+         * fails the install until this is deliberately updated.
+         */
+        val ARTIFACT = ModelInstaller.Artifact(
+            sha256 = "961d5ff98a17f4aa6de69864d0aa71fa5bac682301d2b5d17a3f24c5c99a46d4",
+            maxBytes = 64L * 1024 * 1024
+        )
+
+        private const val CONNECT_TIMEOUT_MS = 30_000
+        private const val READ_TIMEOUT_MS = 60_000
+        private const val BUFFER = 64 * 1024
+        private const val PERCENT = 100
     }
 
     sealed class DownloadState {
@@ -32,21 +56,15 @@ class VoskModelManager(private val context: Context) {
     private val _downloadState = MutableStateFlow<DownloadState>(DownloadState.NotDownloaded)
     val downloadState: StateFlow<DownloadState> = _downloadState.asStateFlow()
 
-    private val modelDir: File get() = File(context.filesDir, MODEL_DIR_NAME)
+    private val installer = ModelInstaller(
+        filesDir = context.filesDir,
+        cacheDir = context.cacheDir,
+        folderName = MODEL_DIR_NAME,
+        marker = MODEL_MARKER,
+        expected = ARTIFACT
+    )
 
-    fun getModelPath(): String? {
-        val dir = modelDir
-        if (!dir.exists()) return null
-        val marker = File(dir, MODEL_MARKER)
-        if (!marker.exists()) {
-            val subdirs = dir.listFiles()?.filter { it.isDirectory } ?: return null
-            for (subdir in subdirs) {
-                if (File(subdir, MODEL_MARKER).exists()) return subdir.absolutePath
-            }
-            return null
-        }
-        return dir.absolutePath
-    }
+    fun getModelPath(): String? = installer.modelRoot()?.absolutePath
 
     fun isModelReady(): Boolean = getModelPath() != null
 
@@ -59,71 +77,48 @@ class VoskModelManager(private val context: Context) {
             _downloadState.value = DownloadState.Ready
             return@withContext
         }
-
         try {
             _downloadState.value = DownloadState.Downloading(0)
-
-            val tempFile = File(context.cacheDir, "vosk-model.zip")
-            downloadFile(MODEL_URL, tempFile)
-
-            _downloadState.value = DownloadState.Extracting
-            extractZip(tempFile, modelDir)
-            tempFile.delete()
-
-            if (isModelReady()) {
-                _downloadState.value = DownloadState.Ready
-                Log.i(TAG, "Model downloaded and extracted: ${getModelPath()}")
-            } else {
-                _downloadState.value = DownloadState.Error("Model extraction failed — marker file not found")
+            installer.install { archive ->
+                downloadFile(MODEL_URL, archive)
+                _downloadState.value = DownloadState.Extracting
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Download failed: ${e.message}")
+            _downloadState.value =
+                if (isModelReady()) DownloadState.Ready else DownloadState.Error("Model not installed")
+            Log.i(TAG, "Model installed")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Model install failed: ${e.message}")
             _downloadState.value = DownloadState.Error(e.message ?: "Download failed")
         }
     }
 
-    private fun downloadFile(urlStr: String, target: File) {
-        val url = URL(urlStr)
-        val connection = url.openConnection()
-        connection.connectTimeout = 30_000
-        connection.readTimeout = 60_000
+    /** Downloads [urlStr] into [target], stopping past the expected size instead of filling the storage. */
+    private suspend fun downloadFile(urlStr: String, target: File) {
+        val connection = URL(urlStr).openConnection()
+        connection.connectTimeout = CONNECT_TIMEOUT_MS
+        connection.readTimeout = READ_TIMEOUT_MS
         connection.connect()
-
-        val totalSize = connection.contentLength.toLong()
-        var downloaded = 0L
-
+        val totalSize = connection.contentLengthLong
+        if (totalSize > ARTIFACT.maxBytes) throw ModelInstaller.Rejected("The download is larger than the model")
         connection.getInputStream().use { input ->
-            FileOutputStream(target).use { output ->
-                val buffer = ByteArray(8192)
-                var read: Int
-                while (input.read(buffer).also { read = it } != -1) {
-                    output.write(buffer, 0, read)
-                    downloaded += read
-                    if (totalSize > 0) {
-                        val progress = (downloaded * 100 / totalSize).toInt()
-                        _downloadState.value = DownloadState.Downloading(progress)
-                    }
-                }
-            }
+            FileOutputStream(target).use { output -> copyCapped(input, output, totalSize) }
         }
     }
 
-    private fun extractZip(zipFile: File, targetDir: File) {
-        targetDir.mkdirs()
-        ZipInputStream(zipFile.inputStream()).use { zis ->
-            var entry = zis.nextEntry
-            while (entry != null) {
-                val file = File(targetDir, entry.name)
-                if (entry.isDirectory) {
-                    file.mkdirs()
-                } else {
-                    file.parentFile?.mkdirs()
-                    FileOutputStream(file).use { output ->
-                        zis.copyTo(output)
-                    }
-                }
-                zis.closeEntry()
-                entry = zis.nextEntry
+    private suspend fun copyCapped(input: InputStream, output: OutputStream, totalSize: Long) {
+        val buffer = ByteArray(BUFFER)
+        var downloaded = 0L
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            val read = input.read(buffer)
+            if (read < 0) break
+            downloaded += read
+            if (downloaded > ARTIFACT.maxBytes) throw ModelInstaller.Rejected("The download is larger than the model")
+            output.write(buffer, 0, read)
+            if (totalSize > 0) {
+                _downloadState.value = DownloadState.Downloading((downloaded * PERCENT / totalSize).toInt())
             }
         }
     }

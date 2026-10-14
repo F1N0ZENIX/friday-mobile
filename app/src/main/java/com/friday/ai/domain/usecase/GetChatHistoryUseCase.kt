@@ -11,11 +11,6 @@ import kotlinx.coroutines.flow.Flow
  */
 class GetChatHistoryUseCase(private val repository: AssistantRepository) {
 
-    /** @return Reactive Flow of all stored messages, ordered by timestamp. */
-    operator fun invoke(): Flow<List<Message>> {
-        return repository.getChatHistory()
-    }
-
     /** Messages belonging to one conversation. */
     fun session(sessionId: String): Flow<List<Message>> =
         repository.getSessionMessages(sessionId)
@@ -26,10 +21,5 @@ class GetChatHistoryUseCase(private val repository: AssistantRepository) {
     /** Delete a single conversation. */
     suspend fun deleteSession(sessionId: String) {
         repository.deleteSession(sessionId)
-    }
-
-    /** Clear all stored messages. */
-    suspend fun clearHistory() {
-        repository.clearHistory()
     }
 }

@@ -2,7 +2,6 @@ package com.friday.ai.service
 
 import android.media.AudioFormat
 import android.media.AudioRecord
-import android.media.MediaRecorder
 import android.util.Log
 import com.friday.ai.core.PcmAudio
 import com.friday.ai.core.RollingAudio
@@ -126,13 +125,7 @@ class WakeWordEngine {
             // VOICE_RECOGNITION gets the device's echo cancellation, which
             // matters when this listens while Friday is speaking (barge-in) —
             // otherwise it hears the assistant's own voice through the speaker.
-            record = AudioRecord(
-                MediaRecorder.AudioSource.VOICE_RECOGNITION,
-                SAMPLE_RATE, CHANNEL, ENCODING, bufferSize
-            )
-
-            if (record.state != AudioRecord.STATE_INITIALIZED) {
-                Log.e(TAG, "AudioRecord failed to initialize")
+            record = openVoiceRecord(SAMPLE_RATE, bufferSize, TAG) ?: run {
                 _state.value = EngineState.ERROR
                 return@withContext
             }

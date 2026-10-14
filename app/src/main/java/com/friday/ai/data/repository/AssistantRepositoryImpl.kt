@@ -75,9 +75,6 @@ class AssistantRepositoryImpl(
             }
     }
 
-    override fun getChatHistory(): Flow<List<Message>> =
-        chatDao.observeAll().map { entities -> entities.map { it.toDomain() } }
-
     override fun getSessionMessages(sessionId: String): Flow<List<Message>> =
         chatDao.observeSession(sessionId).map { entities -> entities.map { it.toDomain() } }
 
@@ -89,10 +86,6 @@ class AssistantRepositoryImpl(
 
     override suspend fun deleteSession(sessionId: String) {
         chatDao.deleteSession(sessionId)
-    }
-
-    override suspend fun clearHistory() {
-        chatDao.deleteAll()
     }
 
     override suspend fun analyzeImage(imageBase64: String, prompt: String): Flow<String> {

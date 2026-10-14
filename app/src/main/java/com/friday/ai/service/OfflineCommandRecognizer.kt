@@ -3,7 +3,6 @@ package com.friday.ai.service
 import android.content.Context
 import android.media.AudioFormat
 import android.media.AudioRecord
-import android.media.MediaRecorder
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.util.Log
@@ -64,14 +63,7 @@ class OfflineCommandRecognizer(private val context: Context) {
 
             val bufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL, ENCODING)
                 .coerceAtLeast(4096)
-            audioRecord = AudioRecord(
-                MediaRecorder.AudioSource.VOICE_RECOGNITION,
-                SAMPLE_RATE, CHANNEL, ENCODING, bufferSize
-            )
-            if (audioRecord.state != AudioRecord.STATE_INITIALIZED) {
-                Log.e(TAG, "Microphone unavailable")
-                return@withContext null
-            }
+            audioRecord = openVoiceRecord(SAMPLE_RATE, bufferSize, TAG) ?: return@withContext null
 
             audioRecord.startRecording()
             val buffer = ShortArray(bufferSize / 2)

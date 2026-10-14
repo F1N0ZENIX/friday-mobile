@@ -2,7 +2,6 @@ package com.friday.ai.service
 
 import android.media.AudioFormat
 import android.media.AudioRecord
-import android.media.MediaRecorder
 import android.util.Log
 import com.friday.ai.core.KaldiFbank
 import com.friday.ai.core.PcmAudio
@@ -50,11 +49,7 @@ class VoiceEnroller {
         var effects: AudioEffects? = null
 
         try {
-            record = AudioRecord(
-                MediaRecorder.AudioSource.VOICE_RECOGNITION,
-                SAMPLE_RATE, CHANNEL, ENCODING, bufferSize
-            )
-            if (record.state != AudioRecord.STATE_INITIALIZED) return@withContext null
+            record = openVoiceRecord(SAMPLE_RATE, bufferSize, TAG) ?: return@withContext null
 
             effects = AudioEffects.attach(record.audioSessionId)
             record.startRecording()
