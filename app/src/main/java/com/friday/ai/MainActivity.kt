@@ -41,6 +41,7 @@ class MainActivity : ComponentActivity() {
      */
     override fun onResume() {
         super.onResume()
+        com.friday.ai.core.apps.AppVisibility.activityResumed()
         lifecycleScope.launch {
             deviceContext.refresh()
             // An update or a reboot stops the listening service, and Android
@@ -49,6 +50,11 @@ class MainActivity : ComponentActivity() {
             // this changes nothing.
             if (prefs.get("wake_word_enabled") == "true") FridayWakeWordService.start(this@MainActivity)
         }
+    }
+
+    override fun onPause() {
+        com.friday.ai.core.apps.AppVisibility.activityPaused()
+        super.onPause()
     }
 
     override fun onNewIntent(intent: Intent) {

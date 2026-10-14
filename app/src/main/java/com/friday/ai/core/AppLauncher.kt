@@ -11,6 +11,10 @@ import android.provider.AlarmClock
 import android.provider.CalendarContract
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.friday.ai.core.apps.AndroidApps
+import com.friday.ai.core.apps.AppMatch
+import com.friday.ai.core.apps.AppMatcher
+import com.friday.ai.core.apps.AppOpener
 import java.text.DateFormat
 import java.util.Date
 
@@ -48,51 +52,11 @@ class AppLauncher(
         }
     }
 
-    fun openApp(packageHint: String?, appName: String): String {
-        // "Браузер", "галерея", "сообщения" name a role, not an app: open
-        // whatever the user has chosen for it, Samsung's or Google's alike.
-        defaultAppFor(appName)?.let { intent ->
-            if (intent.resolveActivity(context.packageManager) != null) {
-                context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                return "Opening $appName"
-            }
-        }
-        val packageName = packageHint?.takeIf { isInstalled(it) } ?: resolvePackage(appName)
+    private val opener = AppOpener(AndroidApps(context, ::roleIntent))
 
-        if (packageName != null) {
-            val intent = context.packageManager.getLaunchIntentForPackage(packageName)
-            if (intent != null) {
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(intent)
-                return "Opening $appName"
-            }
-        }
-
-        val searchIntent = Intent(Intent.ACTION_MAIN).apply {
-            addCategory(Intent.CATEGORY_LAUNCHER)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-
-        val resolveInfos = context.packageManager.queryIntentActivities(searchIntent, 0)
-        val match = resolveInfos.firstOrNull { info ->
-            info.loadLabel(context.packageManager).toString().lowercase().contains(appName.lowercase())
-        }
-
-        return if (match != null) {
-            val launchIntent = context.packageManager.getLaunchIntentForPackage(
-                match.activityInfo.packageName
-            )
-            if (launchIntent != null) {
-                launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(launchIntent)
-                "Opening ${match.loadLabel(context.packageManager)}"
-            } else {
-                "Can't open $appName — launch intent not found"
-            }
-        } else {
-            "App \"$appName\" not found on this device"
-        }
-    }
+    /** The app [appName] means, opened through [AppOpener]: chosen deterministically, reported truthfully. */
+    fun openApp(packageHint: String?, appName: String, russian: Boolean = false): String =
+        opener.open(appName, packageHint, russian)
 
     /**
      * Android lets no app close another. What can be done is to leave it —
@@ -100,8 +64,13 @@ class AppLauncher(
      * background; the reply says exactly that instead of "closed".
      */
     fun closeApp(packageHint: String?, appName: String): String {
-        val packageName = packageHint?.takeIf { isInstalled(it) } ?: resolvePackage(appName)
-            ?: return "App \"$appName\" not found on this device"
+        val match = AppMatcher.match(appName, AndroidApps(context, ::roleIntent).launchable(), packageHint)
+        val packageName = when (match) {
+            is AppMatch.Found -> match.app.packageName
+            is AppMatch.Ambiguous ->
+                return "\"$appName\" could be ${match.labels.joinToString(", ")} — say the full name"
+            AppMatch.NotFound -> return "App \"$appName\" not found on this device"
+        }
         context.startActivity(
             Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         )
@@ -110,11 +79,12 @@ class AppLauncher(
             "the system will stop it in the background"
     }
 
-    private fun isInstalled(pkg: String): Boolean = context.packageManager.getLaunchIntentForPackage(pkg) != null
-
-    /** The user's default app for a role named in [appName], if it names one. */
-    private fun defaultAppFor(appName: String): Intent? {
-        val name = appName.lowercase()
+    /**
+     * "Браузер", "галерея", "сообщения" name a role, not an app: the intent
+     * opens whatever the user has chosen for it, Samsung's or Google's alike.
+     */
+    private fun roleIntent(appName: String): Intent? {
+        val name = AppMatcher.normalize(appName)
         return roles.firstOrNull { (words, _) -> words.any { name.startsWith(it) } }?.second?.invoke()
     }
 
@@ -342,13 +312,4 @@ class AppLauncher(
         }
     }
 
-    private fun resolvePackage(appName: String): String? {
-        val intent = Intent(Intent.ACTION_MAIN).apply {
-            addCategory(Intent.CATEGORY_LAUNCHER)
-        }
-        return context.packageManager
-            .queryIntentActivities(intent, 0)
-            .firstOrNull { it.loadLabel(context.packageManager).toString().lowercase().contains(appName.lowercase()) }
-            ?.activityInfo?.packageName
-    }
 }
