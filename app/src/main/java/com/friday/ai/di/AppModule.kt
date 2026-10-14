@@ -202,7 +202,11 @@ val appModule = module {
                     .deserialise(prefs.get(com.friday.ai.service.FridayWakeWordService.PREF_VOICE_PROFILE))
                     ?.coversCommands == true
                 locked to verified
-            }
+            },
+            lockLevel = {
+                com.friday.ai.command.LockPolicy.Level.of(prefs.get(com.friday.ai.command.LockPolicy.Level.PREF))
+            },
+            unlocker = com.friday.ai.service.lock.LockScreen.unlocker(androidContext())
         )
     }
     single {
@@ -253,6 +257,7 @@ val appModule = module {
     single { com.friday.ai.ui.notebook.NotebookInbox() }
     viewModel { com.friday.ai.ui.settings.TransferViewModel(androidContext(), get(), get(), get()) }
     viewModel { com.friday.ai.ui.settings.LocationViewModel(get()) }
+    viewModel { com.friday.ai.ui.settings.LockLevelViewModel(get()) }
     viewModel { com.friday.ai.ui.settings.QuickLinksViewModel(get()) }
     viewModel {
         LazuriDashboardViewModel(

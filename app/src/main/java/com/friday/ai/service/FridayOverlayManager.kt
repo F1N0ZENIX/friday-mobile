@@ -64,7 +64,24 @@ class FridayOverlayManager(private val context: Context) {
     }
 
     fun updateText(text: String) {
-        handler.post { mainText?.text = text }
+        handler.post {
+            mainText?.text = text
+            mirror()
+        }
+    }
+
+    /**
+     * The same panel over the lock screen, where Android hides overlays
+     * ([com.friday.ai.service.lock.LockScreen]).
+     */
+    private fun mirror() {
+        com.friday.ai.service.lock.LockScreen.show(
+            context,
+            com.friday.ai.service.lock.LockScreen.Panel(
+                statusText?.text?.toString().orEmpty(),
+                mainText?.text?.toString().orEmpty()
+            )
+        )
     }
 
     /**
@@ -79,6 +96,7 @@ class FridayOverlayManager(private val context: Context) {
     fun dismiss() {
         handler.post {
             cancelAutoDismiss()
+            com.friday.ai.service.lock.LockScreen.close(context)
             val view = overlayView
             if (view == null) {
                 currentState = State.HIDDEN
@@ -259,6 +277,7 @@ class FridayOverlayManager(private val context: Context) {
             }
             State.HIDDEN -> dismiss()
         }
+        if (state != State.HIDDEN) mirror()
     }
 
     private fun removeOverlay() {
