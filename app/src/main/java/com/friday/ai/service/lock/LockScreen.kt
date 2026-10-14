@@ -50,6 +50,7 @@ object LockScreen {
 
     private const val TAG = "LockScreen"
     private const val CHANNEL_ID = "friday_lock_screen_v2"
+    private const val OLD_CHANNEL_ID = "friday_lock_screen"
     private const val NOTIFICATION_ID = 4108
     private const val UNLOCK_WAIT_MS = 45_000L
 
@@ -167,6 +168,8 @@ object LockScreen {
      */
     private fun post(context: Context, fullScreen: Boolean, status: String): Boolean {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return false
+        // The old call-styled channel; settings would otherwise list two «Пятница» channels.
+        manager.deleteNotificationChannel(OLD_CHANNEL_ID)
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL_ID, "Пятница на экране блокировки", NotificationManager.IMPORTANCE_HIGH)
                 .apply {
