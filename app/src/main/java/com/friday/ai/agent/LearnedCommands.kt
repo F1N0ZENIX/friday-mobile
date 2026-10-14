@@ -100,7 +100,7 @@ class LearnedCommands(
                         val stored = ActionSchema.parse(row.value)
                         if (stored == null) {
                             // Written by a version whose meaning can't be carried over: dropped, not guessed.
-                            Log.w(TAG, "Dropping \"${row.key.removePrefix(PREFIX)}\": can't be read in this version")
+                            Log.w(TAG, "Dropping a learned phrase: can't be read in this version")
                         } else {
                             shortcuts[row.key.removePrefix(PREFIX)] = stored
                         }
@@ -123,7 +123,7 @@ class LearnedCommands(
         val envelope = ActionEnvelope(tool, args)
         shortcuts[k] = envelope
         lastLearned = k to clock()
-        Log.i(TAG, "Learned \"$k\" -> $tool$args")
+        Log.i(TAG, "Learned a phrase for $tool")
         scope.launch { prefs.set(UserPreferenceEntity(PREFIX + k, envelope.toJson())) }
     }
 

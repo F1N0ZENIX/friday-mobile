@@ -109,7 +109,7 @@ class OfflineCommandRecognizer(private val context: Context) {
             // "[unk]" means the decoder matched nothing in the grammar.
             val cleaned = text.replace("[unk]", "").replace(Regex("\\s+"), " ").trim()
 
-            cleaned.ifBlank { null }?.also { Log.i(TAG, "Offline heard: $it") }
+            cleaned.ifBlank { null }?.also { Log.i(TAG, "Offline heard ${it.length} characters") }
         } catch (e: Exception) {
             Log.e(TAG, "Offline recognition failed: ${e.message}")
             null

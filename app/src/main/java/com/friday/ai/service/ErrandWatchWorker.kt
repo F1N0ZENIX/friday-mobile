@@ -181,6 +181,6 @@ class ErrandWatchWorker(
                 .setAutoCancel(true)
                 .build()
         )
-        Log.i(TAG, "Prompted about '$what' — nearest ${meters}m")
+        Log.i(TAG, "Prompted about an errand — nearest ${meters}m")
     }
 }

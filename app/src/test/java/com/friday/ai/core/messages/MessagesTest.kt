@@ -428,7 +428,7 @@ class WebResearchTest {
     @Test
     fun `a garbled answer is tried once more`() = runTest {
         var calls = 0
-        every { groq.browse(any(), any(), any(), any()) } answers {
+        coEvery { groq.browse(any(), any(), any(), any()) } answers {
             if (++calls == 1) throw GroqApiException(400, "API error (400): output_parse_failed") else "Spain."
         }
         assertEquals("Spain.", web.answer("кто чемпион", true))
@@ -436,7 +436,7 @@ class WebResearchTest {
 
     @Test
     fun `a used-up minute is explained, not shown as an error code`() = runTest {
-        every { groq.browse(any(), any(), any(), any()) } throws
+        coEvery { groq.browse(any(), any(), any(), any()) } throws
             GroqApiException(429, "Rate limit", retryAfterMs = 30_000)
         assertTrue(web.answer("кто чемпион", true).contains("минутный лимит"))
     }

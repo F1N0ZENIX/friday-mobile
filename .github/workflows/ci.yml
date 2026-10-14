@@ -35,6 +35,8 @@ jobs:
 
       # R8 can break JNI-reached code without failing the build; the check
       # fails it instead (see verifyReleaseKeepRules in app/build.gradle.kts).
+      # CI has no signing secrets, so this release is unsigned on purpose: it
+      # proves the build, not a distributable APK (see keystore/README.md).
       - name: Release build + R8 keep-rule check
         run: ./gradlew assembleRelease verifyReleaseKeepRules
 

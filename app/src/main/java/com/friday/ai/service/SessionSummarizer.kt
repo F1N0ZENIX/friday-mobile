@@ -107,7 +107,7 @@ Reply in the same language the conversation is in. Output only the sentence."""
                 messageCount = messages.size
             )
         )
-        Log.i(TAG, "Summarised $sessionId: $summary")
+        Log.i(TAG, "Summarised $sessionId")
         summary
     }
 
