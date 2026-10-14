@@ -81,7 +81,7 @@ class ChatViewModelTest {
         // Relaxed mocks answer "" for String?, which would read as a
         // confirmed send and swallow every message.
         coEvery { mail.answerPending(any(), any()) } returns null
-        coEvery { phone.answerPending(any()) } returns null
+        coEvery { phone.answerPending(any(), any()) } returns null
         // The real executor, so these tests cover the chat and the command
         // path together; only the actions themselves are stubbed.
         commands = CommandExecutor(router, phone, planner, info, mail, io = testDispatcher)

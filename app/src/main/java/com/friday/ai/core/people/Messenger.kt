@@ -112,8 +112,13 @@ class Messenger(
     private val context: Context,
     private val people: PeopleDirectory,
     private val device: DeviceContext,
-    private val prefDao: UserPreferenceDao
+    private val prefDao: UserPreferenceDao,
+    /** Sends an SMS itself after a spoken yes; without it (or its permission) the SMS app is opened. */
+    private val sms: SmsConfirmation? = null
 ) {
+
+    /** The yes or no to "Отправить SMS…?", carried out; null when nothing was asked. */
+    suspend fun answerPending(text: String, russian: Boolean): String? = sms?.answer(text, russian)
 
     private companion object {
         const val TAG = "Messenger"
@@ -138,6 +143,11 @@ class Messenger(
         // Asked for by name: that is how this person is reached from now on.
         if (requested != null && requested == choice.channel) {
             prefDao.set(UserPreferenceEntity(usualKey(person), requested.name))
+        }
+        // An SMS with its text can go straight from the phone, once the owner says yes.
+        val direct = sms?.takeIf { choice.channel == Channel.SMS && text != null && it.available }
+        if (direct != null && text != null) {
+            return direct.ask(person.name, choice.number.e164 ?: choice.number.raw, text, russian)
         }
         return try {
             reply(person, choice, text, pasted = open(choice, text), russian)
