@@ -1,6 +1,6 @@
 package com.friday.ai.core.audio
 
-import kotlin.math.sqrt
+import com.friday.ai.core.PcmAudio
 
 /**
  * Decides when the owner has started and finished speaking, from the
@@ -29,6 +29,15 @@ import kotlin.math.sqrt
  *    video, a television, people talking across the room — does not keep
  *    the turn open. On the phone, a command was followed by ten seconds of
  *    someone else's words before this.
+ *  - **Never below the room.** The calibration is a ceiling, and a
+ *    calibration made in a quiet room is low: in a louder one (a fan, the
+ *    street, the gain control lifting the noise in every pause) the room
+ *    itself passed for speech and every turn ran to thirty seconds. Once the
+ *    room has been heard, speech must stand clear of it, and only sound
+ *    clearly above it keeps a turn open.
+ *
+ * The words themselves end a turn sooner (see SpokenEnd); this is the
+ * acoustic side and the fallback.
  */
 class SpeechEndpointer(
     /** The calibrated threshold: speech never has to be louder than this. */
@@ -86,6 +95,20 @@ class SpeechEndpointer(
         /** The room's floor is the quietest 200 ms of the last 3 s. */
         private const val FLOOR_WINDOW = 10
         private const val FLOOR_HISTORY = 150
+
+        /** Speech opens only this far above the room, whatever the calibration says. */
+        private const val OPEN_OVER_ROOM = 1.8
+
+        /** Once speaking, sound must stay this far above the room to count as voice. */
+        private const val HOLD_OVER_ROOM = 1.4
+        private const val VOICE_HOLD_CAP = 0.5
+
+        /**
+         * Speech that seemed to start before the room was known is checked
+         * after this much audio: within a second a voice has pauses that show
+         * the room beneath it, and steady noise has none.
+         */
+        private const val RECHECK_FRAMES = 50
     }
 
     var speechStarted = leadMs > 0
@@ -111,7 +134,10 @@ class SpeechEndpointer(
 
     /** How loud the owner speaks in this turn; 0 until they start. */
     private var voiceLevel = 0.0
-    private val history = ArrayDeque<Double>()
+
+    /** Speech began before the room had been heard; checked again once it has. */
+    private var provisional = false
+    private val room = Room()
     private val leftover = ShortArray(FRAME)
     private var leftoverCount = 0
 
@@ -124,7 +150,7 @@ class SpeechEndpointer(
             leftoverCount += take
             i += take
             if (leftoverCount == FRAME) {
-                frame(rms(leftover))
+                frame(PcmAudio.rms(leftover, FRAME))
                 leftoverCount = 0
             }
         }
@@ -134,28 +160,66 @@ class SpeechEndpointer(
     /** The owner pressed stop: what was said so far is the turn. */
     fun stop(): End = end ?: End.STOPPED.also { end = it }
 
-    /** The level a frame must reach to open speech, given the room so far. */
-    fun openThreshold(): Double {
-        if (history.size < FLOOR_WINDOW) return ceiling
-        var floor = Double.MAX_VALUE
-        var sum = history.take(FLOOR_WINDOW).sum()
-        for (start in 0..history.size - FLOOR_WINDOW) {
-            if (start > 0) sum += history[start + FLOOR_WINDOW - 1] - history[start - 1]
-            floor = minOf(floor, sum / FLOOR_WINDOW)
+    /** True when [endByWords] ended the turn rather than the sound. */
+    var endedByWords = false
+        private set
+
+    /** The words say the owner is done ([SpokenEnd]): finished, if they really spoke. */
+    fun endByWords(): End? {
+        if (end == null && speechStarted) {
+            end = End.FINISHED
+            endedByWords = true
         }
-        return minOf(ceiling, maxOf(MIN_THRESHOLD, floor * NOISE_MARGIN))
+        return end
+    }
+
+    /** The level a frame must reach to open speech, given the room so far. */
+    fun openThreshold(): Double = openOver(room.floor())
+
+    private fun openOver(room: Double?): Double =
+        room?.let { maxOf(calibrated(it), it * OPEN_OVER_ROOM) } ?: ceiling
+
+    /** The calibration's view alone: never above the ceiling. Holding speech is measured against this. */
+    private fun calibrated(room: Double?): Double =
+        room?.let { minOf(ceiling, maxOf(MIN_THRESHOLD, it * NOISE_MARGIN)) } ?: ceiling
+
+    /** The last 3 s of frame levels, and the quietest 200 ms in them. */
+    private class Room {
+        private val levels = ArrayDeque<Double>()
+        val heard: Int get() = levels.size
+
+        fun add(level: Double) {
+            levels.addLast(level)
+            if (levels.size > FLOOR_HISTORY) levels.removeFirst()
+        }
+
+        /** Null until 200 ms have been heard. */
+        fun floor(): Double? {
+            if (levels.size < FLOOR_WINDOW) return null
+            var floor = Double.MAX_VALUE
+            var sum = levels.take(FLOOR_WINDOW).sum()
+            for (start in 0..levels.size - FLOOR_WINDOW) {
+                if (start > 0) sum += levels[start + FLOOR_WINDOW - 1] - levels[start - 1]
+                floor = minOf(floor, sum / FLOOR_WINDOW)
+            }
+            return floor
+        }
     }
 
     private fun frame(level: Double) {
-        val open = openThreshold()
-        history.addLast(level)
-        if (history.size > FLOOR_HISTORY) history.removeFirst()
+        val floor = room.floor()
+        val open = openOver(floor)
+        room.add(level)
         totalMs += FRAME_MS
-        if (speechStarted) speaking(level, open) else waiting(level, level > open)
+        if (provisional && floor != null && room.heard >= RECHECK_FRAMES) recheck(floor)
+        if (speechStarted) speaking(level, open, floor) else waiting(level, level > open)
+        // Longer speech, longer patience: a pause to think is not the end.
+        val endSilence = if (speechMs >= LONG_SPEECH_MS) LONG_END_SILENCE_MS else END_SILENCE_MS
         end = end ?: when {
             totalMs >= maxMs -> End.MAX_DURATION
             !speechStarted && totalMs >= START_TIMEOUT_MS -> End.NO_SPEECH
-            speechStarted && silenceMs >= endSilence() -> End.FINISHED
+            // Not while it is still unclear whether this was the owner or the room.
+            speechStarted && !provisional && silenceMs >= endSilence -> End.FINISHED
             else -> null
         }
     }
@@ -168,15 +232,35 @@ class SpeechEndpointer(
             speechMs += voicedRun * FRAME_MS
             silenceMs = 0
             voiceLevel = runLevel / voicedRun
+            provisional = room.heard <= FLOOR_WINDOW
         }
     }
 
-    private fun speaking(level: Double, open: Double) {
+    /**
+     * Speech that "began" in the first 200 ms, judged only against the
+     * calibration: if, a second in, it is no louder than the room turned out
+     * to be, it was the room, and the turn is still waiting for the owner.
+     */
+    private fun recheck(room: Double) {
+        provisional = false
+        if (voiceLevel >= room * OPEN_OVER_ROOM) return
+        speechStarted = false
+        speechMs = 0
+        silenceMs = 0
+        voiceLevel = 0.0
+        voicedRun = 0
+        runLevel = 0.0
+    }
+
+    private fun speaking(level: Double, open: Double, room: Double?) {
         // Only sound near the owner's own level teaches it; background must not drag it down.
         if (level > open && level > voiceLevel / 2) {
             voiceLevel = if (voiceLevel == 0.0) level else voiceLevel + (level - voiceLevel) * LEVEL_SMOOTHING
         }
-        val voiced = level > maxOf(open * HOLD_RATIO, voiceLevel * OWN_VOICE_RATIO)
+        // Capped by the owner's own level: during a long stretch without a pause the
+        // "room" is the voice itself, and the voice must never count as silence.
+        val roomHold = minOf((room ?: 0.0) * HOLD_OVER_ROOM, voiceLevel * VOICE_HOLD_CAP)
+        val voiced = level > maxOf(calibrated(room) * HOLD_RATIO, voiceLevel * OWN_VOICE_RATIO, roomHold)
         if (voiced) {
             speechMs += FRAME_MS
             silenceMs = 0
@@ -185,11 +269,4 @@ class SpeechEndpointer(
         }
     }
 
-    private fun endSilence(): Long = if (speechMs >= LONG_SPEECH_MS) LONG_END_SILENCE_MS else END_SILENCE_MS
-
-    private fun rms(frame: ShortArray): Double {
-        var sum = 0.0
-        for (s in frame) sum += s.toDouble() * s
-        return sqrt(sum / frame.size)
-    }
 }

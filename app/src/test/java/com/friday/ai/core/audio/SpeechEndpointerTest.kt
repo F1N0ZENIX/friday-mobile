@@ -116,6 +116,46 @@ class SpeechEndpointerTest {
     }
 
     @Test
+    fun `a quiet-room calibration in a louder room still ends the turn`() {
+        // Calibrated at a whisper (55); now a fan or the street, RMS about 150,
+        // which the gain control lifts in every pause. Before, the room itself
+        // counted as speech and every turn ran to thirty seconds.
+        val low = 55.0
+        val e = SpeechEndpointer(low)
+        assertEquals(End.FINISHED, e.feed(join(room(1000, 260), voice(1500, 3000), room(3000, 260))))
+        assertTrue(e.usable)
+        assertTrue("ended in the pause, not at the limit: ${e.elapsedMs}", e.elapsedMs < 1000 + 1500 + 1600)
+    }
+
+    @Test
+    fun `the room alone is not a speaker, whatever the calibration`() {
+        val e = SpeechEndpointer(55.0)
+        assertEquals(End.NO_SPEECH, e.feed(room(6000, 260)))
+        assertFalse(e.usable)
+    }
+
+    @Test
+    fun `a long sentence without a breath is not cut by the room floor`() {
+        // Three and a half seconds of voice with no pause: the "quietest 200 ms"
+        // becomes the voice itself, and must not turn the voice into silence.
+        val e = SpeechEndpointer(CEILING)
+        assertEquals(End.FINISHED, e.feed(join(room(300, 100), voice(4500, 3000), room(2000, 100))))
+        assertTrue(e.elapsedMs > 300 + 4500)
+        assertTrue(e.speechMs >= 4400)
+    }
+
+    @Test
+    fun `speech from the very first moment still counts once its pauses show the room`() {
+        val e = SpeechEndpointer(CEILING)
+        val audio = join(
+            voice(300, 3000), room(250, 100), voice(400, 3000), room(250, 100), voice(500, 3000), room(2000, 100)
+        )
+        assertEquals(End.FINISHED, e.feed(audio))
+        assertTrue(e.usable)
+        assertTrue(e.speechMs >= 1100)
+    }
+
+    @Test
     fun `the read size changes nothing`() {
         val audio = join(room(700, 100), voice(1200, 3000), room(500, 100), voice(300, 3000), room(1500, 100))
         val ends = listOf(320, 2048, 777, 4096, 160).map { chunk ->
@@ -127,7 +167,8 @@ class SpeechEndpointerTest {
     @Test
     fun `a long message is cut at thirty seconds, not fifteen`() {
         val e = SpeechEndpointer(CEILING)
-        assertNull(e.feed(voice(20_000, 3000)))
+        // A breath of room first: a flat tone from the very first sample is indistinguishable from noise.
+        assertNull(e.feed(join(room(500, 100), voice(19_500, 3000))))
         assertEquals(End.MAX_DURATION, e.feed(voice(15_000, 3000)))
         assertEquals(SpeechEndpointer.MAX_MS, e.elapsedMs)
     }

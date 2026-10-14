@@ -28,8 +28,20 @@ class PhoneActions(
     private val messenger: Messenger,
     private val mediaSearch: MediaSearch,
     private val caller: Caller,
-    private val messages: MessageAssistant
+    private val messages: MessageAssistant,
+    /** Holds a "кого именно?" for calls and messages alike. */
+    private val people: com.friday.ai.core.people.PeopleDirectory? = null
 ) {
+
+    /** The answer to "кого именно?" or to "Отправить SMS…?", carried out; null when [text] is neither. */
+    suspend fun answerPending(text: String, russian: Boolean): String? =
+        people?.answerPending(text) ?: messenger.answerPending(text, russian)
+
+    /** Forgets questions that got no answer; true when one was waiting. */
+    fun dropPending(): Boolean {
+        val asked = people?.drop() == true
+        return messenger.dropPending() || asked
+    }
 
     suspend fun run(c: CommandResult.Phone, russian: Boolean): String = when (c) {
         is CommandResult.OpenApp -> apps.openApp(c.packageHint, c.appName, russian)

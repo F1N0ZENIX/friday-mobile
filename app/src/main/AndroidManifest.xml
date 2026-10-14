@@ -31,9 +31,11 @@
          enough — this only ranks places a few hundred metres apart. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <!-- No media-library or SMS permissions: files and photos come through the
-         system picker (SAF), which grants access to the one chosen item, and an
-         SMS is composed with an smsto: intent the user sends from the SMS app. -->
+    <!-- No media-library permission: files and photos come through the system
+         picker (SAF), which grants access to the one chosen item. -->
+    <!-- A dictated SMS is read back and sent only after a spoken "да"
+         (SmsConfirmation); without this grant the SMS app opens with the text. -->
+    <uses-permission android:name="android.permission.SEND_SMS" />
     <!-- The real name: "android.permission.SET_ALARM" does not exist, and
          Samsung's Clock refuses ACTION_SET_ALARM without this one. -->
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />

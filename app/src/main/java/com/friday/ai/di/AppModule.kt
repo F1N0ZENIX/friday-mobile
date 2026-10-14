@@ -102,7 +102,14 @@ val appModule = module {
         )
     }
     single { com.friday.ai.core.people.PeopleDirectory(get(), get()) }
-    single { com.friday.ai.core.people.Messenger(androidContext(), get(), get(), get()) }
+    single {
+        com.friday.ai.core.people.Messenger(
+            androidContext(), get(), get(), get(),
+            sms = com.friday.ai.core.people.SmsConfirmation(
+                com.friday.ai.service.messages.AndroidSms(androidContext())
+            )
+        )
+    }
     single { com.friday.ai.core.MediaSearch(androidContext(), get(), get(), get()) }
     single { com.friday.ai.service.WeatherHere(androidContext(), get(), get()) }
     single { com.friday.ai.core.people.Caller(androidContext(), get(), get(), get(), get(), get()) }
@@ -117,7 +124,11 @@ val appModule = module {
         val summarizer = get<com.friday.ai.service.messages.MessageSummarizer>()
         com.friday.ai.service.messages.MessageAssistant(androidContext(), get(), get(), summarizer::summarize)
     }
-    single { com.friday.ai.command.PhoneActions(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    single {
+        com.friday.ai.command.PhoneActions(
+            get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), people = get()
+        )
+    }
     single {
         com.friday.ai.command.PlannerActions(get(), get(), get(), watchErrands = {
             com.friday.ai.service.ErrandWatchWorker.schedule(androidContext())

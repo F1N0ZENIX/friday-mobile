@@ -45,6 +45,7 @@ class EdgeTtsSpeaker(private val context: Context) {
 
     companion object {
         private const val TAG = "EdgeTtsSpeaker"
+        private const val HTTP_FORBIDDEN = 403
     }
 
     private val client = OkHttpClient.Builder()
@@ -220,11 +221,25 @@ class EdgeTtsSpeaker(private val context: Context) {
         player = null
     }
 
-    private suspend fun synthesize(text: String): ByteArray? =
+    /** One synthesis; after a 403 caused by a wrong phone clock, one more try with the corrected clock. */
+    private suspend fun synthesize(text: String): ByteArray? {
+        val first = attempt(text)
+        if (first !is Attempt.Refused || !first.clockWasOff) return (first as? Attempt.Audio)?.mp3
+        Log.i(TAG, "Phone clock was off; retrying with the server's time")
+        return (attempt(text) as? Attempt.Audio)?.mp3
+    }
+
+    private sealed interface Attempt {
+        class Audio(val mp3: ByteArray) : Attempt
+        class Refused(val clockWasOff: Boolean) : Attempt
+        data object Failed : Attempt
+    }
+
+    private suspend fun attempt(text: String): Attempt =
         suspendCancellableCoroutine { cont ->
             val requestId = UUID.randomUUID().toString().replace("-", "")
             val connectionId = UUID.randomUUID().toString().replace("-", "")
-            val now = System.currentTimeMillis()
+            val now = EdgeClock.now()
             val voice = EdgeTtsProtocol.detectVoice(text)
 
             val request = Request.Builder()
@@ -234,6 +249,7 @@ class EdgeTtsSpeaker(private val context: Context) {
                 .addHeader("Pragma", "no-cache")
                 .addHeader("Cache-Control", "no-cache")
                 .addHeader("Accept-Language", "en-US,en;q=0.9")
+                .addHeader("Cookie", EdgeTtsProtocol.muidCookie())
                 .build()
 
             val audioBuffer = ByteArrayOutputStream()
@@ -255,29 +271,34 @@ class EdgeTtsSpeaker(private val context: Context) {
                 override fun onMessage(webSocket: WebSocket, text: String) {
                     if (text.contains("turn.end")) {
                         webSocket.close(1000, null)
-                        cont.resumeIfActive(audioBuffer.toByteArray())
+                        cont.resumeIfActive(Attempt.Audio(audioBuffer.toByteArray()))
                     }
                 }
 
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                     val code = response?.code
                     Log.e(TAG, "Websocket failed${code?.let { " (HTTP $it)" } ?: ""}: ${t.message}")
-                    if (code == 403) {
-                        Log.e(TAG, "403 = Microsoft rejected the client fingerprint. " +
-                            "Bump USER_AGENT / SEC_MS_GEC_VERSION in EdgeTtsProtocol.")
+                    if (code == HTTP_FORBIDDEN) {
+                        val clockWasOff = EdgeClock.learn(response.header("Date"), now)
+                        if (!clockWasOff) {
+                            Log.e(TAG, "403 with a correct clock: Microsoft changed the handshake again " +
+                                "(token algorithm, SEC_MS_GEC_VERSION or USER_AGENT in EdgeTtsProtocol).")
+                        }
+                        cont.resumeIfActive(Attempt.Refused(clockWasOff))
+                    } else {
+                        cont.resumeIfActive(Attempt.Failed)
                     }
-                    cont.resumeIfActive(null)
                 }
 
                 override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                    cont.resumeIfActive(audioBuffer.toByteArray())
+                    cont.resumeIfActive(Attempt.Audio(audioBuffer.toByteArray()))
                 }
             })
 
             cont.invokeOnCancellation { ws.cancel() }
         }
 
-    private fun CancellableContinuation<ByteArray?>.resumeIfActive(value: ByteArray?) {
+    private fun CancellableContinuation<Attempt>.resumeIfActive(value: Attempt) {
         if (isActive) resume(value)
     }
 

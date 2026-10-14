@@ -269,6 +269,38 @@ class FridayAgentTest {
     }
 
     @Test
+    fun `a message is reported as it went, never retold by the model`() = runTest {
+        // The model once said "отправлено" for a message whose contact was never found.
+        replies(calls("send_message" to """{"contact":"Фердавс","text":"я свободен"}"""), text("Сообщение отправлено."))
+        coEvery { commands.execute(any(), any()) } returns
+            CommandExecutor.Outcome.Reply("Кого именно: Firdavs Yakubov или Firdavs Gettysburg?")
+
+        assertEquals("Кого именно: Firdavs Yakubov или Firdavs Gettysburg?", ask("Напиши Фердавсу, что я свободен"))
+        assertEquals("the model is not asked to retell it", 1, sent.size)
+    }
+
+    @Test
+    fun `a message text from an earlier request goes back to the model, which sends what was said`() = runTest {
+        replies(
+            calls("send_message" to """{"contact":"Фирдавс","text":"я свободен"}"""),
+            calls("send_message" to """{"contact":"Фирдавс","text":"буду поздно вечером"}""")
+        )
+        coEvery { commands.execute(any(), any()) } returns CommandExecutor.Outcome.Reply("Отправить SMS? Да или нет.")
+
+        assertEquals("Отправить SMS? Да или нет.", ask("Напиши Фердавсу, что буду поздно вечером"))
+        coVerify(exactly = 0) { commands.execute(CommandResult.SendMessage("Фирдавс", "я свободен"), any()) }
+        coVerify { commands.execute(CommandResult.SendMessage("Фирдавс", "буду поздно вечером"), true) }
+        assertTrue(sent[1].last().content.startsWith("Error: \"text\" must be the message the user dictated"))
+    }
+
+    @Test
+    fun `a message tool that could not even be read is still explained by the model`() = runTest {
+        replies(calls("send_message" to "not json"), text("Не поняла, кому написать."))
+        assertEquals("Не поняла, кому написать.", ask("Напиши"))
+        assertEquals(2, sent.size)
+    }
+
+    @Test
     fun `arithmetic never reaches the phone`() = runTest {
         replies(calls("calculate" to """{"expression":"17*23"}"""), text("391."))
         assertEquals("391.", ask("Сколько будет 17 на 23"))

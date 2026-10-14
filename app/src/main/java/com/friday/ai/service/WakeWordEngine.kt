@@ -58,6 +58,13 @@ class WakeWordEngine : WakeSource {
     private var model: Model? = null
     private var recognizer: Recognizer? = null
 
+    /**
+     * The loaded model, shared with the command recorder's word follower.
+     * Vosk counts references: a recognizer made from it keeps it alive even
+     * after [close].
+     */
+    val vosk: Model? get() = model
+
     /** The recorder of the running capture, for [interrupt]; null between captures. */
     @Volatile private var active: AudioRecord? = null
     @Volatile private var interrupted = false

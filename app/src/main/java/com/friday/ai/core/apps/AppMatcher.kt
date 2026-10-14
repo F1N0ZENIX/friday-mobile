@@ -177,7 +177,8 @@ internal object Spelling {
         return if (longest == 0) 1.0 else 1.0 - distance(a, b).toDouble() / longest
     }
 
-    private fun distance(a: String, b: String): Int {
+    /** Levenshtein distance. */
+    fun distance(a: String, b: String): Int {
         var previous = IntArray(b.length + 1) { it }
         for (i in a.indices) {
             val current = IntArray(b.length + 1)

@@ -117,6 +117,8 @@ fun ChatScreen(
         val needed = listOfNotNull(
             Manifest.permission.READ_CONTACTS,
             Manifest.permission.CALL_PHONE,
+            // A dictated SMS goes out after a spoken yes, without opening the SMS app.
+            Manifest.permission.SEND_SMS,
             Manifest.permission.READ_CALENDAR,
             Manifest.permission.WRITE_CALENDAR,
             Manifest.permission.ACCESS_COARSE_LOCATION,
