@@ -2,6 +2,7 @@ package com.friday.ai.service
 
 import com.friday.ai.service.VoiceCalibrator.Outcome
 import com.friday.ai.ui.settings.Calibration
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -25,20 +26,31 @@ class VoiceCalibratorTest {
         val reading = CompletableDeferred<Unit>()
 
         @Volatile var closed = false
+        private val stopped = CountDownLatch(1)
 
         override fun read(buffer: ShortArray): Int {
             val amplitude = level(frames.getAndIncrement())
             reading.complete(Unit)
             if (pauseMs > 0) Thread.sleep(pauseMs)
-            if (amplitude < 0) return -1
+            // Like AudioRecord.read when the HAL stalls: blocked until stop().
+            if (amplitude == HANG) stopped.await()
+            if (amplitude < 0 || stopped.count == 0L) return -1
             // A square wave: its RMS is the amplitude.
             for (i in 0 until frameSize) buffer[i] = (if (i % 2 == 0) amplitude else -amplitude).toShort()
             return frameSize
         }
 
+        override fun stop() {
+            stopped.countDown()
+        }
+
         override fun close() {
             closed = true
         }
+    }
+
+    private companion object {
+        const val HANG = -2
     }
 
     private val timing = VoiceCalibrator.Timing(silenceMs = 1000, speechWaitMs = 2000, speechMs = 1000)
@@ -77,6 +89,18 @@ class VoiceCalibratorTest {
         val endless = VoiceCalibrator.Timing(silenceMs = 100, speechWaitMs = Long.MAX_VALUE, speechMs = 100)
         val job = launch(Dispatchers.IO) { calibrator(mic, endless).calibrate() }
         mic.reading.await()
+
+        withTimeout(5_000) { job.cancelAndJoin() }
+
+        assertTrue(job.isCancelled)
+        assertTrue(mic.closed)
+    }
+
+    @Test
+    fun `cancelling ends a read that is stuck in the platform`() = runBlocking {
+        val mic = FakeMic { if (it < 3) 40 else HANG }
+        val job = launch(Dispatchers.IO) { calibrator(mic).calibrate() }
+        withTimeout(5_000) { while (mic.frames.get() < 4) Thread.sleep(5) }
 
         withTimeout(5_000) { job.cancelAndJoin() }
 

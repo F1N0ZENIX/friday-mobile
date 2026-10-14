@@ -7,6 +7,9 @@ import android.util.Log
 import com.friday.ai.core.PcmAudio
 import java.io.Closeable
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
@@ -96,8 +99,11 @@ class VoiceCalibrator(
         /** Samples per read. */
         val frameSize: Int
 
-        /** Fills [buffer] with up to [frameSize] samples; 0 or less when the source has failed. */
+        /** Fills [buffer] with up to [frameSize] samples; 0 or less when the source has failed or stopped. */
         fun read(buffer: ShortArray): Int
+
+        /** Ends a [read] blocked on another thread; [close] still frees the microphone. */
+        fun stop()
     }
 
     private class RecordMicrophone(
@@ -106,6 +112,14 @@ class VoiceCalibrator(
         override val frameSize: Int
     ) : Microphone {
         override fun read(buffer: ShortArray): Int = record.read(buffer, 0, frameSize)
+
+        override fun stop() {
+            try {
+                record.stop()
+            } catch (e: IllegalStateException) {
+                Log.w(TAG, "AudioRecord.stop failed: ${e.message}")
+            }
+        }
 
         override fun close() {
             effects.release()
@@ -161,10 +175,30 @@ class VoiceCalibrator(
     /**
      * Runs one calibration. Cancelling the caller throws CancellationException
      * as usual, after the microphone is released.
+     *
+     * Checking for cancellation between frames is not enough on its own: a
+     * read can block in the platform (a stalled audio HAL, the microphone
+     * taken by a call). A watcher stops the recording the moment the run is
+     * cancelled, which makes that read return.
      */
     suspend fun calibrate(): Outcome = withContext(Dispatchers.IO) {
         val mic = openMicrophone() ?: return@withContext Outcome.AudioUnavailable
-        mic.use { measure(it) }
+        mic.use {
+            coroutineScope {
+                val watcher = launch {
+                    try {
+                        awaitCancellation()
+                    } finally {
+                        mic.stop()
+                    }
+                }
+                try {
+                    measure(mic)
+                } finally {
+                    watcher.cancel()
+                }
+            }
+        }
     }
 
     /** The microphone stopped delivering audio part-way. */
@@ -178,7 +212,11 @@ class VoiceCalibrator(
         suspend fun frame(): Double {
             currentCoroutineContext().ensureActive()
             val read = mic.read(buffer)
-            if (read <= 0) throw MicrophoneFailed()
+            if (read <= 0) {
+                // A read ended by the watcher is a cancellation, not a broken microphone.
+                currentCoroutineContext().ensureActive()
+                throw MicrophoneFailed()
+            }
             return PcmAudio.rms(buffer, read).also { listener?.onEnergyUpdate(it) }
         }
 
