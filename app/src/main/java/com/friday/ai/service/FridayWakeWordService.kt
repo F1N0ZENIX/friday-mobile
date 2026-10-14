@@ -16,6 +16,9 @@ import com.friday.ai.data.remote.GroqApiService
 import com.friday.ai.service.messages.Announcer
 import com.friday.ai.core.MediaControls
 import com.friday.ai.service.voice.AudioFocusHold
+import com.friday.ai.service.voice.CallWatcher
+import com.friday.ai.service.voice.WakeHealth
+import com.friday.ai.service.voice.WakeStatus
 import com.friday.ai.service.voice.ServiceNotifier
 import com.friday.ai.service.voice.SpeakerGate
 import com.friday.ai.service.voice.SpokenAnswer
@@ -77,8 +80,19 @@ class FridayWakeWordService : Service() {
                     context.startService(intent)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to start: ${e.message}")
+                Log.e(TAG, "Failed to start: ${e.javaClass.simpleName}")
+                // Seen in settings, not only in logcat.
+                WakeStatus.startFailed(startFailure(e))
             }
+        }
+
+        /** What a refused start means for the owner, and what to do. */
+        internal fun startFailure(e: Exception): String = when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                e is android.app.ForegroundServiceStartNotAllowedException ->
+                "Android не дал запустить прослушивание из фона — откройте Friday"
+            e is SecurityException -> "Android не дал службе микрофон в фоне — откройте Friday"
+            else -> "Прослушивание не запустилось (${e.javaClass.simpleName}) — откройте Friday"
         }
 
         private const val ACTION_INVOKE = "com.friday.ai.INVOKE"
@@ -150,6 +164,7 @@ class FridayWakeWordService : Service() {
     private lateinit var prefDao: UserPreferenceDao
     private var started = false
     private var links: LinkWatcher? = null
+    private var calls: CallWatcher? = null
 
     /** False when only the side button started the service: no wake word, and it ends with the conversation. */
     private var wakeWordOn = true
@@ -163,8 +178,11 @@ class FridayWakeWordService : Service() {
         try {
             notifier.createChannel()
             startForeground(ServiceNotifier.NOTIFICATION_ID, notifier.build("Initializing..."))
+            WakeStatus.startFailed(null)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start foreground: ${e.message}")
+            // Android 14+: a microphone service started from the background is refused here.
+            Log.e(TAG, "Failed to start foreground: ${e.javaClass.simpleName}")
+            WakeStatus.startFailed(startFailure(e))
             stopSelf()
             return
         }
@@ -181,7 +199,7 @@ class FridayWakeWordService : Service() {
             prefetch(Acknowledgements.all)
         }
         gate = SpeakerGate(SpeakerEmbedder(applicationContext))
-        wake = WakeListener(applicationContext, scope, gate, notifier)
+        wake = WakeListener.create(applicationContext, scope, gate, notifier)
         transcriber = WhisperTranscriber(get(GroqApiService::class.java), cacheDir).apply {
             // Fires on the recording thread ~20x a second; the reactor only
             // stores the value and redraws on its own vsync, so no hop needed.
@@ -214,9 +232,11 @@ class FridayWakeWordService : Service() {
                 delay(FOCUS_SETTLE_MS)
                 get<MediaControls>(MediaControls::class.java).keepPaused()
             }
+            // Taken now: if a new turn, a call or a stop comes first, this late resume does nothing.
+            val token = wake.token
             scope.launch {
                 delay(MIC_SETTLE_MS)
-                if (wakeWordOn) wake.resume() else stopSelf()
+                if (wakeWordOn) wake.resume(token) else stopSelf()
             }
         }
     }
@@ -243,6 +263,9 @@ class FridayWakeWordService : Service() {
         } else if (!wakeWordOn) {
             // Running for the side button only, and now the wake word was switched on.
             scope.launch { begin() }
+        } else {
+            // Opened from the app while running: re-arm a listener that gave up.
+            scope.launch { rearm() }
         }
         return START_STICKY
     }
@@ -251,8 +274,12 @@ class FridayWakeWordService : Service() {
         gate.load(prefDao.get(PREF_VOICE_PROFILE))
         prefDao.get(VoiceCalibrator.PREF_WHISPER)?.toDoubleOrNull()?.let { transcriber.silenceThreshold = it }
         wakeWordOn = prefDao.get("wake_word_enabled") == "true"
+        if (!wakeWordOn) WakeStatus.report(WakeHealth(WakeHealth.Status.DISABLED))
         if (wakeWordOn && wake.initialise(prefDao.get(VoiceCalibrator.PREF_WAKE)?.toDoubleOrNull())) wake.resume()
-        if (wakeWordOn) watchLinks()
+        if (wakeWordOn) {
+            watchLinks()
+            watchCalls()
+        }
         // Calls and messages the notification listener heard about.
         scope.launch {
             get<Announcer>(Announcer::class.java).announcements
@@ -275,6 +302,20 @@ class FridayWakeWordService : Service() {
             } ?: return@LinkWatcher
             val ownerIsThere = trigger == com.friday.ai.core.modes.Trigger.BLUETOOTH && connected
             if (ownerIsThere) conversation.announce(said, listenAfter = false) else notifyModeResult(this, said)
+        }.also { it.start() }
+    }
+
+    /** A listener that failed or never loaded starts again — only from a visible start, like opening the app. */
+    private suspend fun rearm() {
+        val status = wake.health.value.status
+        if (status != WakeHealth.Status.FAILED && status != WakeHealth.Status.UNAVAILABLE) return
+        if (wake.ready || wake.initialise(prefDao.get(VoiceCalibrator.PREF_WAKE)?.toDoubleOrNull())) wake.resume()
+    }
+
+    /** Ringing, a phone call or a VoIP call takes the microphone from the wake listener until it ends. */
+    private fun watchCalls() {
+        calls = CallWatcher(scope, { com.friday.ai.core.CallState.mode(this) }) { inCall ->
+            if (inCall) wake.pauseForCall() else wake.callEnded(listenNow = !overlayShowing())
         }.also { it.start() }
     }
 
@@ -308,6 +349,7 @@ class FridayWakeWordService : Service() {
 
     override fun onDestroy() {
         links?.stop()
+        calls?.stop()
         running = false
         started = false
         if (::conversation.isInitialized) {
