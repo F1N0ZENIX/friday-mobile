@@ -87,7 +87,8 @@ class VoiceCalibratorTest {
     fun `cancelling stops the loop and frees the microphone`() = runBlocking {
         val mic = FakeMic(pauseMs = 5) { 40 }
         val endless = VoiceCalibrator.Timing(silenceMs = 100, speechWaitMs = Long.MAX_VALUE, speechMs = 100)
-        val job = launch(Dispatchers.IO) { calibrator(mic, endless).calibrate() }
+        // Outside runBlocking: a run that never ends fails the test instead of hanging the suite.
+        val job = CoroutineScope(Dispatchers.IO).launch { calibrator(mic, endless).calibrate() }
         mic.reading.await()
 
         withTimeout(5_000) { job.cancelAndJoin() }
@@ -99,7 +100,8 @@ class VoiceCalibratorTest {
     @Test
     fun `cancelling ends a read that is stuck in the platform`() = runBlocking {
         val mic = FakeMic { if (it < 3) 40 else HANG }
-        val job = launch(Dispatchers.IO) { calibrator(mic).calibrate() }
+        // Outside runBlocking: a run that never ends fails the test instead of hanging the suite.
+        val job = CoroutineScope(Dispatchers.IO).launch { calibrator(mic).calibrate() }
         withTimeout(5_000) { while (mic.frames.get() < 4) Thread.sleep(5) }
 
         withTimeout(5_000) { job.cancelAndJoin() }

@@ -85,7 +85,6 @@ class ChatViewModelTest {
         // path together; only the actions themselves are stubbed.
         commands = CommandExecutor(router, phone, planner, info, mail, io = testDispatcher)
 
-        every { getChatHistoryUseCase() } returns emptyFlow()
         every { getChatHistoryUseCase.sessions() } returns flowOf(emptyList())
         every { getChatHistoryUseCase.session(any()) } returns emptyFlow()
         coEvery { memory.getOrCreateSessionId() } returns ACTIVE_SESSION

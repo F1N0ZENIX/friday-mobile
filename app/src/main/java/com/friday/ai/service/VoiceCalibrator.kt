@@ -2,10 +2,10 @@ package com.friday.ai.service
 
 import android.media.AudioFormat
 import android.media.AudioRecord
-import android.media.MediaRecorder
 import android.util.Log
 import com.friday.ai.core.PcmAudio
 import java.io.Closeable
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.coroutineScope
@@ -61,23 +61,9 @@ class VoiceCalibrator(
          * Null when the microphone cannot be opened: no permission, or held
          * by a call or another app.
          */
-        @Suppress("MissingPermission") // Callers check RECORD_AUDIO; a denial lands in the catch.
         private fun openVoiceRecognition(): Microphone? {
             val bufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL, ENCODING).coerceAtLeast(MIN_BUFFER)
-            val record = try {
-                AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, SAMPLE_RATE, CHANNEL, ENCODING, bufferSize)
-            } catch (e: SecurityException) {
-                Log.w(TAG, "Microphone refused: ${e.message}")
-                null
-            } catch (e: IllegalArgumentException) {
-                Log.w(TAG, "Microphone unavailable: ${e.message}")
-                null
-            }
-            if (record?.state != AudioRecord.STATE_INITIALIZED) {
-                record?.release()
-                return null
-            }
-            return start(record, bufferSize)
+            return openVoiceRecord(SAMPLE_RATE, bufferSize, TAG)?.let { start(it, bufferSize) }
         }
 
         private fun start(record: AudioRecord, bufferSize: Int): Microphone? {
@@ -185,7 +171,9 @@ class VoiceCalibrator(
         val mic = openMicrophone() ?: return@withContext Outcome.AudioUnavailable
         mic.use {
             coroutineScope {
-                val watcher = launch {
+                // Started on the spot, not dispatched: a cancellation arriving first
+                // would otherwise skip its finally and leave the read blocked.
+                val watcher = launch(start = CoroutineStart.UNDISPATCHED) {
                     try {
                         awaitCancellation()
                     } finally {

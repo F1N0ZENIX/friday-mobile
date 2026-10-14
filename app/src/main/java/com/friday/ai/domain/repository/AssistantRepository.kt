@@ -14,9 +14,6 @@ interface AssistantRepository {
     /** Stream tokens from Groq API for the given user prompt. */
     suspend fun sendMessage(prompt: String, history: List<Message>, mode: AssistantMode): Flow<String>
 
-    /** Observe all chat messages from local DB as a reactive Flow. */
-    fun getChatHistory(): Flow<List<Message>>
-
     /** Observe the messages of one conversation. */
     fun getSessionMessages(sessionId: String): Flow<List<Message>>
 
@@ -28,9 +25,6 @@ interface AssistantRepository {
 
     /** Delete one conversation. */
     suspend fun deleteSession(sessionId: String)
-
-    /** Delete all messages from local storage. */
-    suspend fun clearHistory()
 
     /** Analyze an image via Groq Vision API. */
     suspend fun analyzeImage(imageBase64: String, prompt: String): Flow<String>

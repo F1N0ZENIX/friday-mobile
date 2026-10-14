@@ -2,7 +2,6 @@ package com.friday.ai.service
 
 import android.media.AudioFormat
 import android.media.AudioRecord
-import android.media.MediaRecorder
 import android.util.Log
 import com.friday.ai.core.PcmAudio
 import com.friday.ai.core.RollingAudio
@@ -106,11 +105,7 @@ class WhisperTranscriber(
         try {
             // VOICE_RECOGNITION rather than MIC: it is the tuned path, and it
             // is what the hardware effects below expect to sit on.
-            audioRecord = AudioRecord(
-                MediaRecorder.AudioSource.VOICE_RECOGNITION,
-                SAMPLE_RATE, CHANNEL, ENCODING, bufferSize
-            )
-            if (audioRecord.state != AudioRecord.STATE_INITIALIZED) {
+            audioRecord = openVoiceRecord(SAMPLE_RATE, bufferSize, TAG) ?: run {
                 withContext(Dispatchers.Main) { listener?.onError("Microphone unavailable") }
                 return@withContext VoiceTurn.Outcome.Nothing
             }
