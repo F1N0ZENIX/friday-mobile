@@ -5,6 +5,7 @@ package com.friday.ai.core.modes
 import com.friday.ai.agent.ActionEnvelope
 import com.friday.ai.core.DeviceController
 import com.friday.ai.core.DeviceKnobs
+import com.friday.ai.core.MediaVolume
 import com.friday.ai.core.Radio
 import com.friday.ai.core.Ringer
 import com.friday.ai.data.local.dao.ModeDao
@@ -114,8 +115,10 @@ private class ModesTable : ModeDao {
 
 private class Dnd : DeviceKnobs {
     var on = false
-    override fun volumePercent() = 50
-    override fun setVolumePercent(percent: Int) = Unit
+    override fun mediaVolume() = MediaVolume(7, 0, 15, muted = false)
+    override fun setMediaVolumeIndex(index: Int) = Unit
+    override fun stepMediaVolume(raise: Boolean) = Unit
+    override fun setMediaMuted(muted: Boolean) = Unit
     override fun dndAccess() = true
     override fun dndOn() = on
     override fun setDnd(on: Boolean) { this.on = on }

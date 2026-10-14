@@ -94,13 +94,15 @@ private class MemoryModeDao : ModeDao {
 
 /** A phone's settings in memory. */
 private class PhoneSettings : DeviceKnobs {
-    var volume = 70
+    val media = com.friday.ai.core.FakeMediaStream(index = 10)
     var dndState = false
     var ringerMode = Ringer.NORMAL
     var brightness = 60
     var auto = false
-    override fun volumePercent() = volume
-    override fun setVolumePercent(percent: Int) { volume = percent }
+    override fun mediaVolume() = media.read()
+    override fun setMediaVolumeIndex(index: Int) = media.applyIndex(index)
+    override fun stepMediaVolume(raise: Boolean) = media.applyStep(raise)
+    override fun setMediaMuted(muted: Boolean) = media.applyMuted(muted)
     override fun dndAccess() = true
     override fun dndOn() = dndState
     override fun setDnd(on: Boolean) { dndState = on }
@@ -204,6 +206,19 @@ class ModeEngineTest {
         say("выключи режим отдыха")
         assertEquals(60, phone.brightness)
         assertFalse(phone.dndState)
+    }
+
+    @Test
+    fun `a mode that set the volume while media was muted puts back the level and the mute`() = runTest {
+        phone.media.muted = true
+        compiled["громкость 40"] = ModeCompiler.Result.Steps(listOf(envelope("phone_control", """{"target":"volume","level":40}""")), emptyList())
+        say("Создай режим кино: громкость 40")
+        say("режим кино")
+        assertEquals(6, phone.media.index)
+        assertFalse(phone.media.muted)
+        say("выключи режим кино")
+        assertEquals(10, phone.media.index)
+        assertTrue(phone.media.muted)
     }
 
     @Test

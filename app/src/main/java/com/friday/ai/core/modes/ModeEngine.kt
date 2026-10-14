@@ -557,7 +557,8 @@ class ModeEngine(
                 is CommandResult.DeviceControl -> {
                     val result = device.apply(c.action, c.level, say.russian)
                     messages += result.message
-                    result.undo?.let { undo.addFirst(ModeSteps.deviceEnvelope(it.action, it.level)) }
+                    // Newest first, but a result's own steps keep their order (level, then mute).
+                    result.undo?.steps?.asReversed()?.forEach { undo.addFirst(ModeSteps.deviceEnvelope(it.action, it.level)) }
                 }
                 else -> {
                     val reply = runner(c)

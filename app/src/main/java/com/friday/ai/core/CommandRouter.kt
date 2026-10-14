@@ -471,7 +471,8 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
             volumeMaxPattern.containsMatchIn(lower) -> CommandResult.DeviceControl(DeviceAction.VOLUME_SET, 100)
             volumeMinPattern.containsMatchIn(lower) -> CommandResult.DeviceControl(DeviceAction.VOLUME_SET, MIN_VOLUME)
 
-            lower.matches(Regex(".*(?:выключи звук|без звука|беззвучн\\p{L}*|mute|тише некуда).*")) ->
+            // "(?<!un)mute": "unmute" contains "mute" and used to mute.
+            lower.matches(Regex(".*(?:выключи звук|без звука|беззвучн\\p{L}*|(?<!un)mute|тише некуда).*")) ->
                 CommandResult.DeviceControl(DeviceAction.MUTE)
 
             lower.matches(Regex(".*(?:включи звук|unmute|верни звук).*")) ->

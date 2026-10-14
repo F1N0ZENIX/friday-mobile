@@ -18,7 +18,7 @@ import org.junit.Test
 
 /** A phone's settings in memory, with the same rules Android applies. */
 private class FakeKnobs : DeviceKnobs {
-    var volume = 60
+    val media = FakeMediaStream()
     var dndGranted = true
     var dndState = false
     var ringerMode = Ringer.NORMAL
@@ -31,8 +31,10 @@ private class FakeKnobs : DeviceKnobs {
     /** Simulates a vendor that ignores the request. */
     var ignoreWrites = false
 
-    override fun volumePercent() = volume
-    override fun setVolumePercent(percent: Int) { if (!ignoreWrites) volume = percent }
+    override fun mediaVolume() = media.read()
+    override fun setMediaVolumeIndex(index: Int) = media.applyIndex(index)
+    override fun stepMediaVolume(raise: Boolean) = media.applyStep(raise)
+    override fun setMediaMuted(muted: Boolean) = media.applyMuted(muted)
     override fun dndAccess() = dndGranted
     override fun dndOn() = dndState
     override fun setDnd(on: Boolean) { if (!ignoreWrites) dndState = on }
@@ -59,28 +61,184 @@ class DeviceControllerTest {
 
     private fun run(action: DeviceAction, level: Int? = null) = controller.apply(action, level, russian = true)
 
-    /** Applies [result]'s undo, as a mode's exit does. */
+    /** Applies [result]'s undo, every step of it, as a mode's exit does. */
     private fun undo(result: DeviceActionResult) {
         val u = result.undo ?: error("no undo")
-        controller.apply(u.action, u.level, russian = true)
+        u.steps.forEach { controller.apply(it.action, it.level, russian = true) }
     }
 
     @Test
-    fun `volume is set, read back, and its undo restores the old level`() {
+    fun `volume is set to the nearest step, read back, and its undo restores the old level`() {
         val r = run(DeviceAction.VOLUME_SET, 25)
         assertTrue(r.succeeded)
-        assertEquals("Громкость 25%", r.message)
+        // 15 steps: 25 % is step 4, which Android shows as 27 %.
+        assertEquals(4, knobs.media.index)
+        assertEquals("Громкость 27%", r.message)
         undo(r)
-        assertEquals(60, knobs.volume)
+        assertEquals(9, knobs.media.index)
+        assertFalse(knobs.media.muted)
     }
 
     @Test
-    fun `a change the phone ignored is not reported as done`() {
-        knobs.ignoreWrites = true
-        val r = run(DeviceAction.MUTE)
+    fun `set on a 15-step stream reports what the stream really holds`() {
+        val expected = mapOf(0 to (0 to "Звук медиа выключен"), 1 to (1 to "Громкость 7%"), 50 to (8 to "Громкость 53%"),
+            99 to (15 to "Громкость 100%"), 100 to (15 to "Громкость 100%"))
+        expected.forEach { (asked, outcome) ->
+            knobs.media.index = 9
+            knobs.media.muted = false
+            val r = run(DeviceAction.VOLUME_SET, asked)
+            assertEquals("$asked %", outcome.first, knobs.media.index)
+            assertEquals("$asked %", outcome.second, r.message)
+            assertTrue("$asked %", r.succeeded)
+        }
+    }
+
+    @Test
+    fun `a level the phone ignored is not reported as done`() {
+        knobs.media.ignoreWrites = true
+        val r = run(DeviceAction.VOLUME_SET, 100)
         assertFalse(r.succeeded)
         assertEquals("Громкость не изменилась", r.message)
         assertNull("nothing changed, nothing to undo", r.undo)
+        // Already where asked: true without a change, and nothing to undo either.
+        val same = run(DeviceAction.VOLUME_SET, 60)
+        assertTrue(same.succeeded)
+        assertNull(same.undo)
+    }
+
+    @Test
+    fun `a level that landed elsewhere says where`() {
+        val phone = object : DeviceKnobs by knobs {
+            override fun setMediaVolumeIndex(index: Int) = knobs.setMediaVolumeIndex(minOf(index, 10))
+        }
+        val r = DeviceController(phone).apply(DeviceAction.VOLUME_SET, 100, russian = true)
+        assertFalse(r.succeeded)
+        assertEquals("Получилось только 67% вместо 100%", r.message)
+        // What did change can still be put back.
+        undo(r)
+        assertEquals(9, knobs.media.index)
+    }
+
+    @Test
+    fun `up and down move exactly one platform step and stop honestly at the ends`() {
+        assertEquals("Громкость 67%", run(DeviceAction.VOLUME_UP).message)
+        assertEquals(10, knobs.media.index)
+        assertEquals("Громкость 60%", run(DeviceAction.VOLUME_DOWN).message)
+        assertEquals(9, knobs.media.index)
+
+        knobs.media.index = 15
+        knobs.media.calls.clear()
+        val top = run(DeviceAction.VOLUME_UP)
+        assertEquals("Громкость медиа уже на максимуме", top.message)
+        assertNull(top.undo)
+        assertFalse("no raise was sent at the top", "raise" in knobs.media.calls)
+
+        knobs.media.index = 0
+        knobs.media.muted = true
+        assertEquals("Звук медиа и так выключен", run(DeviceAction.VOLUME_DOWN).message)
+
+        knobs.media.index = 1
+        knobs.media.muted = false
+        val toZero = run(DeviceAction.VOLUME_DOWN)
+        assertTrue("index 0 reads as muted, and that is the step asked for", toZero.succeeded)
+        assertEquals("Звук медиа выключен", toZero.message)
+    }
+
+    @Test
+    fun `mute keeps the level and unmute gives back the same 85 percent`() {
+        knobs.media.index = 13 // 87 % of 15, the step nearest 85 %
+        val muted = run(DeviceAction.MUTE)
+        assertTrue(muted.succeeded)
+        assertEquals("Звук медиа выключен", muted.message)
+        assertEquals(13, knobs.media.index)
+        assertTrue(knobs.media.muted)
+
+        val back = run(DeviceAction.UNMUTE)
+        assertTrue(back.succeeded)
+        assertEquals("Звук медиа включён, 87%", back.message)
+        assertEquals(13, knobs.media.index)
+        assertFalse("no hard-coded 40 %", knobs.media.calls.any { it.startsWith("set") })
+    }
+
+    @Test
+    fun `unmute at zero does not promise sound`() {
+        knobs.media.index = 0
+        knobs.media.muted = true
+        val r = run(DeviceAction.UNMUTE)
+        assertTrue(r.message, r.message.contains("громкость на нуле"))
+
+        knobs.media.muted = false
+        assertTrue(run(DeviceAction.UNMUTE).message.contains("громкость на нуле"))
+
+        // A build that lifts the stream to its first step says what it got.
+        knobs.media.muted = true
+        knobs.media.unmuteLiftsZero = true
+        assertEquals("Звук медиа включён, 7%", run(DeviceAction.UNMUTE).message)
+    }
+
+    @Test
+    fun `raising a muted stream unmutes it and steps from its own level`() {
+        knobs.media.muted = true
+        val r = run(DeviceAction.VOLUME_UP)
+        assertTrue(r.succeeded)
+        assertEquals(10, knobs.media.index)
+        assertFalse(knobs.media.muted)
+        undo(r)
+        assertEquals(9, knobs.media.index)
+        assertTrue("undo puts the mute back too", knobs.media.muted)
+    }
+
+    @Test
+    fun `fixed volume, ignored mute and a refused change are failures, never verified`() {
+        knobs.media.fixed = true
+        listOf(DeviceAction.VOLUME_UP, DeviceAction.VOLUME_DOWN, DeviceAction.MUTE, DeviceAction.UNMUTE).forEach {
+            val r = run(it)
+            assertEquals(it.name, DeviceActionResult.Mode.FAILED, r.mode)
+            assertTrue(it.name, r.message.contains("фиксирована"))
+        }
+        val set = run(DeviceAction.VOLUME_SET, 30)
+        assertEquals(DeviceActionResult.Mode.FAILED, set.mode)
+        assertFalse(set.succeeded)
+
+        knobs.media.fixed = false
+        knobs.media.ignoreWrites = true
+        val mute = run(DeviceAction.MUTE)
+        assertFalse(mute.succeeded)
+        assertEquals("Звук не выключился", mute.message)
+        assertNull(mute.undo)
+
+        knobs.media.ignoreWrites = false
+        knobs.media.refuse = true
+        val refused = run(DeviceAction.VOLUME_SET, 80)
+        assertEquals(DeviceActionResult.Mode.NEEDS_PERMISSION, refused.mode)
+        assertFalse(refused.succeeded)
+        assertNull(refused.undo)
+    }
+
+    @Test
+    fun `undo of a level set while muted restores the level and the mute`() {
+        knobs.media.muted = true
+        val r = run(DeviceAction.VOLUME_SET, 40)
+        assertTrue(r.succeeded)
+        assertFalse(knobs.media.muted)
+        assertEquals(listOf(DeviceAction.VOLUME_SET, DeviceAction.MUTE), r.undo!!.steps.map { it.action })
+        undo(r)
+        assertEquals(9, knobs.media.index)
+        assertTrue(knobs.media.muted)
+    }
+
+    @Test
+    fun `undo levels land back on the same index on common stream sizes`() {
+        listOf(15, 25, 30).forEach { max ->
+            val v = MediaVolume(0, 0, max, muted = false)
+            (0..max).forEach { i -> assertEquals("$i/$max", i, v.indexFor(v.percentOf(i))) }
+        }
+    }
+
+    @Test
+    fun `during a call the reply says only media changed`() {
+        knobs.media.duringCall = true
+        assertEquals("Громкость 53% (медиа; громкость разговора не менялась)", run(DeviceAction.VOLUME_SET, 50).message)
     }
 
     @Test
@@ -174,7 +332,7 @@ class DeviceControllerTest {
 
     @Test
     fun `english replies for english requests`() {
-        assertEquals("Volume 30%", controller.apply(DeviceAction.VOLUME_SET, 30, russian = false).message)
+        assertEquals("Volume 33%", controller.apply(DeviceAction.VOLUME_SET, 30, russian = false).message)
     }
 }
 
@@ -254,6 +412,27 @@ class DeviceRoutingTest {
         assertEquals(DeviceAction.RINGER_NORMAL, action("выключи беззвучный режим"))
         assertEquals(DeviceAction.RINGER_NORMAL, action("отключи вибрацию"))
         assertEquals(DeviceAction.MUTE, action("выключи звук"))
+    }
+
+    @Test
+    fun `russian and english volume phrases reach the same actions as the llm tool`() {
+        val now = LocalDateTime.of(2026, 10, 7, 12, 0)
+        fun tool(state: String) = (AgentTools.interpret(
+            "phone_control",
+            kotlinx.serialization.json.Json.parseToJsonElement("""{"target":"volume","state":"$state"}""") as JsonObject,
+            now
+        ) as AgentTools.Call.Command).command
+        val pairs = listOf(
+            listOf("сделай громче", "volume up") to "up",
+            listOf("сделай тише", "turn the volume down") to "down",
+            listOf("выключи звук", "mute") to "off",
+            listOf("включи звук", "unmute") to "on"
+        )
+        pairs.forEach { (phrases, toolAction) ->
+            phrases.forEach { assertEquals(it, tool(toolAction), router.route(it)) }
+        }
+        assertEquals(CommandResult.DeviceControl(DeviceAction.VOLUME_SET, 50), router.route("громкость на 50"))
+        assertEquals(CommandResult.DeviceControl(DeviceAction.VOLUME_SET, 50), router.route("set volume to 50"))
     }
 
     @Test

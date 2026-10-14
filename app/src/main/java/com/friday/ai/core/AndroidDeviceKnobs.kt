@@ -17,6 +17,7 @@ class AndroidDeviceKnobs(private val context: Context) : DeviceKnobs {
     private companion object {
         /** Settings.System.SCREEN_BRIGHTNESS is 0..255 on stock Android and One UI. */
         const val BRIGHTNESS_MAX = 255
+        const val MEDIA = AudioManager.STREAM_MUSIC
         const val PERCENT = 100
 
         /** Added before dividing by 100, so integer division rounds to the nearest step. */
@@ -27,17 +28,28 @@ class AndroidDeviceKnobs(private val context: Context) : DeviceKnobs {
     private val notifications get() = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private val resolver get() = context.contentResolver
 
-    override fun volumePercent(): Int {
-        val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        return if (max == 0) 0 else audio.getStreamVolume(AudioManager.STREAM_MUSIC) * PERCENT / max
+    override fun mediaVolume(): MediaVolume {
+        val audio = audio
+        val mode = audio.mode
+        return MediaVolume(
+            index = audio.getStreamVolume(MEDIA),
+            min = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) audio.getStreamMinVolume(MEDIA) else 0,
+            max = audio.getStreamMaxVolume(MEDIA),
+            muted = audio.isStreamMute(MEDIA),
+            fixed = audio.isVolumeFixed,
+            duringCall = mode == AudioManager.MODE_IN_CALL || mode == AudioManager.MODE_IN_COMMUNICATION
+        )
     }
 
-    override fun setVolumePercent(percent: Int) {
-        val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        // Round to the nearest step, but never let a non-zero request land on silence.
-        val index = ((max * percent + HALF) / PERCENT).let { if (percent > 0) it.coerceAtLeast(1) else 0 }
-        audio.setStreamVolume(AudioManager.STREAM_MUSIC, index, 0)
-    }
+    // Flags 0: Friday answers in words, and the system slider popping up on
+    // top of her panel would be a second, competing display.
+    override fun setMediaVolumeIndex(index: Int) = audio.setStreamVolume(MEDIA, index, 0)
+
+    override fun stepMediaVolume(raise: Boolean) =
+        audio.adjustStreamVolume(MEDIA, if (raise) AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER, 0)
+
+    override fun setMediaMuted(muted: Boolean) =
+        audio.adjustStreamVolume(MEDIA, if (muted) AudioManager.ADJUST_MUTE else AudioManager.ADJUST_UNMUTE, 0)
 
     override fun dndAccess(): Boolean = notifications.isNotificationPolicyAccessGranted
 
