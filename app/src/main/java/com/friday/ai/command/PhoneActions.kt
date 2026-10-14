@@ -32,7 +32,7 @@ class PhoneActions(
 ) {
 
     suspend fun run(c: CommandResult.Phone, russian: Boolean): String = when (c) {
-        is CommandResult.OpenApp -> apps.openApp(c.packageHint, c.appName)
+        is CommandResult.OpenApp -> apps.openApp(c.packageHint, c.appName, russian)
         is CommandResult.CloseApp -> apps.closeApp(c.packageHint, c.appName)
         is CommandResult.PhoneCall -> caller.call(c.target, c.via, russian)
         is CommandResult.ReplyMessage -> messages.reply(c.to, c.body, russian, c.loose)

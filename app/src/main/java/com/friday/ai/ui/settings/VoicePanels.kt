@@ -120,6 +120,7 @@ internal fun VoicePanel(viewModel: SettingsViewModel, say: (String) -> Unit) {
                 }
             }
         )
+        WakeHealthStatus(visible = wakeWordEnabled)
         BackgroundWorkStatus(visible = wakeWordEnabled)
         HudNote(
             "Боковая кнопка: выберите Пятницу цифровым помощником — и долгое нажатие будет звать её, " +

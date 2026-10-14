@@ -11,6 +11,10 @@ import com.friday.ai.service.SpeakerEmbedder
  * audio too short to score ("стоп", "да"), the turn goes through: an
  * assistant that answers nobody is a far worse failure than one that
  * occasionally answers the wrong person.
+ *
+ * So this is a convenience, not a security boundary. Anything that must not
+ * run for a stranger is held by LockPolicy (locked phone, unverified voice)
+ * and by the command's own confirmation, never by this check alone.
  */
 class SpeakerGate(
     private val embedder: SpeakerEmbedder,

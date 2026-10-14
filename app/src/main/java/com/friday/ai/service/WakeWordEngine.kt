@@ -9,10 +9,12 @@ import com.friday.ai.core.Singing
 import com.friday.ai.core.VoiceGate
 import com.friday.ai.core.WakeCheck
 import com.friday.ai.core.WakePhrases
+import com.friday.ai.service.voice.WakeFailure
+import com.friday.ai.service.voice.WakeSource
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -20,7 +22,16 @@ import org.json.JSONObject
 import org.vosk.Model
 import org.vosk.Recognizer
 
-class WakeWordEngine {
+/**
+ * Spots "Пятница" on the device: one recorder, a restricted Vosk grammar, a
+ * voice gate with pre-roll, and checks that a call is neither too short nor
+ * sung.
+ *
+ * Each [capture] owns its recorder and releases it before returning, so the
+ * caller hands the microphone on only once it is free. [interrupt] stops the
+ * recorder from any thread, which ends even a read blocked in the platform.
+ */
+class WakeWordEngine : WakeSource {
 
     companion object {
         private const val TAG = "WakeWordEngine"
@@ -28,6 +39,7 @@ class WakeWordEngine {
         private const val CHANNEL = AudioFormat.CHANNEL_IN_MONO
         private const val ENCODING = AudioFormat.ENCODING_PCM_16BIT
         private const val DEFAULT_ENERGY_THRESHOLD = 150.0
+        private const val MIN_BUFFER = 4096
 
         /**
          * How much audio to keep for speaker verification. Long enough that a
@@ -39,15 +51,16 @@ class WakeWordEngine {
         /** A frame this loud relative to the open gate still counts as speech. */
         private const val CLOSE_RATIO = 0.55
 
+        /** Empty reads in a row that mean the recorder has stalled, not paused for a moment. */
+        private const val MAX_EMPTY_READS = 20
     }
-
-    enum class EngineState { IDLE, LOADING, LISTENING, PAUSED, ERROR }
-
-    private val _state = MutableStateFlow(EngineState.IDLE)
-    val state: StateFlow<EngineState> = _state.asStateFlow()
 
     private var model: Model? = null
     private var recognizer: Recognizer? = null
+
+    /** The recorder of the running capture, for [interrupt]; null between captures. */
+    @Volatile private var active: AudioRecord? = null
+    @Volatile private var interrupted = false
 
     /**
      * Samples handed to [recognizer] since it was made. Vosk times its words
@@ -58,19 +71,11 @@ class WakeWordEngine {
 
     /** The last name checked for singing, and the answer: the decoder repeats it frame after frame. */
     private var sungCheck: Pair<WakeCheck.Word, Boolean>? = null
-    /**
-     * Receives the text the wake call was matched in — so the reply can match
-     * its language — the audio it was heard in, so the caller can check whose
-     * voice it was (16 kHz mono, int16 scale), and whether the speaker was
-     * still talking when the name was recognised: "Пятница, включи музыку"
-     * said in one breath.
-     */
-    var onWakeWordDetected: ((heard: String, audio: FloatArray, continuing: Boolean) -> Unit)? = null
+
     var energyThreshold: Double = DEFAULT_ENERGY_THRESHOLD
 
     fun loadModel(modelPath: String): Boolean {
         return try {
-            _state.value = EngineState.LOADING
             model = Model(modelPath)
             // Grammar-constrained recognition: instead of transcribing free
             // speech (which requires guessing among the model's entire
@@ -85,34 +90,79 @@ class WakeWordEngine {
                 setPartialWords(true)
             }
             fedSamples = 0L
-            _state.value = EngineState.IDLE
-            Log.i(TAG, "Vosk model loaded from $modelPath with grammar: $grammar")
+            Log.i(TAG, "Vosk model loaded")
             true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load Vosk model: ${e.message}")
-            _state.value = EngineState.ERROR
             false
         }
     }
 
-    suspend fun startListening() = withContext(Dispatchers.IO) {
-        if (model == null || recognizer == null) {
-            Log.e(TAG, "Model not loaded")
-            return@withContext
+    override suspend fun capture(onFrame: () -> Unit): WakeSource.End = withContext(Dispatchers.IO) {
+        interrupted = false
+        ensureActive()
+        if (model == null || recognizer == null) return@withContext WakeSource.End.Failed(WakeFailure.MODEL)
+        // An error code (negative) here means the format is unsupported: no recorder will open.
+        val minBuffer = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL, ENCODING)
+        if (minBuffer <= 0) return@withContext WakeSource.End.Failed(WakeFailure.RECORDER)
+        // VOICE_RECOGNITION gets the device's echo cancellation, which
+        // matters when this listens while Friday is speaking (barge-in) —
+        // otherwise it hears the assistant's own voice through the speaker.
+        val record = openVoiceRecord(SAMPLE_RATE, minBuffer.coerceAtLeast(MIN_BUFFER), TAG)
+            ?: return@withContext WakeSource.End.Failed(WakeFailure.RECORDER)
+        // The phone's own DSP. Road noise is exactly the stationary kind
+        // hardware suppression removes, and none of it runs unless asked.
+        val effects = AudioEffects.attach(record.audioSessionId)
+        active = record
+        try {
+            if (interrupted) return@withContext WakeSource.End.Stopped
+            record.startRecording()
+            listen(record, minBuffer.coerceAtLeast(MIN_BUFFER) / 2, onFrame)
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Recorder failed: ${e.message}")
+            if (interrupted) WakeSource.End.Stopped else WakeSource.End.Failed(WakeFailure.RECORDER)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "Listening error: ${e.javaClass.simpleName}")
+            if (interrupted) WakeSource.End.Stopped else WakeSource.End.Failed(WakeFailure.UNEXPECTED)
+        } finally {
+            // Release the microphone before anyone else is told they may use
+            // it — otherwise the command recorder races this teardown and can
+            // fail to open the mic at all. The result above is returned only
+            // after this has run.
+            active = null
+            effects.release()
+            record.stopAndRelease(TAG)
         }
+    }
 
-        val bufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL, ENCODING)
-            .coerceAtLeast(4096)
+    /** The read loop of one capture; returns how it ended. */
+    private suspend fun listen(record: AudioRecord, frameSize: Int, onFrame: () -> Unit): WakeSource.End {
+        val session = Session(frameSize)
+        var empty = 0
+        Log.i(TAG, "Silent wake word listening started")
+        while (currentCoroutineContext().isActive && !interrupted) {
+            val read = record.read(session.buffer, 0, frameSize)
+            if (interrupted) break
+            // An error code, or nothing over and over: the recorder is gone, not quiet.
+            if (read == 0) empty++ else empty = 0
+            val broken = when {
+                read < 0 -> WakeFailure.READ
+                empty >= MAX_EMPTY_READS -> WakeFailure.STALLED
+                else -> null
+            }
+            if (broken != null) return WakeSource.End.Failed(broken)
+            if (read == 0) continue
+            onFrame()
+            hear(session, read)?.let { return it }
+        }
+        return WakeSource.End.Stopped
+    }
 
-        var detected = false
-        var detectedIn = ""
-        var continuing = false
-        var detectedAudio = FloatArray(0)
-        // Each listening session owns its recorder. A shared field let one
-        // session's teardown release the next session's microphone, which
-        // left Friday deaf after the first conversation.
-        var record: AudioRecord? = null
-        var effects: AudioEffects? = null
+    /** One capture's buffers and gate. */
+    private inner class Session(frameSize: Int) {
+        val buffer = ShortArray(frameSize)
         // Everything heard in the last few seconds. On detection this is
         // handed over for speaker verification: the wake word is always
         // somewhere inside it, including the part that preceded the gate
@@ -120,99 +170,54 @@ class WakeWordEngine {
         val recent = RollingAudio(SAMPLE_RATE * RECENT_AUDIO_SECONDS)
         // Only what the decoder heard, so a word's timing points into it.
         val fed = RollingAudio(SAMPLE_RATE * RECENT_AUDIO_SECONDS)
+        val gate = VoiceGate(energyThreshold, (frameSize * 1000 / SAMPLE_RATE).coerceAtLeast(1))
+        // The last few frames before the gate opens. Without these the
+        // decoder joins the word already in progress and "пятница" arrives
+        // as "ница", which matches nothing.
+        val preRoll = ArrayDeque<ShortArray>(gate.preRollFrames)
+    }
 
-        try {
-            // VOICE_RECOGNITION gets the device's echo cancellation, which
-            // matters when this listens while Friday is speaking (barge-in) —
-            // otherwise it hears the assistant's own voice through the speaker.
-            record = openVoiceRecord(SAMPLE_RATE, bufferSize, TAG) ?: run {
-                _state.value = EngineState.ERROR
-                return@withContext
-            }
-
-            // The phone's own DSP. Road noise is exactly the stationary kind
-            // hardware suppression removes, and none of it runs unless asked.
-            effects = AudioEffects.attach(record.audioSessionId)
-
-            record.startRecording()
-            _state.value = EngineState.LISTENING
-            Log.i(TAG, "Silent wake word listening started")
-
-            val buffer = ShortArray(bufferSize / 2)
-            val frameMs = (buffer.size * 1000 / SAMPLE_RATE).coerceAtLeast(1)
-            val gate = VoiceGate(energyThreshold, frameMs)
-
-            // The last few frames before the gate opens. Without these the
-            // decoder joins the word already in progress and "пятница" arrives
-            // as "ница", which matches nothing.
-            val preRoll = ArrayDeque<ShortArray>(gate.preRollFrames)
-
-            while (isActive && _state.value == EngineState.LISTENING) {
-                val read = record.read(buffer, 0, buffer.size)
-                if (read < 0) break
-                if (read <= 0) continue
-
-                val frame = buffer.copyOf(read)
-                recent.append(buffer, read)
-                val decision = gate.onFrame(PcmAudio.rms(buffer, read))
-
-                if (decision.resetDecoder) {
-                    // A real gap between utterances. Clearing here — and only
-                    // here — keeps the partial transcript from accumulating
-                    // fragments of every earlier attempt.
-                    recognizer?.reset()
-                }
-
-                if (!decision.feed) {
-                    preRoll.addLast(frame)
-                    while (preRoll.size > gate.preRollFrames) preRoll.removeFirst()
-                    continue
-                }
-
-                if (decision.flushPreRoll) {
-                    preRoll.forEach { feed(it, fed) }
-                    preRoll.clear()
-                }
-                val json = feed(frame, fed)
-
-                if (json != null && containsWakePhrase(json) && believable(json, fed.snapshot())) {
-                    detected = true
-                    detectedIn = heardText(json)
-                    detectedAudio = recent.snapshot()
-                    // Still loud this very frame: the command is following the name.
-                    continuing = PcmAudio.rms(buffer, read) > gate.effectiveThreshold * CLOSE_RATIO
-                    break
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Listening error: ${e.message}")
-        } finally {
-            // Release the microphone before anyone else is told they may use
-            // it — otherwise the command recorder races this teardown and can
-            // fail to open the mic at all.
-            effects?.release()
-            record.stopAndRelease(TAG)
-        }
-
-        if (detected) {
-            _state.value = EngineState.PAUSED
+    /** Gates and decodes one frame; the detection, if this frame completed the call. */
+    private fun hear(s: Session, read: Int): WakeSource.End.Detected? {
+        val frame = s.buffer.copyOf(read)
+        s.recent.append(s.buffer, read)
+        val decision = s.gate.onFrame(PcmAudio.rms(s.buffer, read))
+        if (decision.resetDecoder) {
+            // A real gap between utterances. Clearing here — and only
+            // here — keeps the partial transcript from accumulating
+            // fragments of every earlier attempt.
             recognizer?.reset()
-            Log.i(TAG, "Wake word detected (continuing=$continuing); microphone released, handing over")
-            onWakeWordDetected?.invoke(detectedIn, detectedAudio, continuing)
+        }
+        if (!decision.feed) {
+            s.preRoll.addLast(frame)
+            while (s.preRoll.size > s.gate.preRollFrames) s.preRoll.removeFirst()
+            return null
+        }
+        if (decision.flushPreRoll) {
+            s.preRoll.forEach { feed(it, s.fed) }
+            s.preRoll.clear()
+        }
+        val json = feed(frame, s.fed)?.takeIf { containsWakePhrase(it) && believable(it, s.fed.snapshot()) }
+            ?: return null
+        recognizer?.reset()
+        // Still loud this very frame: the command is following the name.
+        val continuing = PcmAudio.rms(s.buffer, read) > s.gate.effectiveThreshold * CLOSE_RATIO
+        Log.i(TAG, "Wake word detected (continuing=$continuing); releasing the microphone")
+        return WakeSource.End.Detected(VoskResults.text(json), s.recent.snapshot(), continuing)
+    }
+
+    /** Ends the running capture from any thread: stopping the recorder makes a blocked read return. */
+    override fun interrupt() {
+        interrupted = true
+        try {
+            active?.stop()
+        } catch (e: IllegalStateException) {
+            Log.w(TAG, "Stop on interrupt failed: ${e.message}")
         }
     }
 
-    /** Ends the listening loop; it releases its own microphone as it leaves. */
-    fun pause() {
-        _state.value = EngineState.PAUSED
-    }
-
-    fun resume() {
-        _state.value = EngineState.IDLE
-    }
-
-    fun destroy() {
-        _state.value = EngineState.IDLE
+    /** Frees the decoder; the listener calls this only after the last capture has returned. */
+    override fun close() {
         try {
             recognizer?.close()
             model?.close()
@@ -226,18 +231,10 @@ class WakeWordEngine {
      * in control of teardown ordering (see the microphone handover above).
      */
     internal fun containsWakePhrase(jsonResult: String): Boolean {
-        val text = heardText(jsonResult)
+        val text = VoskResults.text(jsonResult)
         return if (text.isBlank()) false
         else WakePhrases.isWakeCall(text)
             .also { if (it) Log.i(TAG, "Wake call matched in: $text") }
-    }
-
-    /** The words behind a Vosk result, whether final or partial. */
-    internal fun heardText(jsonResult: String): String = try {
-        val obj = JSONObject(jsonResult)
-        (obj.optString("text", "") + " " + obj.optString("partial", "")).trim()
-    } catch (_: Exception) {
-        ""
     }
 
     /** Hands one frame to the decoder and returns whatever it has so far. */
@@ -313,6 +310,14 @@ internal object VoskResults {
         }
     } catch (_: Exception) {
         emptyList()
+    }
+
+    /** The words behind a Vosk result, whether final or partial. */
+    fun text(jsonResult: String): String = try {
+        val obj = JSONObject(jsonResult)
+        (obj.optString("text", "") + " " + obj.optString("partial", "")).trim()
+    } catch (_: Exception) {
+        ""
     }
 
     fun isFinal(jsonResult: String): Boolean = try {

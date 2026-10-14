@@ -28,9 +28,7 @@ class DeviceController(private val knobs: DeviceKnobs) {
 
     companion object {
         private const val TAG = "DeviceController"
-        const val VOLUME_STEP = 15
         const val BRIGHTNESS_STEP = 20
-        const val UNMUTE_LEVEL = 40
         private const val DEFAULT_LEVEL = 50
         private const val MIN_BRIGHTNESS = 1
     }
@@ -41,11 +39,11 @@ class DeviceController(private val knobs: DeviceKnobs) {
     fun apply(action: DeviceAction, level: Int?, russian: Boolean): DeviceActionResult = try {
         val say = Say(russian)
         when (action) {
-            DeviceAction.VOLUME_UP -> volume(knobs.volumePercent() + VOLUME_STEP, say)
-            DeviceAction.VOLUME_DOWN -> volume(knobs.volumePercent() - VOLUME_STEP, say)
-            DeviceAction.VOLUME_SET -> volume(level ?: DEFAULT_LEVEL, say)
-            DeviceAction.MUTE -> volume(0, say)
-            DeviceAction.UNMUTE -> volume(UNMUTE_LEVEL, say)
+            DeviceAction.VOLUME_UP -> volumeStep(raise = true, say)
+            DeviceAction.VOLUME_DOWN -> volumeStep(raise = false, say)
+            DeviceAction.VOLUME_SET -> volumeSet(level ?: DEFAULT_LEVEL, say)
+            DeviceAction.MUTE -> mute(say)
+            DeviceAction.UNMUTE -> unmute(say)
             DeviceAction.DND_ON -> dnd(true, say)
             DeviceAction.DND_OFF -> dnd(false, say)
             DeviceAction.RINGER_NORMAL -> ringer(Ringer.NORMAL, say)
@@ -77,20 +75,137 @@ class DeviceController(private val knobs: DeviceKnobs) {
     }
 
     // --- volume ----------------------------------------------------------
+    //
+    // Media volume only (STREAM_MUSIC), in the stream's own steps. A result is
+    // verified when the index read back is the index asked for — never merely
+    // because the level is above zero — and its undo puts back both the index
+    // and the mute flag that were there before.
 
-    private fun volume(target: Int, say: Say): DeviceActionResult {
-        val before = knobs.volumePercent()
-        val wanted = target.coerceIn(0, 100)
-        knobs.setVolumePercent(wanted)
-        val now = knobs.volumePercent()
-        // The stream has a few steps only (15 on most phones): "50 %" lands on the nearest one.
-        val verified = if (wanted == 0) now == 0 else now > 0
-        val message = when {
-            !verified -> say("Громкость не изменилась", "The volume didn't change")
-            now == 0 -> say("Звук выключен", "Muted")
-            else -> say("Громкость $now%", "Volume $now%")
+    /** One platform step up or down; honest at the ends of the scale. */
+    private fun volumeStep(raise: Boolean, say: Say): DeviceActionResult {
+        val before = knobs.mediaVolume()
+        return when {
+            before.fixed -> fixedVolume(say)
+            !raise && before.muted ->
+                DeviceActionResult.direct(true, say("Звук медиа и так выключен", "Media is already muted"), null)
+            else -> step(before, raise, say)
         }
-        return DeviceActionResult.direct(verified, message, undo(DeviceAction.VOLUME_SET, before))
+    }
+
+    private fun step(before: MediaVolume, raise: Boolean, say: Say): DeviceActionResult {
+        // Raising a muted stream first gives back its own level, then steps from there.
+        val base = if (before.muted) {
+            knobs.setMediaMuted(false)
+            knobs.mediaVolume()
+        } else {
+            before
+        }
+        val atEdge = if (raise) base.atMax else base.atMin
+        if (atEdge) {
+            val edge = if (raise) say("Громкость медиа уже на максимуме", "Media volume is already at maximum")
+            else say("Громкость медиа уже на минимуме", "Media volume is already at minimum")
+            return DeviceActionResult.direct(!base.muted, edge, restore(before).takeIf { before != base })
+        }
+        knobs.stepMediaVolume(raise)
+        val after = knobs.mediaVolume()
+        val wanted = base.index + if (raise) 1 else -1
+        // Index 0 reads as muted on Android; that is the step down, not a failure.
+        val verified = after.index == wanted && (wanted == 0 || !after.muted)
+        return DeviceActionResult.direct(verified, volumeText(after, verified, say), restore(before))
+    }
+
+    /** An absolute level: mapped to the nearest index, then reported as read back. */
+    private fun volumeSet(percent: Int, say: Say): DeviceActionResult {
+        val before = knobs.mediaVolume()
+        if (before.fixed) return fixedVolume(say)
+        val wanted = before.indexFor(percent)
+        val audible = wanted > 0
+        if (before.index == wanted && before.muted != audible) {
+            return DeviceActionResult.direct(true, volumeText(before, true, say, already = true), null)
+        }
+        knobs.setMediaVolumeIndex(wanted)
+        if (audible && knobs.mediaVolume().muted) knobs.setMediaMuted(false)
+        val after = knobs.mediaVolume()
+        val verified = after.index == wanted && (!audible || !after.muted)
+        val message = when {
+            verified -> volumeText(after, true, say)
+            after.index != before.index ->
+                say("Получилось только ${after.percent}% вместо ${before.percentOf(wanted)}%",
+                    "Only got to ${after.percent}% instead of ${before.percentOf(wanted)}%")
+            else -> say("Громкость не изменилась", "The volume didn't change")
+        }
+        // Not what was asked, but something did change: that part can still be put back.
+        val undo = restore(before).takeIf { after != before }
+        return if (verified) DeviceActionResult.direct(true, message, undo)
+        else DeviceActionResult(DeviceActionResult.Mode.DIRECT, false, message, undo)
+    }
+
+    /** Mutes media, keeping its level for [unmute]. */
+    private fun mute(say: Say): DeviceActionResult {
+        val before = knobs.mediaVolume()
+        if (before.fixed) return fixedVolume(say)
+        if (before.muted) {
+            return DeviceActionResult.direct(true, say("Звук медиа уже выключен", "Media is already muted"), null)
+        }
+        knobs.setMediaMuted(true)
+        val verified = knobs.mediaVolume().muted
+        val message = if (verified) say("Звук медиа выключен", "Media muted")
+        else say("Звук не выключился", "Media didn't mute")
+        return DeviceActionResult.direct(verified, message, undo(DeviceAction.UNMUTE))
+    }
+
+    /** Takes the mute off and keeps the level it had; at zero, says so rather than promise sound. */
+    private fun unmute(say: Say): DeviceActionResult {
+        val before = knobs.mediaVolume()
+        if (before.fixed) return fixedVolume(say)
+        if (!before.muted) {
+            val text = if (before.index > 0) {
+                say("Звук медиа уже включён, ${before.percent}%", "Media is already on, ${before.percent}%")
+            } else {
+                silentText(say)
+            }
+            return DeviceActionResult.direct(true, text, null)
+        }
+        knobs.setMediaMuted(false)
+        val after = knobs.mediaVolume()
+        val verified = !after.muted
+        val message = when {
+            !verified -> say("Звук не включился", "Media didn't unmute")
+            after.index == 0 -> silentText(say)
+            else -> callNote(after, say("Звук медиа включён, ${after.percent}%", "Media on, ${after.percent}%"), say)
+        }
+        return DeviceActionResult.direct(verified, message, undo(DeviceAction.MUTE))
+    }
+
+    private fun volumeText(v: MediaVolume, verified: Boolean, say: Say, already: Boolean = false): String {
+        val text = when {
+            !verified -> say("Громкость не изменилась", "The volume didn't change")
+            v.index == 0 || v.muted -> say("Звук медиа выключен", "Media muted")
+            already -> say("Громкость уже ${v.percent}%", "Volume is already ${v.percent}%")
+            else -> say("Громкость ${v.percent}%", "Volume ${v.percent}%")
+        }
+        return if (verified) callNote(v, text, say) else text
+    }
+
+    /** During a call the media slider is not the call's: say which one moved. */
+    private fun callNote(v: MediaVolume, text: String, say: Say): String =
+        if (v.duringCall) text + say(" (медиа; громкость разговора не менялась)", " (media; call volume unchanged)")
+        else text
+
+    private fun silentText(say: Say) =
+        say("Звук медиа включён, но громкость на нуле — скажите, например, «громкость 50»",
+            "Media is unmuted but its volume is zero — say, for example, \"volume 50\"")
+
+    private fun fixedVolume(say: Say) = DeviceActionResult(
+        DeviceActionResult.Mode.FAILED, false,
+        say("На этом выходе звука громкость фиксирована — Android её не меняет",
+            "This audio output has fixed volume — Android won't change it")
+    )
+
+    /** Puts back [before]: its level, then its mute flag. */
+    private fun restore(before: MediaVolume): DeviceActionResult.Undo {
+        val level = undo(DeviceAction.VOLUME_SET, before.percent)
+        return if (before.muted) level.copy(then = undo(DeviceAction.MUTE)) else level
     }
 
     // --- Do Not Disturb ----------------------------------------------------
@@ -236,7 +351,11 @@ data class DeviceActionResult(
 ) {
     enum class Mode { DIRECT, OPENED_SYSTEM_UI, NEEDS_PERMISSION, FAILED }
 
-    data class Undo(val action: DeviceAction, val level: Int?)
+    /** [then] runs right after this one: a level and a mute flag are two steps to restore. */
+    data class Undo(val action: DeviceAction, val level: Int?, val then: Undo? = null) {
+        /** This step and the ones after it, in the order they run. */
+        val steps: List<Undo> get() = generateSequence(this) { it.then }.toList()
+    }
 
     val succeeded: Boolean get() = mode == Mode.DIRECT && verified == true
 
@@ -257,8 +376,11 @@ enum class Radio(val label: String) { WIFI("Wi-Fi"), BLUETOOTH("Bluetooth") }
 /** The system calls [DeviceController] needs; [AndroidDeviceKnobs] makes them. */
 @Suppress("TooManyFunctions") // a read and a write per setting
 interface DeviceKnobs {
-    fun volumePercent(): Int
-    fun setVolumePercent(percent: Int)
+    fun mediaVolume(): MediaVolume
+    fun setMediaVolumeIndex(index: Int)
+    /** One platform step on the media stream (ADJUST_RAISE / ADJUST_LOWER). */
+    fun stepMediaVolume(raise: Boolean)
+    fun setMediaMuted(muted: Boolean)
     fun dndAccess(): Boolean
     fun dndOn(): Boolean
     fun setDnd(on: Boolean)

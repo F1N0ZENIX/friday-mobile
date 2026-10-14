@@ -204,6 +204,12 @@ class FridayOverlayManager(private val context: Context) {
             gravity = Gravity.BOTTOM
         }
 
+        // Attached to the window manager = a window Android counts as visible,
+        // which is what lets Friday start another app from the background.
+        container.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) = com.friday.ai.core.apps.AppVisibility.overlay(true)
+            override fun onViewDetachedFromWindow(v: View) = com.friday.ai.core.apps.AppVisibility.overlay(false)
+        })
         try {
             windowManager.addView(container, params)
             overlayView = container

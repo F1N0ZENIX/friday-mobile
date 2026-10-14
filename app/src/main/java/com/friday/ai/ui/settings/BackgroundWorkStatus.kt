@@ -21,6 +21,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.friday.ai.service.voice.WakeHealth
+import com.friday.ai.service.voice.WakeStatus
 
 /** Whether the system may stop Friday's always-on listener to save battery. */
 fun isBatteryRestricted(context: Context): Boolean {
@@ -65,6 +68,30 @@ fun BackgroundWorkStatus(visible: Boolean) {
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedButton(onClick = { requestBatteryExemption(context) }) {
             Text("Разрешить работу в фоне")
+        }
+    }
+}
+
+/**
+ * What the listener is really doing, under the wake-word switch: "listening"
+ * only while the microphone delivers audio, and why not otherwise —
+ * including a start Android refused, which used to reach only logcat.
+ */
+@Composable
+fun WakeHealthStatus(visible: Boolean) {
+    val health by WakeStatus.health.collectAsStateWithLifecycle()
+    val startError by WakeStatus.startError.collectAsStateWithLifecycle()
+    if (!visible) return
+    Column {
+        Spacer(modifier = Modifier.height(8.dp))
+        val listening = health.status == WakeHealth.Status.LISTENING
+        Text(
+            if (listening) "Микрофон: слушает" else "Микрофон: ${health.describe()}",
+            style = MaterialTheme.typography.bodySmall,
+            color = if (listening) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
+        )
+        startError?.let {
+            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
         }
     }
 }

@@ -183,27 +183,6 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
         Regex("where(?:'?s| is)\\s+the\\s+nearest\\s+(.+)$", RegexOption.IGNORE_CASE)
     )
 
-    /**
-     * Brand names whose launcher label differs from what is said. Roles —
-     * "браузер", "галерея", "сообщения" — are not here: the launcher opens
-     * the user's default app for them, whoever made it.
-     */
-    private val appAliases = mapOf(
-        "ютуб" to "com.google.android.youtube",
-        "youtube" to "com.google.android.youtube",
-        "телеграм" to "org.telegram.messenger",
-        "telegram" to "org.telegram.messenger",
-        "хром" to "com.android.chrome",
-        "chrome" to "com.android.chrome",
-        "whatsapp" to "com.whatsapp",
-        "вотсап" to "com.whatsapp",
-        "ватсап" to "com.whatsapp",
-        "instagram" to "com.instagram.android",
-        "инстаграм" to "com.instagram.android",
-        "spotify" to "com.spotify.music",
-        "спотифай" to "com.spotify.music"
-    )
-
     fun route(said: String): CommandResult {
         val input = Filler.strip(said)
         val whole = routeOne(input)
@@ -356,13 +335,13 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
         for (p in openPatterns) {
             val m = p.find(trimmed) ?: continue
             val appName = m.groupValues[1].trim().lowercase()
-            return CommandResult.OpenApp(appName, appAliases[appName])
+            return CommandResult.OpenApp(appName, com.friday.ai.core.apps.AppMatcher.aliasFor(appName))
         }
 
         for (p in closePatterns) {
             val m = p.find(trimmed) ?: continue
             val appName = m.groupValues[1].trim().lowercase()
-            return CommandResult.CloseApp(appName, appAliases[appName])
+            return CommandResult.CloseApp(appName, com.friday.ai.core.apps.AppMatcher.aliasFor(appName))
         }
 
         return CommandResult.ChatMessage(trimmed)
@@ -471,7 +450,8 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
             volumeMaxPattern.containsMatchIn(lower) -> CommandResult.DeviceControl(DeviceAction.VOLUME_SET, 100)
             volumeMinPattern.containsMatchIn(lower) -> CommandResult.DeviceControl(DeviceAction.VOLUME_SET, MIN_VOLUME)
 
-            lower.matches(Regex(".*(?:выключи звук|без звука|беззвучн\\p{L}*|mute|тише некуда).*")) ->
+            // "(?<!un)mute": "unmute" contains "mute" and used to mute.
+            lower.matches(Regex(".*(?:выключи звук|без звука|беззвучн\\p{L}*|(?<!un)mute|тише некуда).*")) ->
                 CommandResult.DeviceControl(DeviceAction.MUTE)
 
             lower.matches(Regex(".*(?:включи звук|unmute|верни звук).*")) ->
