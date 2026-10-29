@@ -18,7 +18,8 @@ object ConversationControl {
         "спасибо", "отбой", "закончили", "выйди", "отстань",
         // English
         "bye", "goodbye", "stop", "enough", "thanks", "thank", "quit",
-        "exit", "cancel", "dismiss", "nevermind"
+        "exit", "cancel", "dismiss", "nevermind",
+        "parar", "chega", "tchau", "encerrar", "obrigado", "obrigada"
     )
 
     /** Multi-word endings that close a short utterance. */
