@@ -85,20 +85,20 @@ fun DiagnosticsScreen(
     HudBackground {
         Column(Modifier.fillMaxSize()) {
             HudTopBar(
-                title = "ДИАГНОСТИКА",
+                title = "DIAGNÓSTICO",
                 status = when (problems) {
-                    null -> HudStatus("Проверяю", ArcAmber, live = true)
-                    0 -> HudStatus("Все системы в норме")
-                    else -> HudStatus("Требует внимания: $problems", ArcAmber)
+                    null -> HudStatus("Verificando", ArcAmber, live = true)
+                    0 -> HudStatus("Todos os sistemas funcionando")
+                    else -> HudStatus("Requer atenção: $problems", ArcAmber)
                 },
                 navigation = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад", tint = OnBackground)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = OnBackground)
                     }
                 },
                 actions = {
                     IconButton(onClick = { scope.launch { share(context, viewModel.report()) } }) {
-                        Icon(Icons.Filled.Share, contentDescription = "Поделиться отчётом", tint = ArcCyan)
+                        Icon(Icons.Filled.Share, contentDescription = "Compartilhar relatório", tint = ArcCyan)
                     }
                 }
             )
@@ -149,15 +149,15 @@ private fun DiagnosticRow(row: Diagnostics.Row, onFix: (Fix) -> Unit) {
         }
         row.fix?.let { fix ->
             Spacer(Modifier.width(8.dp))
-            HudOutlinedButton(onClick = { onFix(fix) }) { Text("Исправить") }
+            HudOutlinedButton(onClick = { onFix(fix) }) { Text("Corrigir") }
         }
     }
 }
 
 private fun statusLook(status: Status): Pair<String, Color> = when (status) {
     Status.OK -> "OK" to ArcCyan
-    Status.PROBLEM -> "СБОЙ" to ArcAmber
-    Status.OFF -> "ВЫКЛ" to OnSurfaceMuted
+    Status.PROBLEM -> "FALHA" to ArcAmber
+    Status.OFF -> "DESLIGADO" to OnSurfaceMuted
     Status.INFO -> "INFO" to ArcCyanDim
 }
 
@@ -220,9 +220,9 @@ private fun permissionsFor(fix: Fix): Array<String> = when (fix) {
 private fun share(context: Context, report: String) {
     val send = Intent(Intent.ACTION_SEND)
         .setType("text/plain")
-        .putExtra(Intent.EXTRA_SUBJECT, "Friday — отчёт диагностики")
+        .putExtra(Intent.EXTRA_SUBJECT, "Friday — relatório de diagnóstico")
         .putExtra(Intent.EXTRA_TEXT, report)
-    context.startActivity(Intent.createChooser(send, "Отчёт диагностики").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    context.startActivity(Intent.createChooser(send, "Relatório de diagnóstico").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
 }
 
 private fun Context.openAppDetails() = startActivity(
