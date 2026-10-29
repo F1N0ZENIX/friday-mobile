@@ -248,7 +248,7 @@ class WakeListenerTest {
         }
         assertEquals(6, rig.source.captures)
         assertEquals(Status.FAILED, rig.status)
-        assertTrue(rig.shown.last(), rig.shown.last().contains("откройте Friday"))
+        assertTrue(rig.shown.last(), rig.shown.last().contains("Abra o aplicativo"))
         advanceTimeBy(120_000)
         assertEquals("no endless retry", 6, rig.source.captures)
     }
@@ -296,7 +296,7 @@ class WakeListenerTest {
         assertEquals(WakeFailure.PERMISSION, rig.listener.health.value.reason)
         advanceTimeBy(60_000)
         assertEquals(1, rig.source.captures)
-        assertTrue(rig.shown.last().contains("Нет доступа к микрофону"))
+        assertTrue(rig.shown.last().contains("Sem acesso ao microfone"))
     }
 
     @Test
@@ -308,7 +308,7 @@ class WakeListenerTest {
 
         val noModel = Rig(this).apply { loaded = WakeListener.Loaded.Unavailable(WakeFailure.MODEL) }
         assertFalse(noModel.listener.initialise(null))
-        assertTrue(noModel.shown.last().contains("модель"))
+        assertTrue(noModel.shown.last().contains("Modelo de voz"))
         noModel.listener.listen()
         runCurrent()
         assertEquals(0, noModel.source.captures)
