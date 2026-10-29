@@ -32,6 +32,15 @@ class CommandRouterTest {
     }
 
     @Test
+    fun `open WhatsApp in Brazilian Portuguese`() {
+        listOf("abra o WhatsApp", "abrir WhatsApp", "abre WhatsApp").forEach { phrase ->
+            val result = router.route(phrase)
+            assertTrue("Não abriu com: $phrase -> $result", result is CommandResult.OpenApp)
+            assertEquals("com.whatsapp", (result as CommandResult.OpenApp).packageHint)
+        }
+    }
+
+    @Test
     fun `route open camera in Russian`() {
         // The camera left the generic app launcher: routing it separately is
         // what lets "открой камеру и сделай фото" open in capture mode instead
