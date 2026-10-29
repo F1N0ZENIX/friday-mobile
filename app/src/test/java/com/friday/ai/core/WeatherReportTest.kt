@@ -91,7 +91,8 @@ class WeatherReportTest {
     fun `in Brazilian Portuguese, km per hour`() {
         val said = WeatherReport.spoken(forecast(today.atTime(20, 10), tomorrowRain = setOf(14, 15)), 1, false)
         assertEquals(
-            "Amanhã em Геттисберг: de +9° a +23°, encoberto. Chuva de 14:00 até 16:00, cerca de 2 mm, probabilidade de 80%. " +
+            "Amanhã em Геттисберг: de +9° a +23°, encoberto. " +
+                "Chuva de 14:00 até 16:00, cerca de 2 mm, probabilidade de 80%. " +
                 "Vento de até 22 km/h.",
             said
         )
