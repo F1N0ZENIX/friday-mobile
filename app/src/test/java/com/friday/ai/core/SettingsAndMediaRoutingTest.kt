@@ -136,6 +136,36 @@ class SettingsAndMediaRoutingTest {
         assertEquals(SettingsScreens.Screen.AIRPLANE, SettingsScreens.match("режим полета"))
     }
 
+    @Test
+    fun `Brazilian Portuguese device controls keep their intended actions`() {
+        mapOf(
+            "aumente o volume" to DeviceAction.VOLUME_UP,
+            "diminua o volume" to DeviceAction.VOLUME_DOWN,
+            "ligar wifi" to DeviceAction.WIFI_ON,
+            "desligar bluetooth" to DeviceAction.BLUETOOTH_OFF,
+            "desative o modo não perturbe" to DeviceAction.DND_OFF,
+            "ative o modo não perturbe" to DeviceAction.DND_ON,
+            "brilho automático" to DeviceAction.BRIGHTNESS_AUTO,
+            "aumentar brilho" to DeviceAction.BRIGHTNESS_UP,
+            "diminuir brilho" to DeviceAction.BRIGHTNESS_DOWN,
+            "modo silencioso" to DeviceAction.RINGER_SILENT,
+            "modo vibração" to DeviceAction.RINGER_VIBRATE,
+            "desativar modo silencioso" to DeviceAction.RINGER_NORMAL
+        ).forEach { (phrase, expected) ->
+            val result = router.route(phrase)
+            assertTrue("'$phrase' -> $result", result is CommandResult.DeviceControl)
+            assertEquals("'$phrase'", expected, (result as CommandResult.DeviceControl).action)
+        }
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_SET, 30),
+            router.route("brilho em 30%")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.VOLUME_SET, 40),
+            router.route("volume em 40%")
+        )
+    }
+
     // ---------- offline ----------
 
     @Test
