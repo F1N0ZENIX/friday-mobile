@@ -30,7 +30,7 @@ class SystemPromptTimeTest {
     @Test
     fun `the full prompt carries it`() {
         val prompt = builder.build(AssistantMode.DEFAULT)
-        assertTrue(prompt.contains("Current local date/time:"))
-        assertTrue(prompt.contains("time zone"))
+        assertTrue(prompt.contains("Data e hora locais atuais:"))
+        assertTrue(prompt.contains("fuso horário"))
     }
 }
