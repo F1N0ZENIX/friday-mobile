@@ -36,7 +36,8 @@ class VoiceSession(
         catalog.refresh()
     }
 
-    /** Whether to answer in Russian. */
+    /** Legacy session API; all spoken replies now use pt-BR. */
+    @Suppress("FunctionOnlyReturningConstant")
     suspend fun russian(): Boolean = false
 
     suspend fun id(): String = memory.getOrCreateSessionId()
