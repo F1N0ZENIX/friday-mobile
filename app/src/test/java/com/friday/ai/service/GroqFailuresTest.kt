@@ -101,17 +101,18 @@ class QuickWinsTest {
     @Test
     fun `the persona speaks of herself in the feminine and follows the user's language`() {
         val prompt = SystemPromptBuilder().build(AssistantMode.DEFAULT)
-        assertTrue(prompt.contains("feminine"))
-        assertTrue(prompt.contains("сэр"))
-        assertTrue(prompt.contains("latest message"))
-        assertTrue(prompt.contains("Never invent"))
+        assertTrue(prompt.contains("SEMPRE em português brasileiro"))
+        assertTrue(prompt.contains("use sempre formas femininas"))
+        assertTrue(prompt.contains("Não invente informações"))
+        assertTrue(prompt.contains("Você não pode controlar o celular"))
     }
 
     @Test
-    fun `the voice is female in both languages`() {
+    fun `the output voice is Brazilian Portuguese and feminine`() {
         // Every fixed phrase is feminine ("не расслышала"); a male voice clashed.
         assertEquals("ru-RU-SvetlanaNeural", EdgeTtsProtocol.VOICE_RU)
-        assertEquals("en-IE-EmilyNeural", EdgeTtsProtocol.VOICE_EN)
+        assertEquals("pt-BR-FranciscaNeural", EdgeTtsProtocol.VOICE_EN)
+        assertEquals(EdgeTtsProtocol.VOICE_EN, EdgeTtsProtocol.detectVoice("Tudo pronto, posso ajudar?"))
     }
 
     @Test
