@@ -101,7 +101,9 @@ class VoskModelManager(private val context: Context) {
         connection.readTimeout = READ_TIMEOUT_MS
         connection.connect()
         val totalSize = connection.contentLengthLong
-        if (totalSize > ARTIFACT.maxBytes) throw ModelInstaller.Rejected("O download excede o tamanho permitido do modelo")
+        if (totalSize > ARTIFACT.maxBytes) {
+            throw ModelInstaller.Rejected("O download excede o tamanho permitido do modelo")
+        }
         connection.getInputStream().use { input ->
             FileOutputStream(target).use { output -> copyCapped(input, output, totalSize) }
         }
