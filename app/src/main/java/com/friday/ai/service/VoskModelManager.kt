@@ -27,7 +27,7 @@ class VoskModelManager(private val context: Context) {
         private const val TAG = "VoskModelManager"
         private const val MODEL_DIR_NAME = "vosk-model-pt-0.3"
         private const val MODEL_URL = "https://alphacephei.com/vosk/models/vosk-model-small-pt-0.3.zip"
-        private const val MODEL_MARKER = "final.mdl"
+        private const val MODEL_MARKER = "am/final.mdl"
 
         /**
          * vosk-model-small-pt-0.3.zip as published at [MODEL_URL]: 32,453,112
