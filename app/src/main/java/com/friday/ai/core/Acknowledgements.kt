@@ -15,16 +15,16 @@ class Acknowledgements(private val random: () -> Double = Math::random) {
 
     companion object {
         private val RUSSIAN = listOf(
-            "К вашим услугам, сэр",
-            "Слушаю вас, сэр",
-            "Чем могу помочь?",
-            "Да, сэр?"
+            "À sua disposição.",
+            "Estou ouvindo.",
+            "Como posso ajudar?",
+            "Pode falar."
         )
         private val ENGLISH = listOf(
-            "At your service, sir",
-            "Yes, sir?",
-            "How can I help?",
-            "Listening"
+            "Pronta para ajudar.",
+            "Sim, pode falar.",
+            "Em que posso ajudar?",
+            "Estou aqui."
         )
 
         /** Every greeting, for synthesising them before they are needed. */
