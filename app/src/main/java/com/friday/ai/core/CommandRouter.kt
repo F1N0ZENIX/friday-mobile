@@ -17,7 +17,7 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
     }
 
     private val openPatterns = listOf(
-        Regex("^(?:открой|открыть|запусти|запустить|open|launch|start)\\s+(.+)$", RegexOption.IGNORE_CASE)
+        Regex("^(?:открой|открыть|запусти|запустить|abra|abrir|abre|inicie|iniciar|execute|executar|open|launch|start)\\s+(.+)$", RegexOption.IGNORE_CASE)
     )
 
     private val closePatterns = listOf(
