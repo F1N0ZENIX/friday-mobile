@@ -128,17 +128,17 @@ fun SettingsScreen(
                 MapsPanel(viewModel)
                 HudPanel("Modos", index = 9) {
                     HudNote(
-                        "Несколько действий под одним именем, созданные голосом: «создай режим отдыха: " +
-                            "беззвучный и яркость на минимум». «Выключи режим» возвращает всё как было."
+                        "Várias ações reunidas em um único modo criado por voz: «crie um modo de descanso: " +
+                            "silencioso e brilho mínimo». «Desative o modo» restaura as configurações anteriores."
                     )
                     HudOutlinedButton(onClick = onOpenModes, modifier = Modifier.fillMaxWidth()) {
                         Text("Abrir modos")
                     }
                 }
                 HudPanel("Memória", index = 10) {
-                    HudNote("Карта того, что Пятница знает о вас: факты и разговоры, из которых они взялись.")
+                    HudNote("Veja o que o Friday sabe sobre você: fatos e as conversas de onde vieram.")
                     HudOutlinedButton(onClick = onOpenDashboard, modifier = Modifier.fillMaxWidth()) {
-                        Text("Что Пятница знает обо мне")
+                        Text("O que o Friday sabe sobre mim")
                     }
                 }
                 HudPanel("Transferir para outro celular", index = 11) { TransferSection() }
@@ -204,7 +204,7 @@ private fun IntelligencePanel(viewModel: SettingsViewModel) {
         HudButton(onClick = viewModel::saveSettings, modifier = Modifier.fillMaxWidth()) {
             Text(if (isSaved) "Salvo" else "Salvar")
         }
-        HudNote("Ключ хранится зашифрованным (Android Keystore) и уходит только в Groq.")
+        HudNote("A chave fica criptografada no Android Keystore e é enviada somente à Groq.")
     }
 }
 
@@ -219,13 +219,13 @@ private fun ChatsPanel(viewModel: SettingsViewModel) {
     }
     HudPanel("Chamadas e mensagens", index = 5) {
         HudNote(
-            "Пятница собирает сообщения WhatsApp, Telegram и SMS, не читая их вслух, и пропускает " +
-                "рекламу. Спросите «есть непрочитанные?» — назовёт, кто писал; ответ: «ответь ему, что еду». " +
-                "Нужен доступ к уведомлениям."
+            "O Friday reúne mensagens do WhatsApp, Telegram e SMS sem lê-las em voz alta e ignora " +
+                "publicidade. Pergunte «tenho mensagens não lidas?» para saber quem escreveu; diga «responda que estou indo». " +
+                "É necessário permitir o acesso às notificações."
         )
         HudSwitchRow(
             title = "Anunciar chamadas",
-            subtitle = "Говорит, кто звонит: телефон, WhatsApp или Telegram",
+            subtitle = "Anuncia quem está ligando por telefone, WhatsApp ou Telegram",
             checked = announceCalls,
             onChange = { needsAccess(it); viewModel.onAnnounceCallsChange(it) }
         )
@@ -253,9 +253,9 @@ private fun MailPanel(viewModel: SettingsViewModel) {
         )
         HudNote(
             if (gmail.account != null) {
-                "Пятница проверяет входящие, читает письма и отвечает — отправляет только после вашего «да»."
+                "O Friday consulta a caixa de entrada, lê e responde e-mails, mas só envia após sua confirmação."
             } else {
-                "После подключения: «есть новые письма?», «прочитай письмо от Ивана», «ответь Ивану: буду в пять»."
+                "Depois de conectar: «tenho e-mails novos?», «leia o e-mail do João», «responda ao João: chego às cinco»."
             }
         )
         gmail.message?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = ArcCyan) }
@@ -275,8 +275,8 @@ private fun LearnedPanel(viewModel: SettingsViewModel) {
     val learned by viewModel.learnedCommands.collectAsStateWithLifecycle()
     HudPanel("Comandos aprendidos", index = 7) {
         HudNote(
-            "Фразы, которые ИИ однажды разобрал, а теперь Пятница выполняет сама, без ИИ. " +
-                "Скажите «нет, не то» сразу после ошибки — и она забудет; или уберите здесь."
+            "Frases que a IA já interpretou e que o Friday agora executa sem chamar a IA. " +
+                "Diga «não era isso» após um erro para apagar o comando ou remova-o aqui."
         )
         if (learned.isEmpty()) HudReadout("Aprendidos", "0")
         learned.forEach { (phrase, action) ->
@@ -304,7 +304,7 @@ private fun LearnedPanel(viewModel: SettingsViewModel) {
 private fun MapsPanel(viewModel: SettingsViewModel) {
     val provider by viewModel.mapsProvider.collectAsStateWithLifecycle()
     HudPanel("Mapas", index = 8) {
-        HudNote("Чем открывать «найди ближайшую кофейню / банк / …». «Как в телефоне» — карты по умолчанию.")
+        HudNote("Escolha o aplicativo para «encontre uma cafeteria ou banco por perto». «Padrão do celular» usa seu app de mapas.")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("auto" to "Celular", "google" to "Google", "yandex" to "Yandex").forEach { (value, label) ->
                 Box(Modifier.weight(1f)) {
