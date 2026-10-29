@@ -98,7 +98,7 @@ private fun FridayLine(message: Message, modifier: Modifier) {
         Spacer(Modifier.width(12.dp))
         Column(Modifier.animateContentSize()) {
             Text(
-                "ПЯТНИЦА · ${time(message.timestamp)}",
+                "FRIDAY · ${time(message.timestamp)}",
                 style = HudLabelStyle,
                 color = ArcCyan.copy(alpha = 0.8f)
             )
