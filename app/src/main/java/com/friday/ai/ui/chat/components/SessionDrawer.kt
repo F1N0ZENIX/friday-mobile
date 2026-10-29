@@ -163,7 +163,7 @@ private fun SessionRow(
         IconButton(onClick = onDelete) {
             Icon(
                 Icons.Filled.DeleteOutline,
-                contentDescription = "Excluir разговор",
+                contentDescription = "Excluir conversa",
                 tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
             )
         }
