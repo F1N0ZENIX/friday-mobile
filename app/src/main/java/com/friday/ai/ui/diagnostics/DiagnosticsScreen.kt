@@ -222,7 +222,10 @@ private fun share(context: Context, report: String) {
         .setType("text/plain")
         .putExtra(Intent.EXTRA_SUBJECT, "Friday — relatório de diagnóstico")
         .putExtra(Intent.EXTRA_TEXT, report)
-    context.startActivity(Intent.createChooser(send, "Relatório de diagnóstico").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    context.startActivity(
+        Intent.createChooser(send, "Relatório de diagnóstico")
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+    )
 }
 
 private fun Context.openAppDetails() = startActivity(
