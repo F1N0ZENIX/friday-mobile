@@ -105,7 +105,7 @@ class WakeListener(
         private suspend fun loadVosk(context: Context, notifier: ServiceNotifier, threshold: Double?): Loaded {
             val models = VoskModelManager(context)
             if (!models.isModelReady()) {
-                notifier.update("Downloading voice model...")
+                notifier.update("Baixando modelo de voz...")
                 models.downloadModel()
             }
             val path = models.getModelPath() ?: return Loaded.Unavailable(WakeFailure.MODEL)
