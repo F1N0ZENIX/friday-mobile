@@ -40,17 +40,17 @@ fun QuickLinksPanel(viewModel: QuickLinksViewModel = koinViewModel()) {
     // null: closed; an empty link: adding; otherwise the one being edited.
     var editing by remember { mutableStateOf<QuickLink?>(null) }
 
-    HudPanel("Быстрые ссылки", index = 13) {
+    HudPanel("Links rápidos", index = 13) {
         HudNote(
-            "Ваша фраза → ваш сайт в новой вкладке Chrome. Формы слов и вступления не важны: «давай посмотрим " +
-                "фильм» сработает и от «хочу посмотреть фильмы». Фраза из одного слова — только в короткой просьбе. " +
-                "«Молча»: без ответа, и ни в чате, ни в памяти Пятницы не остаётся."
+            "Sua frase abre um site em uma nova aba do Chrome. Variações de palavras são aceitas: «vamos assistir a um " +
+                "filme» também funciona como «quero ver filmes». Frases de uma palavra exigem pedidos curtos. " +
+                "«Silencioso»: sem resposta e sem salvar no chat ou na memória do Friday."
         )
         links.sortedBy { it.name.lowercase() }.forEach { link -> LinkRow(link) { editing = link } }
         HudOutlinedButton(
             onClick = { editing = QuickLink("", "", emptyList(), "") },
             modifier = Modifier.fillMaxWidth()
-        ) { Text("Добавить ссылку") }
+        ) { Text("Adicionar link") }
     }
 
     editing?.let { link ->
@@ -72,11 +72,11 @@ private fun LinkRow(link: QuickLink, onClick: () -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
-            .clickable(role = Role.Button, onClickLabel = "Изменить", onClick = onClick)
+            .clickable(role = Role.Button, onClickLabel = "Editar", onClick = onClick)
             .padding(vertical = 6.dp)
     ) {
         Text(
-            link.name + if (link.silent) " · молча" else "",
+            link.name + if (link.silent) " · silencioso" else "",
             color = ArcCyan,
             style = MaterialTheme.typography.titleSmall
         )
@@ -108,26 +108,26 @@ private fun LinkDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (link.id.isEmpty()) "Новая ссылка" else "Ссылка") },
+        title = { Text(if (link.id.isEmpty()) "Novo link" else "Link") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                LinkField(name, { name = it }, "Название", "Фильмы")
-                LinkField(phrases, { phrases = it }, "Фразы, через запятую", "давай посмотрим фильм, включи кино")
-                LinkField(address, { address = it }, "Адрес сайта", "example.com")
+                LinkField(name, { name = it }, "Nome", "Filmes")
+                LinkField(phrases, { phrases = it }, "Frases, separadas por vírgula", "vamos assistir a um filme, abra o cinema")
+                LinkField(address, { address = it }, "Endereço do site", "example.com")
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Открывать молча", Modifier.weight(1f))
+                    Text("Открывать silencioso", Modifier.weight(1f))
                     Switch(checked = silent, onCheckedChange = { silent = it })
                 }
                 problem?.let { Text(it, color = ErrorColor, style = MaterialTheme.typography.bodySmall) }
             }
         },
         confirmButton = {
-            TextButton(onClick = { problem = onSave(name, phrases, address, silent) }) { Text("Сохранить") }
+            TextButton(onClick = { problem = onSave(name, phrases, address, silent) }) { Text("Salvar") }
         },
         dismissButton = {
             Row {
-                onDelete?.let { TextButton(onClick = it) { Text("Удалить", color = ErrorColor) } }
-                TextButton(onClick = onDismiss) { Text("Отмена") }
+                onDelete?.let { TextButton(onClick = it) { Text("Excluir", color = ErrorColor) } }
+                TextButton(onClick = onDismiss) { Text("Cancelar") }
             }
         }
     )
