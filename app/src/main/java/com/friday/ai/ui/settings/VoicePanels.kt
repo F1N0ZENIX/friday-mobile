@@ -157,7 +157,9 @@ private fun VoiceModelState(state: VoskModelManager.DownloadState, onDownload: (
         is VoskModelManager.DownloadState.Error -> {
             HudReadout("Modelo de ativação", "ERRO", valueColor = ErrorColor)
             HudNote(state.message)
-            HudOutlinedButton(onClick = onDownload, modifier = Modifier.fillMaxWidth()) { Text("Tentar baixar novamente") }
+            HudOutlinedButton(onClick = onDownload, modifier = Modifier.fillMaxWidth()) {
+                Text("Tentar baixar novamente")
+            }
         }
     }
 }
