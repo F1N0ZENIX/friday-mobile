@@ -41,7 +41,10 @@ internal object DevicePhrases {
             "(?:яркост\\p{L}*|brightness|brilho|luminosidade)\\s*" +
                 "(?:da tela\\s*)?(?:на|to|em|para)?\\s*(\\d{1,3})\\s*(?:%|por cento|процент\\p{L}*)?"
         )
-    private val autoBrightnessPattern = Regex("(?:автояркост|авто ?яркост|автоматическ\\p{L}* яркост|auto.?brightness|brilho autom[aá]tico|luminosidade autom[aá]tica)")
+    private val autoBrightnessPattern = Regex(
+        "(?:автояркост|авто ?яркост|автоматическ\\p{L}* яркост|" +
+            "auto.?brightness|brilho autom[aá]tico|luminosidade autom[aá]tica)"
+    )
 
     /** "Выключи …" / "включи …" / neither: which of the three a radio phrase asks for. */
     fun onOff(lower: String, on: DeviceAction, off: DeviceAction, neither: DeviceAction): DeviceAction = when {
