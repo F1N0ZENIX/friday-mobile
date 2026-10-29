@@ -27,21 +27,21 @@ data class WakeHealth(
 
     /** The notification's status line: what is happening, and what to do about it. */
     fun describe(): String = when (status) {
-        Status.DISABLED -> "Wake word off"
+        Status.DISABLED -> "Ativação por voz desativada"
         Status.UNAVAILABLE, Status.FAILED -> failureText(reason)
-        Status.LOADING -> "Loading voice model..."
-        Status.STARTING -> "Starting microphone..."
-        Status.LISTENING -> "Listening for \"Friday\""
-        Status.PAUSING, Status.PAUSED_FOR_COMMAND -> "Listening..."
-        Status.PAUSED_FOR_CALL -> "Пауза на время звонка"
-        Status.RECOVERING -> "Микрофон недоступен — повтор через ${retryInMs / MS_PER_SECOND} с ($attempt/$MAX_SHOWN)"
-        Status.STOPPED -> "Stopped"
+        Status.LOADING -> "Carregando modelo de voz..."
+        Status.STARTING -> "Iniciando microfone..."
+        Status.LISTENING -> "Ouvindo a palavra \"Friday\""
+        Status.PAUSING, Status.PAUSED_FOR_COMMAND -> "Aguardando comando..."
+        Status.PAUSED_FOR_CALL -> "Pausado durante a chamada"
+        Status.RECOVERING -> "Microfone indisponível. Nova tentativa em ${retryInMs / MS_PER_SECOND}s ($attempt/$MAX_SHOWN)"
+        Status.STOPPED -> "Parado"
     }
 
     private fun failureText(reason: WakeFailure?): String = when (reason) {
-        WakeFailure.PERMISSION -> "Нет доступа к микрофону — откройте Friday и разрешите его"
-        WakeFailure.MODEL -> "Голосовая модель не установлена — скачайте её в настройках"
-        else -> "Пятница не слышит — откройте Friday, чтобы перезапустить"
+        WakeFailure.PERMISSION -> "Sem acesso ao microfone. Abra o Friday e conceda a permissão."
+        WakeFailure.MODEL -> "Modelo de voz não instalado. Baixe-o nas configurações."
+        else -> "Friday não está ouvindo. Abra o aplicativo para reiniciar."
     }
 
     companion object {
