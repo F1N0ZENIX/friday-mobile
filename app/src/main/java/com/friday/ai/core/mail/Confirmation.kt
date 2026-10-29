@@ -29,13 +29,15 @@ object Confirmation {
      * More words than this and it is a new request that happens to begin with
      * "да" — "да, и добавь что опоздаю" is an edit, not a go-ahead.
      */
+    private val strongNo = setOf("нет", "отмена", "não", "nao", "cancele", "cancela")
+
     private const val MAX_WORDS = 3
 
     fun classify(text: String): Answer {
         val words = SpokenText.normalise(text.replace("'", "")).split(' ').filter { it.isNotBlank() }
         return when {
             words.isEmpty() -> Answer.OTHER
-            words.first() in no || words.any { it in setOf("нет", "отмена", "não", "nao", "cancele", "cancela") } -> Answer.NO
+            words.first() in no || words.any { it in strongNo } -> Answer.NO
             words.size <= MAX_WORDS && words.first() in yes -> Answer.YES
             else -> Answer.OTHER
         }
