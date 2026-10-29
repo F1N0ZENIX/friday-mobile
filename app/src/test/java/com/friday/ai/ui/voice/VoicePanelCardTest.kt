@@ -61,7 +61,7 @@ class VoicePanelCardTest {
                         },
                         onClose = { closed++ },
                         actions = if (expanded || locked) {
-                            listOf(PanelAction("Fechar") { closed++ }, PanelAction("Открыть в Friday", primary = true) {})
+                            listOf(PanelAction("Fechar") { closed++ }, PanelAction("Abrir no Friday", primary = true) {})
                         } else {
                             emptyList()
                         }
@@ -79,7 +79,7 @@ class VoicePanelCardTest {
         compose.mainClock.advanceTimeBy(500)
         assertEquals(1, expandedTaps)
         assertEquals(0, closed)
-        compose.onNodeWithText("Открыть в Friday").assertIsDisplayed()
+        compose.onNodeWithText("Abrir no Friday").assertIsDisplayed()
     }
 
     @Test
@@ -97,13 +97,13 @@ class VoicePanelCardTest {
     fun `actions are at least 48 dp tall`() {
         show(locked = true)
         compose.onNodeWithText("Fechar").assertHeightIsAtLeast(48.dp)
-        compose.onNodeWithText("Открыть в Friday").assertHeightIsAtLeast(48.dp)
+        compose.onNodeWithText("Abrir no Friday").assertHeightIsAtLeast(48.dp)
     }
 
     @Test
     fun `the locked panel shows the stage, never the answer`() {
         show(locked = true)
-        compose.onNodeWithText("Отвечаю").assertIsDisplayed()
+        compose.onNodeWithText("Respondendo").assertIsDisplayed()
         assertTrue(compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text))
             .fetchSemanticsNodes().none { node ->
                 node.config[SemanticsProperties.Text].any { it.text.contains("Gettysburg") }
