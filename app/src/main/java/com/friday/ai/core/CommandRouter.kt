@@ -177,6 +177,8 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
     private val volumeMinPattern =
         Regex("(?:громкость|звук|volume)\\s+(?:на\\s+|to\\s+)?(?:минимум|минимальн\\p{L}*|min(?:imum)?|mínimo|minimo)", RegexOption.IGNORE_CASE)
 
+    private val dndOffWords = Regex("выключ|отключ|\\boff\\b|desativ|deslig")
+
     private val findNearbyPatterns = listOf(
         Regex("(?:найди|найти|где|поищи)\\s+(?:ближайш\\p{L}+)\\s+(.+)$", RegexOption.IGNORE_CASE),
         Regex("(?:find|show)\\s+(?:the\\s+)?nearest\\s+(.+)$", RegexOption.IGNORE_CASE),
@@ -502,8 +504,7 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
             lower.contains("тише") -> CommandResult.DeviceControl(DeviceAction.VOLUME_DOWN)
 
             lower.matches(Regex(".*(?:не беспокоить|режим тишины|do not disturb|dnd|n[aã]o perturbe).*")) ->
-                if (lower.contains("выключ") || lower.contains("off") || lower.contains("отключ") ||
-                    lower.contains("desativ") || lower.contains("deslig")) {
+                if (dndOffWords.containsMatchIn(lower)) {
                     CommandResult.DeviceControl(DeviceAction.DND_OFF)
                 } else {
                     CommandResult.DeviceControl(DeviceAction.DND_ON)
