@@ -97,15 +97,15 @@ internal fun ModesLayout(
     HudBackground {
         Column(Modifier.fillMaxSize()) {
             HudTopBar(
-                title = "РЕЖИМЫ",
+                title = "MODOS",
                 status = when {
-                    modes == null -> HudStatus("Загрузка")
-                    modes.isEmpty() -> HudStatus("Пока нет")
-                    else -> HudStatus("Сохранено: ${modes.size} · включено: ${modes.count { it.active }}")
+                    modes == null -> HudStatus("Carregando")
+                    modes.isEmpty() -> HudStatus("Nenhum ainda")
+                    else -> HudStatus("Salvo: ${modes.size} · ativos: ${modes.count { it.active }}")
                 },
                 navigation = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад", tint = OnBackground)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = OnBackground)
                     }
                 }
             )
@@ -135,15 +135,15 @@ internal fun ModesLayout(
     deleting?.let { mode ->
         AlertDialog(
             onDismissRequest = { deleting = null },
-            title = { Text("Удалить режим ${mode.name}?") },
+            title = { Text("Excluir modo ${mode.name}?") },
             text = {
                 Text(
                     if (mode.active) "Он сейчас включён: настройки, которые он менял, останутся как есть."
                     else "Его шаги будут забыты."
                 )
             },
-            confirmButton = { TextButton(onClick = { onDelete(mode); deleting = null }) { Text("Удалить") } },
-            dismissButton = { TextButton(onClick = { deleting = null }) { Text("Отмена") } }
+            confirmButton = { TextButton(onClick = { onDelete(mode); deleting = null }) { Text("Excluir") } },
+            dismissButton = { TextButton(onClick = { deleting = null }) { Text("Cancelar") } }
         )
     }
 }
@@ -162,12 +162,12 @@ private fun ModePanel(
     onRemoveEvent: (ModeEvent) -> Unit = {},
     onTag: () -> Unit = {}
 ) {
-    HudPanel("Режим ${mode.name}", index = index, accent = if (mode.active) ArcCyan else ArcCyanDim) {
+    HudPanel("Modo ${mode.name}", index = index, accent = if (mode.active) ArcCyan else ArcCyanDim) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             StatusDot(if (mode.active) ArcCyan else OnSurfaceMuted, live = mode.active)
             Spacer(Modifier.width(6.dp))
             Text(
-                if (mode.active) "ВКЛЮЧЁН" else "ВЫКЛЮЧЕН",
+                if (mode.active) "ATIVADO" else "DESATIVADO",
                 style = HudLabelStyle,
                 color = if (mode.active) ArcCyan else OnSurfaceMuted
             )
@@ -190,16 +190,16 @@ private fun ModePanel(
             }
         }
         if (schedules.isNotEmpty() || events.isNotEmpty()) Triggers(schedules, onUnschedule, events, onRemoveEvent)
-        HudReadout("Запусков", mode.runCount.toString())
+        HudReadout("Execuções", mode.runCount.toString())
         if (busy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (mode.active) {
-                HudButton(onClick = onStop, enabled = !busy, modifier = Modifier.weight(1f)) { Text("Выключить") }
+                HudButton(onClick = onStop, enabled = !busy, modifier = Modifier.weight(1f)) { Text("Desativar") }
             } else {
-                HudButton(onClick = onRun, enabled = !busy, modifier = Modifier.weight(1f)) { Text("Включить") }
+                HudButton(onClick = onRun, enabled = !busy, modifier = Modifier.weight(1f)) { Text("Ativar") }
             }
-            HudOutlinedButton(onClick = onTag, enabled = !busy) { Text("Метка") }
-            HudOutlinedButton(onClick = onDelete, enabled = !busy) { Text("Удалить") }
+            HudOutlinedButton(onClick = onTag, enabled = !busy) { Text("Etiqueta") }
+            HudOutlinedButton(onClick = onDelete, enabled = !busy) { Text("Excluir") }
         }
     }
 }
@@ -231,7 +231,7 @@ private fun Triggers(
     }
 }
 
-private fun verb(exit: Boolean) = if (exit) "Выключается " else "Включается "
+private fun verb(exit: Boolean) = if (exit) "Desativa " else "Ativa "
 
 @Composable
 private fun TriggerRow(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, onRemove: () -> Unit) {
@@ -245,7 +245,7 @@ private fun TriggerRow(icon: androidx.compose.ui.graphics.vector.ImageVector, te
             modifier = Modifier.weight(1f)
         )
         IconButton(onClick = onRemove) {
-            Icon(Icons.Filled.Close, contentDescription = "Убрать: $text", tint = OnSurfaceMuted)
+            Icon(Icons.Filled.Close, contentDescription = "Remover: $text", tint = OnSurfaceMuted)
         }
     }
 }
@@ -258,16 +258,16 @@ private fun StatusStrip(text: String) {
             .hudFrame()
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        Text("ПЯТНИЦА", style = HudLabelStyle, color = ArcCyan)
+        Text("FRIDAY", style = HudLabelStyle, color = ArcCyan)
         Text(text, style = MaterialTheme.typography.bodyMedium, color = OnBackground)
     }
 }
 
 @Composable
 private fun HowTo() {
-    HudPanel("Как создать режим") {
+    HudPanel("Como criar um modo") {
         HudNote(
-            "Режим — это несколько действий под одним именем. Создайте его голосом, " +
+            "Modo — это несколько действий под одним именем. Создайте его голосом, " +
                 "Пятница разберёт описание и прочитает шаги вслух."
         )
         Example("«Создай режим грусти. Это режим, где включается Spotify с грустными песнями.»")
