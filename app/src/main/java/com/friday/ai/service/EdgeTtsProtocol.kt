@@ -48,7 +48,7 @@ object EdgeTtsProtocol {
     // them sounded wrong. The English voice is Irish, like F.R.I.D.A.Y.'s in
     // the films. Both names checked against Edge's published voice list.
     const val VOICE_RU = "ru-RU-SvetlanaNeural"
-    const val VOICE_EN = "en-IE-EmilyNeural"
+    const val VOICE_EN = "pt-BR-FranciscaNeural"
 
     /**
      * The v2 token ([EdgeTtsToken]) of (Windows "ticks" floored to a
@@ -87,7 +87,7 @@ object EdgeTtsProtocol {
             "X-RequestId: $requestId\r\n" +
             "X-Timestamp: $timestamp\r\n" +
             "Content-Type: application/ssml+xml\r\n\r\n" +
-            "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'>" +
+            "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='pt-BR'>" +
             "<voice name='$voice'>" +
             "<prosody pitch='+0Hz' rate='+8%' volume='+0%'>${escapeXml(text)}</prosody>" +
             "</voice></speak>"
@@ -136,6 +136,6 @@ object EdgeTtsProtocol {
     fun detectVoice(text: String): String {
         val cyrillic = text.count { it in 'Ѐ'..'ӿ' }
         val latin = text.count { it in 'A'..'Z' || it in 'a'..'z' }
-        return if (cyrillic > latin) VOICE_RU else VOICE_EN
+        return VOICE_EN
     }
 }
