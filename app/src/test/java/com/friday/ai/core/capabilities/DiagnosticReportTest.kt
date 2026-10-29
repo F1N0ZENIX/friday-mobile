@@ -32,6 +32,6 @@ class DiagnosticReportTest {
         )
         val report = DiagnosticReport.build("0.13.0", "samsung SM-S938B", rows, listOf("line"))
         assertTrue(report.startsWith("Friday 0.13.0 · samsung SM-S938B"))
-        assertTrue(report.contains("[PROBLEM] Телефон и люди · Не беспокоить: Нет"))
+        assertTrue(report.contains("[PROBLEM] Telefone e contatos · Não Perturbe: Não"))
     }
 }
