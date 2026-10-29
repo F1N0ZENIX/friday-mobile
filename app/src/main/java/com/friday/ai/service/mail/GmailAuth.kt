@@ -64,7 +64,7 @@ class GmailAuth(private val context: Context) {
                     when {
                         r.hasResolution() && pending != null -> Result.NeedsConsent(pending)
                         token != null -> Result.Token(token)
-                        else -> Result.Failed("Google не выдал доступ к почте")
+                        else -> Result.Failed("O Google não concedeu acesso ao e-mail")
                     }
                 )
             }
@@ -80,14 +80,14 @@ class GmailAuth(private val context: Context) {
     fun fromConsent(data: Intent?, completed: Boolean): Result {
         if (data == null) {
             return Result.Failed(
-                if (completed) "Google не вернул ответ — попробуйте ещё раз"
-                else "Окно входа закрыто без ответа. Если вы не закрывали его сами, Google показал ошибку: " +
-                    "проверьте, что приложение опубликовано (Publish app) или ваш аккаунт есть в Test users"
+                if (completed) "O Google não retornou uma resposta. Tente novamente."
+                else "A janela de login foi fechada sem resposta. Se você não a fechou, verifique a configuração do Google: " +
+                    "publique o aplicativo ou adicione sua conta aos usuários de teste do OAuth"
             )
         }
         return try {
             val r = client.getAuthorizationResultFromIntent(data)
-            r.accessToken?.let { Result.Token(it) } ?: Result.Failed("Доступ к почте не выдан")
+            r.accessToken?.let { Result.Token(it) } ?: Result.Failed("Acesso ao e-mail não concedido")
         } catch (e: ApiException) {
             Result.Failed(describe(e))
         }
@@ -108,23 +108,23 @@ class GmailAuth(private val context: Context) {
         // Google reports a missing or mismatched OAuth client as a generic
         // internal error (code 8) carrying this status — the code alone hides it.
         if (e.message.orEmpty().contains("UNREGISTERED_ON_API_CONSOLE")) {
-            return "Google не нашёл Friday в Google Cloud (UNREGISTERED_ON_API_CONSOLE). В том же проекте, " +
-                "где включён Gmail API, нужен OAuth-клиент типа Android: пакет com.friday.ai, " +
+            return "O Google não reconheceu o Friday no Google Cloud (UNREGISTERED_ON_API_CONSOLE). No projeto " +
+                "com a API do Gmail ativada, registre um cliente OAuth Android: pacote com.friday.ai, " +
                 "SHA-1 4B:B3:CB:54:33:D6:E0:EC:B8:4B:4F:AE:F8:15:40:D7:59:F9:82:96. " +
-                "Если клиент создан только что, подождите до получаса"
+                "Se o cliente acabou de ser criado, aguarde até 30 minutos."
         }
         return when (code) {
             // Not the user's fault and not fixable on the phone: the Google
             // Cloud OAuth client is missing or registered with another
             // package/certificate.
             CommonStatusCodes.DEVELOPER_ERROR ->
-                "Google не узнал приложение (код 10). Нужен OAuth-клиент типа Android: " +
-                    "пакет com.friday.ai, SHA-1 4B:B3:CB:54:33:D6:E0:EC:B8:4B:4F:AE:F8:15:40:D7:59:F9:82:96"
+                "O Google não reconheceu o aplicativo (código 10). Registre um cliente OAuth Android: " +
+                    "pacote com.friday.ai, SHA-1 4B:B3:CB:54:33:D6:E0:EC:B8:4B:4F:AE:F8:15:40:D7:59:F9:82:96"
             CommonStatusCodes.CANCELED, SIGN_IN_CANCELLED ->
-                "Вход отменён (код $code). Если окно Google написало «доступ заблокирован», " +
-                    "приложение не опубликовано (Publish app) или аккаунт не добавлен в Test users"
-            CommonStatusCodes.NETWORK_ERROR -> "Нет сети (код $code)"
-            else -> "Google отказал во входе (код $code): ${e.message.orEmpty()}"
+                "Login cancelado (código $code). Se o Google exibiu acesso bloqueado, " +
+                    "publique o aplicativo ou adicione sua conta aos usuários de teste"
+            CommonStatusCodes.NETWORK_ERROR -> "Sem conexão com a internet (código $code)"
+            else -> "O Google recusou o login (código $code): ${e.message.orEmpty()}"
         }
     }
 }
