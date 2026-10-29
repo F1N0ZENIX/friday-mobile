@@ -156,7 +156,9 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
 
     private val missedPatterns = listOf(
         Regex("^(?:что я пропустил\\p{L}*|что нового|какие уведомления|что там)[?.!]*$", RegexOption.IGNORE_CASE),
-        Regex("^(?:what did i miss|what'?s new|any notifications)[?.!]*$", RegexOption.IGNORE_CASE)
+        Regex("^(?:what did i miss|what'?s new|any notifications)[?.!]*$", RegexOption.IGNORE_CASE),
+        Regex("^(?:(?:resuma|resumir|resume|mostre|mostrar|leia|ler|ver|quais são|quais sao|tenho|há|ha)\\s+)?(?:(?:as|minhas|meus|os)\\s+)?(?:notificações|notificacoes|avisos|mensagens)(?:\\s+(?:do celular|de hoje|recentes|não lidas|nao lidas))?[?.!]*$", RegexOption.IGNORE_CASE),
+        Regex("^(?:o que (?:eu )?perdi|o que (?:eu )?não vi|o que (?:eu )?nao vi|o que aconteceu enquanto eu estava fora)[?.!]*$", RegexOption.IGNORE_CASE)
     )
 
     private val briefPatterns = listOf(
