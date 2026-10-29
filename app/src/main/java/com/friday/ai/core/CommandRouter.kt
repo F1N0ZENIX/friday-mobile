@@ -201,7 +201,40 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
         return if (routed is CommandResult.ChatMessage) CommandResult.ChatMessage(said.trim()) else routed
     }
 
+    private val portugueseOfflineAliases = mapOf(
+        "ligar lanterna" to "включи фонарик",
+        "acender lanterna" to "включи фонарик",
+        "desligar lanterna" to "выключи фонарик",
+        "lanterna" to "фонарик",
+        "aumentar volume" to "громче",
+        "diminuir volume" to "тише",
+        "silenciar" to "выключи звук",
+        "ativar som" to "включи звук",
+        "abrir câmera" to "открой камеру",
+        "abrir camera" to "открой камеру",
+        "abrir música" to "открой музыку",
+        "abrir telefone" to "открой телефон",
+        "abrir mensagens" to "открой сообщения",
+        "abrir navegador" to "открой браузер",
+        "tirar foto" to "сделай фото",
+        "tirar selfie" to "селфи",
+        "gravar vídeo" to "запиши видео",
+        "abrir gravador" to "диктофон",
+        "abrir configurações" to "открой настройки",
+        "abrir wifi" to "открой вайфай",
+        "abrir bluetooth" to "открой блютус",
+        "abrir nfc" to "открой нфс",
+        "abrir tela" to "открой экран",
+        "abrir som" to "открой звук",
+        "abrir bateria" to "открой батарею",
+        "abrir localização" to "открой геолокацию",
+        "não perturbe" to "не беспокоить",
+        "ativar não perturbe" to "включи не беспокоить",
+        "desativar não perturbe" to "выключи не беспокоить"
+    )
+
     private fun routeOne(input: String): CommandResult {
+        portugueseOfflineAliases[input.trim().lowercase()]?.let { return routeOne(it) }
         val trimmed = input.trim()
 
         for (p in analyzeScreenPatterns) {
