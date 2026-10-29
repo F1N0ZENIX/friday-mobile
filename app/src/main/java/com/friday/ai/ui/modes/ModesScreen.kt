@@ -267,7 +267,7 @@ private fun StatusStrip(text: String) {
 private fun HowTo() {
     HudPanel("Como criar um modo") {
         HudNote(
-            "Modo — это несколько действий под одним именем. Создайте его голосом, " +
+            "Um modo reúne várias ações com um único nome. Crie-o por voz, " +
                 "e o Friday interpretará a descrição e explicará as ações."
         )
         Example("«Crie um modo triste que toque músicas tristes no Spotify.»")
