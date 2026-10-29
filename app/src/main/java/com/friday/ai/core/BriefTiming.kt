@@ -36,9 +36,9 @@ object BriefTiming {
     fun greeting(time: LocalTime, russian: Boolean): String {
         val h = time.hour
         return when {
-            h < MORNING_FROM -> if (russian) "Доброй ночи." else "Good evening."
-            h < AFTERNOON_FROM -> if (russian) "Доброе утро." else "Good morning."
-            h < EVENING_FROM -> if (russian) "Добрый день." else "Good afternoon."
+            h < MORNING_FROM -> if (russian) "Доброй ночи." else "Boa noite."
+            h < AFTERNOON_FROM -> if (russian) "Доброе утро." else "Bom dia."
+            h < EVENING_FROM -> if (russian) "Добрый день." else "Boa tarde."
             else -> if (russian) "Добрый вечер." else "Good evening."
         }
     }
