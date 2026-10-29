@@ -248,7 +248,7 @@ class EdgeTtsSpeaker(private val context: Context) {
                 .addHeader("Origin", EdgeTtsProtocol.ORIGIN)
                 .addHeader("Pragma", "no-cache")
                 .addHeader("Cache-Control", "no-cache")
-                .addHeader("Accept-Language", "en-US,en;q=0.9")
+                .addHeader("Accept-Language", "pt-BR,pt;q=0.9")
                 .addHeader("Cookie", EdgeTtsProtocol.muidCookie())
                 .build()
 
