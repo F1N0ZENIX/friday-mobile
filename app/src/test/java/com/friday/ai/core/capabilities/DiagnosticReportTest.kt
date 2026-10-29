@@ -28,7 +28,7 @@ class DiagnosticReportTest {
     fun `the report lists every check`() {
         val rows = listOf(
             Diagnostics.Row("mic", Diagnostics.Group.ESSENTIALS, "Микрофон", Diagnostics.Status.OK, "Разрешён"),
-            Diagnostics.Row("dnd", Diagnostics.Group.PHONE, "Не беспокоить", Diagnostics.Status.PROBLEM, "Нет")
+            Diagnostics.Row("dnd", Diagnostics.Group.PHONE, "Não Perturbe", Diagnostics.Status.PROBLEM, "Não")
         )
         val report = DiagnosticReport.build("0.13.0", "samsung SM-S938B", rows, listOf("line"))
         assertTrue(report.startsWith("Friday 0.13.0 · samsung SM-S938B"))
