@@ -170,12 +170,12 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
     )
 
     private val volumeSetPattern =
-        Regex("(?:громкость|звук|volume)\\s*(?:на|to)?\\s*(\\d{1,3})\\s*(?:%|процент\\p{L}*)?", RegexOption.IGNORE_CASE)
+        Regex("(?:громкость|звук|volume)\\s*(?:на|to|em|para)?\\s*(\\d{1,3})\\s*(?:%|процент\\p{L}*)?", RegexOption.IGNORE_CASE)
 
     private val volumeMaxPattern =
-        Regex("(?:громкость|звук|volume)\\s+(?:на\\s+|to\\s+)?(?:максимум|максимальн\\p{L}*|max(?:imum)?|полную)", RegexOption.IGNORE_CASE)
+        Regex("(?:громкость|звук|volume)\\s+(?:на\\s+|to\\s+)?(?:максимум|максимальн\\p{L}*|max(?:imum)?|полную|máximo|maximo)", RegexOption.IGNORE_CASE)
     private val volumeMinPattern =
-        Regex("(?:громкость|звук|volume)\\s+(?:на\\s+|to\\s+)?(?:минимум|минимальн\\p{L}*|min(?:imum)?)", RegexOption.IGNORE_CASE)
+        Regex("(?:громкость|звук|volume)\\s+(?:на\\s+|to\\s+)?(?:минимум|минимальн\\p{L}*|min(?:imum)?|mínimo|minimo)", RegexOption.IGNORE_CASE)
 
     private val findNearbyPatterns = listOf(
         Regex("(?:найди|найти|где|поищи)\\s+(?:ближайш\\p{L}+)\\s+(.+)$", RegexOption.IGNORE_CASE),
@@ -477,7 +477,7 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
         }
 
         val mentionsVolume = lower.contains("громкост") || lower.contains("volume") ||
-            lower.contains("звук")
+            lower.contains("звук") || lower.contains("som")
 
         return when {
             volumeMaxPattern.containsMatchIn(lower) -> CommandResult.DeviceControl(DeviceAction.VOLUME_SET, 100)
@@ -491,18 +491,19 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
                 CommandResult.DeviceControl(DeviceAction.UNMUTE)
 
             mentionsVolume && (lower.contains("громче") || lower.contains("прибав") ||
-                lower.contains("up") || lower.contains("увеличь")) ->
+                lower.contains("up") || lower.contains("увеличь") || lower.contains("aument")) ->
                 CommandResult.DeviceControl(DeviceAction.VOLUME_UP)
 
             mentionsVolume && (lower.contains("тише") || lower.contains("убав") ||
-                lower.contains("down") || lower.contains("уменьш")) ->
+                lower.contains("down") || lower.contains("уменьш") || lower.contains("diminu")) ->
                 CommandResult.DeviceControl(DeviceAction.VOLUME_DOWN)
 
             lower.contains("громче") -> CommandResult.DeviceControl(DeviceAction.VOLUME_UP)
             lower.contains("тише") -> CommandResult.DeviceControl(DeviceAction.VOLUME_DOWN)
 
-            lower.matches(Regex(".*(?:не беспокоить|режим тишины|do not disturb|dnd).*")) ->
-                if (lower.contains("выключ") || lower.contains("off") || lower.contains("отключ")) {
+            lower.matches(Regex(".*(?:не беспокоить|режим тишины|do not disturb|dnd|n[aã]o perturbe).*")) ->
+                if (lower.contains("выключ") || lower.contains("off") || lower.contains("отключ") ||
+                    lower.contains("desativ") || lower.contains("deslig")) {
                     CommandResult.DeviceControl(DeviceAction.DND_OFF)
                 } else {
                     CommandResult.DeviceControl(DeviceAction.DND_ON)
