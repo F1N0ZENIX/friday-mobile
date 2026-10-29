@@ -7,8 +7,6 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,6 +43,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -123,7 +122,6 @@ fun SettingsScreen(
                 CalibrationPanel(viewModel)
                 VoiceProfilePanel(viewModel)
                 ChatsPanel(viewModel)
-                MailPanel(viewModel)
                 LearnedPanel(viewModel)
                 MapsPanel(viewModel)
                 HudPanel("Modos", index = 9) {
@@ -217,58 +215,45 @@ private fun ChatsPanel(viewModel: SettingsViewModel) {
     val needsAccess = { on: Boolean ->
         if (on && !FridayNotificationListener.isEnabled(context)) FridayNotificationListener.openSettings(context)
     }
-    HudPanel("Chamadas e mensagens", index = 5) {
+    var notificationSummary by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+    HudPanel("Chamadas e notificações", index = 5) {
         HudNote(
             "O Friday reúne mensagens do WhatsApp, Telegram e SMS sem lê-las em voz alta e ignora " +
                 "publicidade. Pergunte «tenho mensagens não lidas?» para saber quem escreveu; " +
                 "diga «responda que estou indo». " +
                 "É necessário permitir o acesso às notificações."
         )
+        HudOutlinedButton(
+            onClick = {
+                if (!FridayNotificationListener.isEnabled(context)) {
+                    FridayNotificationListener.openSettings(context)
+                } else {
+                    scope.launch {
+                        val dao = org.koin.java.KoinJavaComponent.get(
+                            com.friday.ai.data.local.dao.NotificationDao::class.java
+                        )
+                        val recent = dao.since(System.currentTimeMillis() - 24L * 60 * 60 * 1000)
+                        notificationSummary = if (recent.isEmpty()) {
+                            "Nenhuma notificação registrada nas últimas 24 horas."
+                        } else {
+                            recent.groupBy { it.appName }.entries.joinToString("\\n") { (app, items) ->
+                                "$app: ${items.size} notificação(ões). " +
+                                    items.take(3).joinToString("; ") { it.title.ifBlank { it.text } }
+                            }
+                        }
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("Resumir notificações das últimas 24 horas") }
+        if (notificationSummary.isNotBlank()) HudNote(notificationSummary)
         HudSwitchRow(
             title = "Anunciar chamadas",
             subtitle = "Anuncia quem está ligando por telefone, WhatsApp ou Telegram",
             checked = announceCalls,
             onChange = { needsAccess(it); viewModel.onAnnounceCallsChange(it) }
         )
-    }
-}
-
-@Composable
-private fun MailPanel(viewModel: SettingsViewModel) {
-    val gmail by viewModel.gmail.collectAsStateWithLifecycle()
-    // Google's consent screen. A cancelled screen comes back without data,
-    // which the view model reports as "Вход отменён".
-    val consentLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartIntentSenderForResult()
-    ) { result ->
-        viewModel.onGmailConsent(result.data, completed = result.resultCode == android.app.Activity.RESULT_OK)
-    }
-    LaunchedEffect(gmail.consent) {
-        gmail.consent?.let { consentLauncher.launch(IntentSenderRequest.Builder(it).build()) }
-    }
-    HudPanel("E-mail · Gmail", index = 6) {
-        HudReadout(
-            "Conta",
-            gmail.account ?: "NÃO CONECTADA",
-            valueColor = if (gmail.account != null) ArcCyan else OnBackground
-        )
-        HudNote(
-            if (gmail.account != null) {
-                "O Friday consulta a caixa de entrada, lê e responde e-mails, mas só envia após sua confirmação."
-            } else {
-                "Depois de conectar: «tenho e-mails novos?», «leia o e-mail do João», " +
-                "«responda ao João: chego às cinco»."
-            }
-        )
-        gmail.message?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = ArcCyan) }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            HudButton(onClick = viewModel::connectGmail, enabled = !gmail.busy, modifier = Modifier.weight(1f)) {
-                Text(if (gmail.account == null) "Conectar Gmail" else "Reconectar")
-            }
-            if (gmail.account != null) {
-                HudOutlinedButton(onClick = viewModel::disconnectGmail, enabled = !gmail.busy) { Text("Desconectar") }
-            }
-        }
     }
 }
 
