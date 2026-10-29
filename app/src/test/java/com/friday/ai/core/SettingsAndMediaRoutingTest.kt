@@ -150,7 +150,7 @@ class SettingsAndMediaRoutingTest {
         // Guards the failure found before: phrases in the grammar that are
         // recognised but route nowhere, so the user hears silence.
         OfflineCommands.GRAMMAR
-            .filter { it !in setOf("стоп", "хватит", "пока", "отбой") }
+            .filter { it !in setOf("parar", "chega", "tchau", "encerrar") }
             .forEach { phrase ->
                 val command = router.route(phrase)
                 assertTrue(
