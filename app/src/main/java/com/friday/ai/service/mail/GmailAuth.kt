@@ -81,7 +81,8 @@ class GmailAuth(private val context: Context) {
         if (data == null) {
             return Result.Failed(
                 if (completed) "O Google não retornou uma resposta. Tente novamente."
-                else "A janela de login foi fechada sem resposta. Se você não a fechou, verifique a configuração do Google: " +
+                else "A janela de login foi fechada sem resposta. " +
+                    "Se você não a fechou, verifique a configuração do Google: " +
                     "publique o aplicativo ou adicione sua conta aos usuários de teste do OAuth"
             )
         }
