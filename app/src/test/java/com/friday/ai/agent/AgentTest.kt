@@ -500,8 +500,8 @@ class ToolPromptTest {
     @Test
     fun `with tools the model may act but only reports what the tools said`() {
         val prompt = SystemPromptBuilder().build(AssistantMode.DEFAULT, withTools = true)
-        assertTrue(prompt.contains("only by calling the provided tools"))
-        assertTrue(prompt.contains("unless a tool result"))
-        assertFalse(prompt.contains("You cannot operate the phone"))
+        assertTrue(prompt.contains("chamando as ferramentas disponíveis"))
+        assertTrue(prompt.contains("sem confirmação explícita da ferramenta"))
+        assertFalse(prompt.contains("Você não pode controlar o celular apenas por esta conversa"))
     }
 }

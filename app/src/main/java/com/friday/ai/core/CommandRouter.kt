@@ -17,7 +17,7 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
     }
 
     private val openPatterns = listOf(
-        Regex("^(?:открой|открыть|запусти|запустить|open|launch|start)\\s+(.+)$", RegexOption.IGNORE_CASE)
+        Regex("^(?:открой|открыть|запусти|запустить|abra|abrir|abre|inicie|iniciar|execute|executar|open|launch|start)\\s+(?:(?:o|a|the)\\s+)?(.+)$", RegexOption.IGNORE_CASE)
     )
 
     private val closePatterns = listOf(
@@ -156,7 +156,9 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
 
     private val missedPatterns = listOf(
         Regex("^(?:что я пропустил\\p{L}*|что нового|какие уведомления|что там)[?.!]*$", RegexOption.IGNORE_CASE),
-        Regex("^(?:what did i miss|what'?s new|any notifications)[?.!]*$", RegexOption.IGNORE_CASE)
+        Regex("^(?:what did i miss|what'?s new|any notifications)[?.!]*$", RegexOption.IGNORE_CASE),
+        Regex("^(?:(?:resuma|resumir|resume|mostre|mostrar|leia|ler|ver|quais são|quais sao|tenho|há|ha)\\s+)?(?:(?:as|minhas|meus|os)\\s+)?(?:notificações|notificacoes|avisos|mensagens)(?:\\s+(?:do celular|de hoje|recentes|não lidas|nao lidas))?[?.!]*$", RegexOption.IGNORE_CASE),
+        Regex("^(?:o que (?:eu )?perdi|o que (?:eu )?não vi|o que (?:eu )?nao vi|o que aconteceu enquanto eu estava fora)[?.!]*$", RegexOption.IGNORE_CASE)
     )
 
     private val briefPatterns = listOf(
@@ -170,12 +172,14 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
     )
 
     private val volumeSetPattern =
-        Regex("(?:громкость|звук|volume)\\s*(?:на|to)?\\s*(\\d{1,3})\\s*(?:%|процент\\p{L}*)?", RegexOption.IGNORE_CASE)
+        Regex("(?:громкость|звук|volume)\\s*(?:на|to|em|para)?\\s*(\\d{1,3})\\s*(?:%|процент\\p{L}*)?", RegexOption.IGNORE_CASE)
 
     private val volumeMaxPattern =
-        Regex("(?:громкость|звук|volume)\\s+(?:на\\s+|to\\s+)?(?:максимум|максимальн\\p{L}*|max(?:imum)?|полную)", RegexOption.IGNORE_CASE)
+        Regex("(?:громкость|звук|volume)\\s+(?:на\\s+|to\\s+)?(?:максимум|максимальн\\p{L}*|max(?:imum)?|полную|máximo|maximo)", RegexOption.IGNORE_CASE)
     private val volumeMinPattern =
-        Regex("(?:громкость|звук|volume)\\s+(?:на\\s+|to\\s+)?(?:минимум|минимальн\\p{L}*|min(?:imum)?)", RegexOption.IGNORE_CASE)
+        Regex("(?:громкость|звук|volume)\\s+(?:на\\s+|to\\s+)?(?:минимум|минимальн\\p{L}*|min(?:imum)?|mínimo|minimo)", RegexOption.IGNORE_CASE)
+
+    private val dndOffWords = Regex("выключ|отключ|\\boff\\b|desativ|deslig")
 
     private val findNearbyPatterns = listOf(
         Regex("(?:найди|найти|где|поищи)\\s+(?:ближайш\\p{L}+)\\s+(.+)$", RegexOption.IGNORE_CASE),
@@ -201,7 +205,40 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
         return if (routed is CommandResult.ChatMessage) CommandResult.ChatMessage(said.trim()) else routed
     }
 
+    private val portugueseOfflineAliases = mapOf(
+        "ligar lanterna" to "включи фонарик",
+        "acender lanterna" to "включи фонарик",
+        "desligar lanterna" to "выключи фонарик",
+        "lanterna" to "фонарик",
+        "aumentar volume" to "громче",
+        "diminuir volume" to "тише",
+        "silenciar" to "выключи звук",
+        "ativar som" to "включи звук",
+        "abrir câmera" to "открой камеру",
+        "abrir camera" to "открой камеру",
+        "abrir música" to "открой музыку",
+        "abrir telefone" to "открой телефон",
+        "abrir mensagens" to "открой сообщения",
+        "abrir navegador" to "открой браузер",
+        "tirar foto" to "сделай фото",
+        "tirar selfie" to "селфи",
+        "gravar vídeo" to "запиши видео",
+        "abrir gravador" to "диктофон",
+        "abrir configurações" to "открой настройки",
+        "abrir wifi" to "открой вайфай",
+        "abrir bluetooth" to "открой блютус",
+        "abrir nfc" to "открой нфс",
+        "abrir tela" to "открой экран",
+        "abrir som" to "открой звук",
+        "abrir bateria" to "открой батарею",
+        "abrir localização" to "открой геолокацию",
+        "não perturbe" to "не беспокоить",
+        "ativar não perturbe" to "включи не беспокоить",
+        "desativar não perturbe" to "выключи не беспокоить"
+    )
+
     private fun routeOne(input: String): CommandResult {
+        portugueseOfflineAliases[input.trim().lowercase()]?.let { return routeOne(it) }
         val trimmed = input.trim()
 
         for (p in analyzeScreenPatterns) {
@@ -359,7 +396,7 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
 
     private fun stripDayWords(text: String): String = text
         .replace(
-            Regex("(?:на\\s+)?(?:сегодня|завтра|послезавтра|today|tomorrow|day after tomorrow)",
+            Regex("(?:на\\s+)?(?:сегодня|завтра|послезавтра|today|tomorrow|day after tomorrow|hoje|depois de amanhã|depois de amanha|amanhã|amanha)",
                 RegexOption.IGNORE_CASE),
             " "
         )
@@ -444,7 +481,7 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
         }
 
         val mentionsVolume = lower.contains("громкост") || lower.contains("volume") ||
-            lower.contains("звук")
+            lower.contains("звук") || lower.contains("som")
 
         return when {
             volumeMaxPattern.containsMatchIn(lower) -> CommandResult.DeviceControl(DeviceAction.VOLUME_SET, 100)
@@ -458,18 +495,18 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
                 CommandResult.DeviceControl(DeviceAction.UNMUTE)
 
             mentionsVolume && (lower.contains("громче") || lower.contains("прибав") ||
-                lower.contains("up") || lower.contains("увеличь")) ->
+                lower.contains("up") || lower.contains("увеличь") || lower.contains("aument")) ->
                 CommandResult.DeviceControl(DeviceAction.VOLUME_UP)
 
             mentionsVolume && (lower.contains("тише") || lower.contains("убав") ||
-                lower.contains("down") || lower.contains("уменьш")) ->
+                lower.contains("down") || lower.contains("уменьш") || lower.contains("diminu")) ->
                 CommandResult.DeviceControl(DeviceAction.VOLUME_DOWN)
 
             lower.contains("громче") -> CommandResult.DeviceControl(DeviceAction.VOLUME_UP)
             lower.contains("тише") -> CommandResult.DeviceControl(DeviceAction.VOLUME_DOWN)
 
-            lower.matches(Regex(".*(?:не беспокоить|режим тишины|do not disturb|dnd).*")) ->
-                if (lower.contains("выключ") || lower.contains("off") || lower.contains("отключ")) {
+            lower.matches(Regex(".*(?:не беспокоить|режим тишины|do not disturb|dnd|n[aã]o perturbe).*")) ->
+                if (dndOffWords.containsMatchIn(lower)) {
                     CommandResult.DeviceControl(DeviceAction.DND_OFF)
                 } else {
                     CommandResult.DeviceControl(DeviceAction.DND_ON)
@@ -532,8 +569,10 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
 private fun dayOffsetOf(text: String): Int {
     val lower = text.lowercase()
     return when {
-        lower.contains("послезавтра") || lower.contains("day after tomorrow") -> 2
-        lower.contains("завтра") || lower.contains("tomorrow") -> 1
+        lower.contains("послезавтра") || lower.contains("day after tomorrow") ||
+            lower.contains("depois de amanhã") || lower.contains("depois de amanha") -> 2
+        lower.contains("завтра") || lower.contains("tomorrow") ||
+            lower.contains("amanhã") || lower.contains("amanha") -> 1
         else -> 0
     }
 }

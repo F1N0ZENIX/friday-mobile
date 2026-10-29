@@ -71,7 +71,7 @@ fun ChatInputBar(
                 },
             placeholder = {
                 Text(
-                    if (isListening) "Слушаю…" else "Команда или вопрос",
+                    if (isListening) "Ouvindo…" else "Comando ou pergunta",
                     color = OnSurfaceMuted
                 )
             },
@@ -100,7 +100,7 @@ fun ChatInputBar(
                 enabled = !isLoading,
                 colors = IconButtonDefaults.filledIconButtonColors(containerColor = ArcCyan, contentColor = OnPrimary)
             ) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Отправить")
+                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar")
             }
         }
 

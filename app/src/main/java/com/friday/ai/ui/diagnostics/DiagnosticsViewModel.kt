@@ -38,7 +38,7 @@ class DiagnosticsViewModel(private val device: DeviceContext) : ViewModel() {
             Runtime.getRuntime()
                 .exec(logcat)
                 .inputStream.bufferedReader().readLines()
-        }.getOrDefault(listOf("(журнал недоступен)"))
+        }.getOrDefault(listOf("(registro indisponível)"))
         DiagnosticReport.build(
             version = com.friday.ai.BuildConfig.VERSION_NAME,
             device = "${Build.MANUFACTURER} ${Build.MODEL} · Android ${Build.VERSION.RELEASE} " +

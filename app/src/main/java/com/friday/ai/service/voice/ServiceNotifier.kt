@@ -20,9 +20,9 @@ class ServiceNotifier(private val context: Context) {
 
     fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(CHANNEL_ID, "Friday Assistant", NotificationManager.IMPORTANCE_LOW)
+            val channel = NotificationChannel(CHANNEL_ID, "Assistente Friday", NotificationManager.IMPORTANCE_LOW)
                 .apply {
-                    description = "Friday wake word listener"
+                    description = "Reconhecimento da palavra de ativação Friday"
                     setShowBadge(false)
                     setSound(null, null)
                 }

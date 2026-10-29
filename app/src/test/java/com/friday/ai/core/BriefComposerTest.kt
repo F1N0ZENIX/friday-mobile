@@ -20,7 +20,7 @@ class BriefComposerTest {
     @Test
     fun `nothing waiting says so plainly`() {
         assertEquals("Ничего нового.", BriefComposer.missedSummary(emptyList(), russian = true))
-        assertEquals("Nothing new.", BriefComposer.missedSummary(emptyList(), russian = false))
+        assertEquals("Nenhuma novidade.", BriefComposer.missedSummary(emptyList(), russian = false))
     }
 
     @Test
@@ -50,7 +50,7 @@ class BriefComposerTest {
             n("Telegram"), n("Gmail"), n("Slack"), n("Bank"), n("Instagram")
         )
         val s = BriefComposer.missedSummary(across, russian = false)
-        assertTrue("should mention there are more: $s", s.contains("more"))
+        assertTrue("should mention there are more: $s", s.contains("mais"))
     }
 
     @Test
@@ -89,7 +89,7 @@ class BriefComposerTest {
         val s = BriefComposer.morningBrief(
             null, listOf(AgendaItem("standup", "9:30")), 0, false, localTime = LocalTime.of(8, 0)
         )
-        assertTrue(s.startsWith("Good morning."))
+        assertTrue(s.startsWith("Bom dia."))
         assertTrue("got: $s", s.contains("standup"))
     }
 
@@ -97,7 +97,7 @@ class BriefComposerTest {
     fun `a packed day is truncated rather than recited`() {
         val agenda = List(9) { AgendaItem("event $it", "1$it:00") }
         val s = BriefComposer.morningBrief(null, agenda, 0, russian = false, localTime = LocalTime.of(8, 0))
-        assertTrue("should say how many more: $s", s.contains("more"))
+        assertTrue("should say how many more: $s", s.contains("mais"))
         assertTrue("must not list all nine: $s", !s.contains("event 8"))
     }
 

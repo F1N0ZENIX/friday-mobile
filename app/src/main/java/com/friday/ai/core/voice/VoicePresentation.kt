@@ -33,19 +33,20 @@ object VoicePresentation {
     /** The unlocked phone: the floating panel, the in-app layer, the lock panel once unlocked. */
     fun open(p: VoicePanel): PanelView = when (p.phase) {
         VoicePhase.GREETING -> PanelView(
-            "Пятница", PanelView.Tone.CYAN, PanelView.Mood.SPEAKING, p.answer?.ifBlank { null } ?: "Пятница здесь"
+            "Friday", PanelView.Tone.CYAN, PanelView.Mood.SPEAKING, p.answer?.ifBlank { null } ?: "Friday está aqui"
         )
         VoicePhase.LISTENING -> PanelView(
-            "Слушаю", PanelView.Tone.CYAN, PanelView.Mood.LISTENING, if (p.hearing) "Слышу вас…" else null
+            "Estou ouvindo", PanelView.Tone.CYAN, PanelView.Mood.LISTENING,
+            if (p.hearing) "Estou ouvindo você…" else null
         )
         VoicePhase.PROCESSING -> when {
-            !p.answer.isNullOrBlank() -> PanelView("Думаю", PanelView.Tone.AMBER, PanelView.Mood.THINKING, p.answer)
-            p.heard.isNullOrBlank() -> PanelView("Распознаю", PanelView.Tone.AMBER, PanelView.Mood.THINKING, null)
-            else -> PanelView("Думаю", PanelView.Tone.AMBER, PanelView.Mood.THINKING, "«${p.heard}»")
+            !p.answer.isNullOrBlank() -> PanelView("Pensando", PanelView.Tone.AMBER, PanelView.Mood.THINKING, p.answer)
+            p.heard.isNullOrBlank() -> PanelView("Reconhecendo", PanelView.Tone.AMBER, PanelView.Mood.THINKING, null)
+            else -> PanelView("Pensando", PanelView.Tone.AMBER, PanelView.Mood.THINKING, "«${p.heard}»")
         }
         VoicePhase.SPEAKING -> PanelView(speaker(p), PanelView.Tone.CYAN, PanelView.Mood.SPEAKING, p.answer)
         VoicePhase.RESULT -> PanelView(speaker(p), PanelView.Tone.MUTED, PanelView.Mood.IDLE, p.answer)
-        VoicePhase.ERROR -> PanelView("Не получилось", PanelView.Tone.ERROR, PanelView.Mood.IDLE, p.answer)
+        VoicePhase.ERROR -> PanelView("Não foi possível", PanelView.Tone.ERROR, PanelView.Mood.IDLE, p.answer)
     }
 
     /**
@@ -58,24 +59,24 @@ object VoicePresentation {
         // Says that something is hidden, never what.
         val hint = if (withheld) HIDDEN else null
         return when (p.phase) {
-            VoicePhase.GREETING -> PanelView("Пятница здесь", PanelView.Tone.CYAN, PanelView.Mood.SPEAKING, null)
-            VoicePhase.LISTENING -> PanelView("Слушаю", PanelView.Tone.CYAN, PanelView.Mood.LISTENING, null)
+            VoicePhase.GREETING -> PanelView("Friday está aqui", PanelView.Tone.CYAN, PanelView.Mood.SPEAKING, null)
+            VoicePhase.LISTENING -> PanelView("Estou ouvindo", PanelView.Tone.CYAN, PanelView.Mood.LISTENING, null)
             VoicePhase.PROCESSING ->
-                PanelView("Обрабатываю запрос", PanelView.Tone.AMBER, PanelView.Mood.THINKING, null)
+                PanelView("Processando pedido", PanelView.Tone.AMBER, PanelView.Mood.THINKING, null)
             VoicePhase.SPEAKING ->
-                PanelView("Отвечаю", PanelView.Tone.CYAN, PanelView.Mood.SPEAKING, hint, canReveal = withheld)
+                PanelView("Respondendo", PanelView.Tone.CYAN, PanelView.Mood.SPEAKING, hint, canReveal = withheld)
             VoicePhase.RESULT ->
-                PanelView("Ответ готов", PanelView.Tone.MUTED, PanelView.Mood.IDLE, hint, canReveal = withheld)
+                PanelView("Resposta pronta", PanelView.Tone.MUTED, PanelView.Mood.IDLE, hint, canReveal = withheld)
             VoicePhase.ERROR -> PanelView(
-                "Не получилось", PanelView.Tone.ERROR, PanelView.Mood.IDLE, hint, canReveal = withheld
+                "Não foi possível", PanelView.Tone.ERROR, PanelView.Mood.IDLE, hint, canReveal = withheld
             )
         }
     }
 
     /** The only text a locked panel shows besides its stage. */
-    const val HIDDEN = "Текст скрыт, пока телефон заблокирован"
+    const val HIDDEN = "Texto oculto enquanto o celular estiver bloqueado"
 
-    private fun speaker(p: VoicePanel): String = p.source?.let { "Пятница · $it" } ?: "Пятница"
+    private fun speaker(p: VoicePanel): String = p.source?.let { "Friday · $it" } ?: "Friday"
 }
 
 /**

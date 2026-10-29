@@ -36,8 +36,9 @@ class VoiceSession(
         catalog.refresh()
     }
 
-    /** Whether to answer in Russian. */
-    suspend fun russian(): Boolean = (prefDao.get("prefer_russian") ?: "true") == "true"
+    /** Legacy session API; all spoken replies now use pt-BR. */
+    @Suppress("FunctionOnlyReturningConstant")
+    suspend fun russian(): Boolean = false
 
     suspend fun id(): String = memory.getOrCreateSessionId()
 

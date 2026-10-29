@@ -117,14 +117,14 @@ class WeatherHere(
     private suspend fun here(russian: Boolean): WeatherApiService.Place? {
         val fix = lastFix() ?: freshFix() ?: return null
         val name = withContext(Dispatchers.IO) { cityAt(fix, russian) }
-            ?: if (russian) "вашем районе" else "your area"
+            ?: if (russian) "вашем районе" else "sua região"
         return WeatherApiService.Place(name, fix.latitude, fix.longitude)
     }
 
     @Suppress("DEPRECATION")
     private fun cityAt(fix: Location, russian: Boolean): String? = try {
         if (!Geocoder.isPresent()) null
-        else Geocoder(context, if (russian) Locale("ru") else Locale.ENGLISH)
+        else Geocoder(context, if (russian) Locale("ru") else Locale.forLanguageTag("pt-BR"))
             .getFromLocation(fix.latitude, fix.longitude, 1)
             ?.firstOrNull()?.locality
     } catch (e: Exception) {

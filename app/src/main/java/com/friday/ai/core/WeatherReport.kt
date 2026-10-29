@@ -65,16 +65,16 @@ object WeatherReport {
                 feels?.let { append(", ощущается как ${Say.deg(it.toDouble())}") }
                 append(", $condition, ветер ${Say.wind(n.windKmh, true)}.")
             } else {
-                append("It's ${Say.deg(n.temperature)} in ${f.place}")
-                feels?.let { append(", feels like ${Say.deg(it.toDouble())}") }
-                append(", $condition, wind ${Say.wind(n.windKmh, false)}.")
+                append("Agora em ${f.place}: ${Say.deg(n.temperature)}")
+                feels?.let { append(", sensação térmica de ${Say.deg(it.toDouble())}") }
+                append(", $condition, vento de ${Say.wind(n.windKmh, false)}.")
             }
             append(' ').append(precipitation(rest, russian, later = true))
             if (next.isNotEmpty()) {
                 val lo = next.minOf { it.temperature }
                 val hi = next.maxOf { it.temperature }
                 val span = Say.range(lo, hi, russian)
-                append(' ').append(if (russian) "В ближайшие часы $span." else "Over the next few hours $span.")
+                append(' ').append(if (russian) "В ближайшие часы $span." else "Nas próximas horas, $span.")
             }
         }
     }
@@ -84,8 +84,8 @@ object WeatherReport {
         val day = f.days.firstOrNull { it.date == date }
         val hours = f.hours.filter { it.time.toLocalDate() == date }
         val name = when (dayOffset) {
-            1 -> if (russian) "Завтра" else "Tomorrow"
-            else -> if (russian) "Послезавтра" else "The day after tomorrow"
+            1 -> if (russian) "Завтра" else "Amanhã"
+            else -> if (russian) "Послезавтра" else "Depois de amanhã"
         }
         val lo = day?.min ?: hours.minOfOrNull { it.temperature } ?: return noData(f.place, russian)
         val hi = day?.max ?: hours.maxOf { it.temperature }
@@ -95,11 +95,11 @@ object WeatherReport {
         return buildString {
             append(
                 if (russian) "$name в ${f.place} ${Say.range(lo, hi, true)}, $condition."
-                else "$name in ${f.place}: ${Say.range(lo, hi, false)}, $condition."
+                else "$name em ${f.place}: ${Say.range(lo, hi, false)}, $condition."
             )
             append(' ').append(precipitation(hours, russian, later = false, dayTotal = day))
             val gusts = Say.wind(windMax, russian)
-            append(' ').append(if (russian) "Ветер до $gusts." else "Wind up to $gusts.")
+            append(' ').append(if (russian) "Ветер до $gusts." else "Vento de até $gusts.")
         }
     }
 
@@ -118,9 +118,9 @@ object WeatherReport {
 
     private fun dry(chance: Int?, russian: Boolean, later: Boolean): String = when {
         chance != null && chance >= SOME_CHANCE ->
-            if (russian) "Осадки маловероятны, вероятность $chance%." else "Rain is unlikely, $chance% chance."
-        later -> if (russian) "Без осадков до конца дня." else "Dry for the rest of the day."
-        else -> if (russian) "Без осадков." else "No rain expected."
+            if (russian) "Осадки маловероятны, вероятность $chance%." else "Baixa chance de chuva: $chance%."
+        later -> if (russian) "Без осадков до конца дня." else "Sem previsão de chuva até o fim do dia."
+        else -> if (russian) "Без осадков." else "Sem previsão de chuva."
     }
 
     private fun wet(wet: List<Hour>, mm: Double, chance: Int?, russian: Boolean): String {
@@ -128,11 +128,11 @@ object WeatherReport {
         val to = Say.clock(wet.last().time.plusHours(1), russian)
         val gaps = wet.zipWithNext().any { (a, b) -> b.time != a.time.plusHours(1) }
         val parts = mutableListOf(
-            kind(wet, russian) + (if (russian) " с $from до $to" else " from $from to $to") +
-                (if (gaps) (if (russian) " с перерывами" else " on and off") else "")
+            kind(wet, russian) + (if (russian) " с $from до $to" else " de $from até $to") +
+                (if (gaps) (if (russian) " с перерывами" else " com intervalos") else "")
         )
-        if (mm >= WET_MM) parts += if (russian) "около ${Say.amount(mm)} мм" else "about ${Say.amount(mm)} mm"
-        chance?.let { parts += if (russian) "вероятность $it%" else "$it% chance" }
+        if (mm >= WET_MM) parts += if (russian) "около ${Say.amount(mm)} мм" else "cerca de ${Say.amount(mm)} mm"
+        chance?.let { parts += if (russian) "вероятность $it%" else "probabilidade de $it%" }
         return parts.joinToString(", ") + "."
     }
 
@@ -143,10 +143,10 @@ object WeatherReport {
     private fun kind(wet: List<Hour>, russian: Boolean): String {
         val snow = wet.count { it.code in SNOW_CODES }
         return when {
-            snow == wet.size -> if (russian) "Снег" else "Snow"
-            snow > 0 -> if (russian) "Дождь со снегом" else "Rain and snow"
-            wet.any { it.code in STORM_CODES } -> if (russian) "Дождь с грозой" else "Rain with thunderstorms"
-            else -> if (russian) "Дождь" else "Rain"
+            snow == wet.size -> if (russian) "Снег" else "Neve"
+            snow > 0 -> if (russian) "Дождь со снегом" else "Chuva e neve"
+            wet.any { it.code in STORM_CODES } -> if (russian) "Дождь с грозой" else "Chuva com trovoadas"
+            else -> if (russian) "Дождь" else "Chuva"
         }
     }
 
@@ -154,7 +154,7 @@ object WeatherReport {
     private val STORM_CODES = setOf(95, 96, 99)
 
     private fun noData(place: String, russian: Boolean) =
-        if (russian) "Прогноза для $place на этот день нет." else "There's no forecast for $place that day."
+        if (russian) "Прогноза для $place на этот день нет." else "Não há previsão para $place nesse dia."
 }
 
 /** How numbers are said: degrees with a sign, wind in the units the listener thinks in, clock times. */
@@ -168,7 +168,7 @@ internal object Say {
     fun range(lo: Double, hi: Double, russian: Boolean): String = when {
         lo.roundToInt() == hi.roundToInt() -> deg(lo)
         russian -> "от ${Say.deg(lo)} до ${Say.deg(hi)}"
-        else -> "${Say.deg(lo)} to ${Say.deg(hi)}"
+        else -> "de ${Say.deg(lo)} a ${Say.deg(hi)}"
     }
 
     /** Russian speakers think of wind in metres a second; English ones in km/h. */
@@ -181,6 +181,6 @@ internal object Say {
     fun clock(t: LocalDateTime, russian: Boolean): String = when {
         t.hour != 0 || t.minute != 0 -> "%d:%02d".format(t.hour, t.minute)
         russian -> "полуночи"
-        else -> "midnight"
+        else -> "meia-noite"
     }
 }

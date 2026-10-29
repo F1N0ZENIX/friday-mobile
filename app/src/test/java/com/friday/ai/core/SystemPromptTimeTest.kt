@@ -16,7 +16,7 @@ class SystemPromptTimeTest {
         val now = ZonedDateTime.of(LocalDateTime.of(2026, 10, 5, 21, 3), ZoneId.of("Asia/Tashkent"))
         val line = builder.currentDateTime(now)
         assertTrue(line, line.contains("2026-10-05 21:03"))
-        assertTrue(line, line.contains("Monday"))
+        assertTrue(line, line.contains("segunda-feira"))
         assertTrue(line, line.contains("Asia/Tashkent"))
         assertTrue(line, line.contains("UTC+05:00"))
     }
@@ -30,7 +30,7 @@ class SystemPromptTimeTest {
     @Test
     fun `the full prompt carries it`() {
         val prompt = builder.build(AssistantMode.DEFAULT)
-        assertTrue(prompt.contains("Current local date/time:"))
-        assertTrue(prompt.contains("time zone"))
+        assertTrue(prompt.contains("Data e hora locais atuais:"))
+        assertTrue(prompt.contains("fuso horário"))
     }
 }

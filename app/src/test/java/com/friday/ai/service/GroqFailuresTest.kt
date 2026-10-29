@@ -44,11 +44,13 @@ class GroqFailuresTest {
     @Test
     fun `each failure says something the user can act on`() {
         // Before, every one of these was "Something went wrong".
-        assertTrue(VoiceErrors.spoken(retired, true).contains("сменил модель"))
-        assertTrue(VoiceErrors.spoken(GroqApiException(401, "x"), true).contains("Ключ Groq"))
-        assertTrue(VoiceErrors.spoken(GroqApiException(429, "x"), true).contains("лимит"))
-        assertTrue(VoiceErrors.spoken(IOException("timeout"), true).contains("интернет"))
-        assertTrue(VoiceErrors.spoken(GroqApiException(500, "boom"), false).contains("boom"))
+        assertTrue(VoiceErrors.spoken(retired, true).contains("mudou o modelo"))
+        assertTrue(VoiceErrors.spoken(GroqApiException(401, "x"), true).contains("chave do Groq"))
+        assertTrue(VoiceErrors.spoken(GroqApiException(429, "x"), true).contains("limite"))
+        assertTrue(VoiceErrors.spoken(IOException("timeout"), true).contains("internet"))
+        val generic = VoiceErrors.spoken(GroqApiException(500, "boom"), false)
+        assertTrue(generic.contains("Tente novamente"))
+        assertFalse(generic.contains("boom"))
     }
 
     @Test
@@ -101,17 +103,18 @@ class QuickWinsTest {
     @Test
     fun `the persona speaks of herself in the feminine and follows the user's language`() {
         val prompt = SystemPromptBuilder().build(AssistantMode.DEFAULT)
-        assertTrue(prompt.contains("feminine"))
-        assertTrue(prompt.contains("сэр"))
-        assertTrue(prompt.contains("latest message"))
-        assertTrue(prompt.contains("Never invent"))
+        assertTrue(prompt.contains("SEMPRE em português brasileiro"))
+        assertTrue(prompt.contains("use sempre formas femininas"))
+        assertTrue(prompt.contains("Não invente informações"))
+        assertTrue(prompt.contains("Você não pode controlar o celular"))
     }
 
     @Test
-    fun `the voice is female in both languages`() {
+    fun `the output voice is Brazilian Portuguese and feminine`() {
         // Every fixed phrase is feminine ("не расслышала"); a male voice clashed.
         assertEquals("ru-RU-SvetlanaNeural", EdgeTtsProtocol.VOICE_RU)
-        assertEquals("en-IE-EmilyNeural", EdgeTtsProtocol.VOICE_EN)
+        assertEquals("pt-BR-FranciscaNeural", EdgeTtsProtocol.VOICE_EN)
+        assertEquals(EdgeTtsProtocol.VOICE_EN, EdgeTtsProtocol.detectVoice("Tudo pronto, posso ajudar?"))
     }
 
     @Test
@@ -121,6 +124,15 @@ class QuickWinsTest {
         assertNotEquals("a new voice must not replay the old one's audio", a, b)
         assertEquals(a, EdgeTtsProtocol.cacheKey("ru-RU-SvetlanaNeural", "Да, сэр?"))
         assertTrue(a, a.matches(Regex("[0-9a-f]{40}\\.mp3")))
+    }
+
+    @Test
+    fun `every spoken greeting is Brazilian Portuguese`() {
+        assertTrue(Acknowledgements.all.isNotEmpty())
+        assertTrue(Acknowledgements.all.all { greeting ->
+            greeting.none { it in 'Ѐ'..'ӿ' } &&
+                !greeting.contains(Regex("\\b(sir|listening|help)\\b", RegexOption.IGNORE_CASE))
+        })
     }
 
     @Test

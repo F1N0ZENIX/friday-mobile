@@ -27,13 +27,13 @@ import com.friday.ai.ui.theme.OnSurfaceMuted
 /** What each personality is called on screen; the enum's names are for the prompt. */
 val AssistantMode.label: String
     get() = when (this) {
-        AssistantMode.DEFAULT -> "Обычный"
-        AssistantMode.ANALYTICAL -> "Аналитик"
-        AssistantMode.CREATIVE -> "Творческий"
-        AssistantMode.CODING -> "Код"
-        AssistantMode.STUDY -> "Учёба"
-        AssistantMode.FOUNDER -> "Стратег"
-        AssistantMode.FOCUS -> "Фокус"
+        AssistantMode.DEFAULT -> "Normal"
+        AssistantMode.ANALYTICAL -> "Analítico"
+        AssistantMode.CREATIVE -> "Criativo"
+        AssistantMode.CODING -> "Programação"
+        AssistantMode.STUDY -> "Estudos"
+        AssistantMode.FOUNDER -> "Estratégia"
+        AssistantMode.FOCUS -> "Foco"
     }
 
 /** Personality tabs as HUD toggles: lit edge and text when active, dim otherwise. */

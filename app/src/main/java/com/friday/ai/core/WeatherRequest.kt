@@ -23,12 +23,17 @@ object WeatherRequest {
         """(?:[Мм]ой\s+(?:родной\s+|домашний\s+)?город(?:\s*(?:—|-|:|это))?|[Яя]\s+живу\s+(?:в|во))\s+""" +
             """([\p{Lu}][\p{L}\-]*(?:\s+[\p{Lu}][\p{L}\-]*)?)"""
     )
+    private val portugueseHomeCity = Regex(
+        """(?:meu\s+(?:município|municipio|cidade)\s+(?:é|e|fica\s+em)|eu\s+(?:moro|vivo)\s+em)\s+""" +
+            """([\p{Lu}][\p{L}-]*(?:\s+[\p{Lu}][\p{L}-]*)?)""", I
+    )
     private val englishHomeCity =
         Regex("""(?:my\s+(?:home\s+)?city\s+is|i\s+live\s+in)\s+([\p{L}][\p{L}\- ]{1,40}?)(?=[.,!?]|$)""", I)
 
     /** Words only a weather question uses. */
     private val weatherWords = Regex(
-        """(?:погод|дожд|осадк|снег|снегопад|гроз|зонт|ветр|ветер|weather|rain|snow|umbrella|wind)""",
+        """(?:погод|дожд|осадк|снег|снегопад|гроз|зонт|ветр|ветер|weather|rain|snow|umbrella|wind|""" +
+            """previs[aã]o|tempo|clima|chov|chuva|garoa|tempestade|vent|frio|calor|temperatura)""",
         I
     )
 
@@ -39,14 +44,24 @@ object WeatherRequest {
         I
     )
 
+    private val portugueseAsks = Regex(
+        """^(?:qual|como|quando|vai|será|sera|tem|haverá|havera|preciso|devo)(?!\p{L})""", I
+    )
+
     /** "в Москве", "in Paris": a capitalised place after the preposition. */
     private val place = Regex("""(?:^|\s)(?:в|во|in)\s+([\p{Lu}][\p{L}\-]+(?:\s+[\p{Lu}][\p{L}\-]+)?)""")
 
+    private val portuguesePlace = Regex(
+        """(?:^|\s)em\s+([\p{Lu}][\p{L}-]+(?:\s+[\p{Lu}][\p{L}-]+)?)""", I
+    )
+
     fun parse(text: String, dayOffset: Int): CommandResult? {
         val t = text.trim()
-        val city = (homeCity.find(t) ?: englishHomeCity.find(t))?.groupValues?.get(1)?.trim()
+        val cityMatch = homeCity.find(t) ?: portugueseHomeCity.find(t) ?: englishHomeCity.find(t)
+        val city = cityMatch?.groupValues?.get(1)?.trim()
         val weather = CommandResult.Weather(placeIn(t, except = city), dayOffset)
-            .takeIf { weatherWords.containsMatchIn(t) && asks.containsMatchIn(t) }
+            .takeIf { weatherWords.containsMatchIn(t) &&
+                (asks.containsMatchIn(t) || portugueseAsks.containsMatchIn(t)) }
         return when {
             city != null && weather != null ->
                 // The city just named is the one asked about.
@@ -57,5 +72,6 @@ object WeatherRequest {
     }
 
     private fun placeIn(text: String, except: String?): String? =
-        place.findAll(text).map { it.groupValues[1] }.firstOrNull { it != except }
+        (place.findAll(text) + portuguesePlace.findAll(text))
+            .map { it.groupValues[1] }.firstOrNull { it != except }
 }

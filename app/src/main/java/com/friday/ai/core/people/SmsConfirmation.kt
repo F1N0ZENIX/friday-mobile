@@ -49,7 +49,7 @@ class SmsConfirmation(
     fun ask(name: String, number: String, text: String, russian: Boolean): String {
         draft = Draft(name, number, text, clock())
         return if (russian) "Отправить SMS для «$name»: «$text»? Да или нет."
-        else "Send an SMS to $name: \"$text\"? Yes or no."
+        else "Enviar SMS para «$name»: «$text»? Sim ou não."
     }
 
     /** Forgets the draft; true when there was one. */
@@ -62,17 +62,17 @@ class SmsConfirmation(
         if (clock() - d.at > TTL_MS) return null
         return when (Confirmation.classify(text)) {
             Confirmation.Answer.YES -> report(line.send(d.number, d.text), d.name, russian)
-            Confirmation.Answer.NO -> if (russian) "Не отправляю." else "Not sending it."
+            Confirmation.Answer.NO -> if (russian) "Не отправляю." else "Não vou enviar."
             Confirmation.Answer.OTHER -> null
         }
     }
 
     private fun report(result: SmsLine.Result, name: String, russian: Boolean): String = when (result) {
-        SmsLine.Result.Sent -> if (russian) "SMS для «$name» отправлено." else "SMS to $name sent."
+        SmsLine.Result.Sent -> if (russian) "SMS для «$name» отправлено." else "SMS para «$name» enviado."
         is SmsLine.Result.Failed ->
-            if (russian) "SMS не ушло: ${result.reason}." else "The SMS didn't go: ${result.reason}."
+            if (russian) "SMS не ушло: ${result.reason}." else "Não foi possível enviar o SMS: ${result.reason}."
         SmsLine.Result.Unconfirmed ->
             if (russian) "SMS передано телефону, но подтверждения отправки нет — проверьте в «Сообщениях»."
-            else "The SMS was handed to the phone, but it didn't confirm sending — check Messages."
+            else "O celular não confirmou o envio do SMS. Confira no aplicativo Mensagens."
     }
 }
