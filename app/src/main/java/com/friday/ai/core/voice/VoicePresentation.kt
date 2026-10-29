@@ -36,7 +36,8 @@ object VoicePresentation {
             "Friday", PanelView.Tone.CYAN, PanelView.Mood.SPEAKING, p.answer?.ifBlank { null } ?: "Friday está aqui"
         )
         VoicePhase.LISTENING -> PanelView(
-            "Estou ouvindo", PanelView.Tone.CYAN, PanelView.Mood.LISTENING, if (p.hearing) "Estou ouvindo você…" else null
+            "Estou ouvindo", PanelView.Tone.CYAN, PanelView.Mood.LISTENING,
+            if (p.hearing) "Estou ouvindo você…" else null
         )
         VoicePhase.PROCESSING -> when {
             !p.answer.isNullOrBlank() -> PanelView("Pensando", PanelView.Tone.AMBER, PanelView.Mood.THINKING, p.answer)
