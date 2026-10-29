@@ -98,7 +98,10 @@ class SettingsViewModel(
         _gmail.value = when (step) {
             is GmailConnector.Step.NeedsConsent -> _gmail.value.copy(consent = step.intent)
             is GmailConnector.Step.Failed -> _gmail.value.copy(busy = false, message = step.reason)
-            is GmailConnector.Step.Connected -> Gmail(account = step.account, message = SettingsFeedback.GMAIL_CONNECTED)
+            is GmailConnector.Step.Connected -> Gmail(
+                account = step.account,
+                message = SettingsFeedback.GMAIL_CONNECTED
+            )
         }
     }
 
