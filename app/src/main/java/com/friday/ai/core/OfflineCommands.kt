@@ -55,6 +55,8 @@ object OfflineCommands {
     }
 
     /** What Friday says when it heard something it can't do without a network. */
+    // Keep the legacy argument while all callers migrate to the pt-BR-only voice flow.
+    @Suppress("UnusedParameter", "FunctionOnlyReturningConstant")
     fun offlineRefusal(russian: Boolean): String =
         "Sem conexão. No momento, só posso controlar o celular."
 }
