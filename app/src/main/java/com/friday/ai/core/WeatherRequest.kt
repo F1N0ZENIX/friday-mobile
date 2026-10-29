@@ -23,12 +23,16 @@ object WeatherRequest {
         """(?:[Мм]ой\s+(?:родной\s+|домашний\s+)?город(?:\s*(?:—|-|:|это))?|[Яя]\s+живу\s+(?:в|во))\s+""" +
             """([\p{Lu}][\p{L}\-]*(?:\s+[\p{Lu}][\p{L}\-]*)?)"""
     )
+    private val portugueseHomeCity = Regex(
+        """(?:meu\s+(?:município|municipio|cidade)\s+(?:é|e|fica\s+em)|eu\s+(?:moro|vivo)\s+em)\s+""" +
+            """([\p{Lu}][\p{L}-]*(?:\s+[\p{Lu}][\p{L}-]*)?)""", I
+    )
     private val englishHomeCity =
         Regex("""(?:my\s+(?:home\s+)?city\s+is|i\s+live\s+in)\s+([\p{L}][\p{L}\- ]{1,40}?)(?=[.,!?]|$)""", I)
 
     /** Words only a weather question uses. */
     private val weatherWords = Regex(
-        """(?:погод|дожд|осадк|снег|снегопад|гроз|зонт|ветр|ветер|weather|rain|snow|umbrella|wind)""",
+        """(?:погод|дожд|осадк|снег|снегопад|гроз|зонт|ветр|ветер|weather|rain|snow|umbrella|wind|previs[aã]o|tempo|clima|chov|chuva|garoa|tempestade|vent|frio|calor|temperatura)""",
         I
     )
 
@@ -44,7 +48,7 @@ object WeatherRequest {
 
     fun parse(text: String, dayOffset: Int): CommandResult? {
         val t = text.trim()
-        val city = (homeCity.find(t) ?: englishHomeCity.find(t))?.groupValues?.get(1)?.trim()
+        val city = (homeCity.find(t) ?: portugueseHomeCity.find(t) ?: englishHomeCity.find(t))?.groupValues?.get(1)?.trim()
         val weather = CommandResult.Weather(placeIn(t, except = city), dayOffset)
             .takeIf { weatherWords.containsMatchIn(t) && asks.containsMatchIn(t) }
         return when {
