@@ -44,11 +44,13 @@ class GroqFailuresTest {
     @Test
     fun `each failure says something the user can act on`() {
         // Before, every one of these was "Something went wrong".
-        assertTrue(VoiceErrors.spoken(retired, true).contains("сменил модель"))
-        assertTrue(VoiceErrors.spoken(GroqApiException(401, "x"), true).contains("Ключ Groq"))
-        assertTrue(VoiceErrors.spoken(GroqApiException(429, "x"), true).contains("лимит"))
-        assertTrue(VoiceErrors.spoken(IOException("timeout"), true).contains("интернет"))
-        assertTrue(VoiceErrors.spoken(GroqApiException(500, "boom"), false).contains("boom"))
+        assertTrue(VoiceErrors.spoken(retired, true).contains("mudou o modelo"))
+        assertTrue(VoiceErrors.spoken(GroqApiException(401, "x"), true).contains("chave do Groq"))
+        assertTrue(VoiceErrors.spoken(GroqApiException(429, "x"), true).contains("limite"))
+        assertTrue(VoiceErrors.spoken(IOException("timeout"), true).contains("internet"))
+        val generic = VoiceErrors.spoken(GroqApiException(500, "boom"), false)
+        assertTrue(generic.contains("Tente novamente"))
+        assertFalse(generic.contains("boom"))
     }
 
     @Test
