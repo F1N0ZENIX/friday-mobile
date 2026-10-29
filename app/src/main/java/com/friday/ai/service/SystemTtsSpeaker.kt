@@ -98,12 +98,12 @@ class SystemTtsSpeaker(context: Context) {
     private fun applyLanguageFor(text: String) {
         val cyrillic = text.count { it in 'Ѐ'..'ӿ' }
         val latin = text.count { it in 'A'..'Z' || it in 'a'..'z' }
-        val locale = if (cyrillic > latin) Locale("ru", "RU") else Locale.US
+        val locale = Locale.forLanguageTag("pt-BR")
 
         val status = runCatching { tts.setLanguage(locale) }.getOrNull()
         if (status == TextToSpeech.LANG_MISSING_DATA || status == TextToSpeech.LANG_NOT_SUPPORTED) {
             Log.w(TAG, "No voice data for $locale; falling back to the engine default")
-            runCatching { tts.setLanguage(Locale.US) }
+            runCatching { tts.setLanguage(Locale.forLanguageTag("pt-BR")) }
         }
     }
 }
