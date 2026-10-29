@@ -45,14 +45,14 @@ object WeatherRequest {
     )
 
     private val portugueseAsks = Regex(
-        """^(?:qual|como|quando|vai|será|sera|tem|haverá|havera|preciso|devo)(?!\\p{L})""", I
+        """^(?:qual|como|quando|vai|será|sera|tem|haverá|havera|preciso|devo)(?!\p{L})""", I
     )
 
     /** "в Москве", "in Paris": a capitalised place after the preposition. */
     private val place = Regex("""(?:^|\s)(?:в|во|in)\s+([\p{Lu}][\p{L}\-]+(?:\s+[\p{Lu}][\p{L}\-]+)?)""")
 
     private val portuguesePlace = Regex(
-        """(?:^|\\s)em\\s+([\\p{Lu}][\\p{L}-]+(?:\\s+[\\p{Lu}][\\p{L}-]+)?)""", I
+        """(?:^|\s)em\s+([\p{Lu}][\p{L}-]+(?:\s+[\p{Lu}][\p{L}-]+)?)""", I
     )
 
     fun parse(text: String, dayOffset: Int): CommandResult? {
