@@ -126,7 +126,7 @@ internal fun ModesLayout(
                     )
                 }
                 if (!modes.isNullOrEmpty()) {
-                    item { HudNote("Новый режим — голосом: «создай режим … : что в нём делать».") }
+                    item { HudNote("Crie um modo por voz: «crie um modo... e diga o que ele faz».") }
                 }
                 item { Spacer(Modifier.height(24.dp)) }
             }
@@ -138,8 +138,8 @@ internal fun ModesLayout(
             title = { Text("Excluir modo ${mode.name}?") },
             text = {
                 Text(
-                    if (mode.active) "Он сейчас включён: настройки, которые он менял, останутся как есть."
-                    else "Его шаги будут забыты."
+                    if (mode.active) "Este modo está ativo: as configurações alteradas não serão restauradas."
+                    else "As ações deste modo serão apagadas."
                 )
             },
             confirmButton = { TextButton(onClick = { onDelete(mode); deleting = null }) { Text("Excluir") } },
@@ -268,14 +268,14 @@ private fun HowTo() {
     HudPanel("Como criar um modo") {
         HudNote(
             "Modo — это несколько действий под одним именем. Создайте его голосом, " +
-                "Пятница разберёт описание и прочитает шаги вслух."
+                "e o Friday interpretará a descrição e explicará as ações."
         )
-        Example("«Создай режим грусти. Это режим, где включается Spotify с грустными песнями.»")
-        Example("«Создай режим отдыха: полный беззвучный, «Не беспокоить», яркость на минимум.»")
-        HudNote("Потом: «режим отдыха» — включить, «выключи режим отдыха» — вернуть всё как было.")
-        HudNote("По расписанию: «включай режим отдыха каждый день в 23:00», «по будням в 7 выключай режим отдыха».")
-        HudNote("По событию: «когда подключаюсь к машине — режим вождения», «когда ставлю на зарядку — режим сна».")
-        HudNote("NFC-метка: «привяжи режим отдыха к метке» — касание метки включает и выключает режим.")
+        Example("«Crie um modo triste que toque músicas tristes no Spotify.»")
+        Example("«Crie um modo descanso: silencioso, não perturbe e brilho mínimo.»")
+        HudNote("Depois, diga «modo descanso» para ativar e «desative o modo descanso» para restaurar.")
+        HudNote("Por horário: «ative o modo descanso todos os dias às 23h» ou «desative o modo descanso às 7h nos dias úteis».")
+        HudNote("Por evento: «quando conectar ao carro, ative o modo direção» ou «quando carregar, ative o modo sono».")
+        HudNote("Etiqueta NFC: «associe o modo descanso à etiqueta» para alternar o modo com um toque.")
     }
 }
 
