@@ -81,7 +81,7 @@ fun LockPanel(viewModel: LockLevelViewModel = koinViewModel()) {
         )
         HudReadout(
             "Notificações em tela cheia",
-            if (fullScreen) "PERMITIDAS" else "НЕ PERMITIDAS",
+            if (fullScreen) "PERMITIDAS" else "NÃO PERMITIDAS",
             valueColor = if (fullScreen) ArcCyan else ErrorColor
         )
         HudReadout("Última exibição", outcomeText(outcome))
