@@ -185,7 +185,7 @@ class FridayNotificationListener : NotificationListenerService() {
         val app = Channel.entries.firstOrNull { sbn.packageName in it.packages }?.label
         scope.launch {
             if (prefs.get(PREF_ANNOUNCE_CALLS) == "false" || !quietAllowed()) return@launch
-            announcer.say(Announcement(Conversations.incomingCall(caller, app, russian()), listenAfter = false))
+            announcer.say(Announcement(Conversations.incomingCall(caller, app, false), listenAfter = false))
         }
     }
 
@@ -198,7 +198,6 @@ class FridayNotificationListener : NotificationListenerService() {
         return !dnd && !onCall
     }
 
-    private suspend fun russian(): Boolean = (prefs.get("prefer_russian") ?: "true") == "true"
 
     private fun resolveAppName(packageName: String): String = runCatching {
         val pm = packageManager
