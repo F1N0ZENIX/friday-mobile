@@ -71,7 +71,7 @@ fun ChatInputBar(
                 },
             placeholder = {
                 Text(
-                    if (isListening) "Ouvindo…" else "Comando или вопрос",
+                    if (isListening) "Ouvindo…" else "Comando ou pergunta",
                     color = OnSurfaceMuted
                 )
             },
