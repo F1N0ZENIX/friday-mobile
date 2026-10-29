@@ -99,7 +99,8 @@ object WakePhrases {
 
     private val leadingCall = Regex(
         "^\\s*(?:(?:окей|оке|ок|привет|слушай|эй|hey|ok|okay|hi|ei|oi|olá|ola|fala)[\\s,!.]+)?" +
-            "(?:пятниц\\p{L}*|пятнец\\p{L}*|фрайд\\p{L}*|фрэйди|фрейди|friday|fraidei|fráidei|fraide|fráide|fridei|fridai)[\\s,!.:;—–-]*",
+            "(?:пятниц\\p{L}*|пятнец\\p{L}*|фрайд\\p{L}*|фрэйди|фрейди|" +
+                "friday|fraidei|fráidei|fraide|fráide|fridei|fridai)[\\s,!.:;—–-]*",
         RegexOption.IGNORE_CASE
     )
 
