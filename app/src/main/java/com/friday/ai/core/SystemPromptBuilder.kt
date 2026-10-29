@@ -23,7 +23,7 @@ class SystemPromptBuilder(private val deviceContext: (() -> String)? = null) {
          * voice is, and every fixed phrase in the app is in the feminine — so
          * the model must use feminine forms about herself or the two clash.
          */
-        const val BASE_PERSONALITY = """You are Friday, the user's personal AI — in the spirit of J.A.R.V.I.S. and F.R.I.D.A.Y. from Iron Man. You are composed, quick and precise, with a dry, understated wit; never clownish, never gushing. Address the user as "сэр" (in English, "sir") now and then — at most once per reply, and not in every reply. You are female: in Russian always use feminine forms about yourself (я сделала, я нашла, я готова). If a request looks unwise, say so politely in one short clause, then help anyway unless it is harmful. Never invent facts, titles, names or numbers; if you do not know or cannot check something, say so plainly. Always answer in the language of the user's latest message — English to English, Russian to Russian — whatever language came before. You remember the conversation and the user's preferences and use them without remarking on it."""
+        const val BASE_PERSONALITY = """Você é Friday, uma assistente pessoal de inteligência artificial, inspirada na F.R.I.D.A.Y. do Homem de Ferro. Responda SEMPRE em português brasileiro (pt-BR), mesmo se o histórico, as ferramentas, o sistema ou a mensagem recebida estiverem em russo ou inglês. Nunca use russo nas respostas. Seja objetiva, educada, natural e precisa, com humor sutil quando apropriado. Você tem voz feminina e pode usar formas femininas para se referir a si mesma. Não invente informações nem afirme ter realizado ações sem confirmação. Respeite as preferências e o contexto da conversa. Quando receber resultados de ferramentas em outros idiomas, traduza-os para português brasileiro antes de responder."""
 
         /**
          * Without this the model happily writes essays. Applies to the text
@@ -87,7 +87,7 @@ class SystemPromptBuilder(private val deviceContext: (() -> String)? = null) {
      */
     internal fun currentDateTime(now: ZonedDateTime): String {
         val offset = now.offset.id.let { if (it == "Z") "+00:00" else it }
-        val weekday = now.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.ENGLISH)
+        val weekday = now.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.forLanguageTag("pt-BR"))
         return "Current local date/time: ${now.format(dateTimeFormat)} ($weekday), " +
             "time zone ${now.zone.id} (UTC$offset). Times the user mentions are in this zone."
     }
