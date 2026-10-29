@@ -33,6 +33,15 @@ jobs:
       - name: Build APK
         run: ./gradlew assembleDebug
 
+      - name: Upload Android debug APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Friday-PT-BR-debug-APK
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
       # R8 can break JNI-reached code without failing the build; the check
       # fails it instead (see verifyReleaseKeepRules in app/build.gradle.kts).
       # CI has no signing secrets, so this release is unsigned on purpose: it
