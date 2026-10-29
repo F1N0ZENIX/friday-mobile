@@ -1,19 +1,12 @@
 package com.friday.ai.core
 
 /**
- * Decides whether a chunk of recognised speech is the user addressing Friday.
+ * Identifies a direct call to Friday. The pt-BR Vosk model is used for
+ * offline recognition; historical Russian spellings remain accepted by
+ * the pure text matcher for compatibility with old transcripts.
  *
- * Two constraints shape this:
- *
- *  1. The offline recogniser runs a **Russian** acoustic model, so the English
- *     word "Friday" never comes back spelled that way — it arrives as Cyrillic
- *     approximations ("фрайдей", "прайди", "фрайди"). Both the English name and
- *     the Russian one therefore have to be matched through Cyrillic spellings.
- *
- *  2. "Пятница" is also just the Russian word for the weekday. Matching it
- *     anywhere in a sentence would wake the assistant during "встретимся в
- *     пятницу". So a wake word only counts at the *start* of what was heard,
- *     or right after an attention word ("окей пятница").
+ * The name must be at the beginning, optionally after one attention word,
+ * to avoid waking on ordinary conversation.
  */
 object WakePhrases {
 
@@ -23,33 +16,35 @@ object WakePhrases {
         "прайдей", "прайди", "friday"
     )
 
-    /** The Russian name. */
+    /** Common spellings produced by Brazilian Portuguese transcription. */
+    private val PORTUGUESE_NAME = listOf(
+        "friday", "fraidei", "fráidei", "fraide", "fráide", "fridei", "fridai"
+    )
+
+    /** The Russian name (kept for historical transcripts). */
     private val RUSSIAN_NAME = listOf(
         "пятница", "пятницы", "пятнице", "пятницу", "пятнеца", "пятниц"
     )
 
     /** Optional politeness before the name: "окей пятница", "hey friday". */
     private val ATTENTION_PREFIXES = listOf(
-        "окей", "оке", "ок", "привет", "слушай", "эй", "hey", "ok", "okay", "hi"
+        "ok", "okay", "ei", "oi", "olá", "ola", "fala", "hey", "hi",
+        "окей", "оке", "ок", "привет", "слушай", "эй"
     )
 
 
     /** Every accepted name, longest first so "фрайдей" wins over "фрай". */
     private val ALL_NAMES: List<String> =
-        (ENGLISH_NAME + RUSSIAN_NAME).sortedByDescending { it.length }
+        (PORTUGUESE_NAME + ENGLISH_NAME + RUSSIAN_NAME).distinct().sortedByDescending { it.length }
 
     /**
-     * Words handed to Vosk as a decoding grammar.
-     *
-     * Only Cyrillic entries: a grammar word that isn't in the acoustic model's
-     * vocabulary can break the recogniser, and the model here is Russian — it
-     * has no Latin "friday". Recognition of the English name still works
-     * because it comes back spelled in Cyrillic anyway.
+     * Closed grammar for the Brazilian Portuguese Vosk model. Never feed the
+     * Cyrillic legacy aliases into a Portuguese acoustic model.
+     * Spellings that are not in a model's lexicon are ignored by Vosk.
      */
     fun grammarVocabulary(): List<String> =
-        (ALL_NAMES + ATTENTION_PREFIXES).filter { entry ->
-            entry.all { it in 'а'..'я' || it == 'ё' || it == ' ' }
-        }.distinct()
+        (PORTUGUESE_NAME + listOf("ei", "oi", "olá", "ola", "fala", "ok", "okay"))
+            .distinct()
 
     /**
      * True when [heard] is the user calling Friday.
