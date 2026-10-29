@@ -73,7 +73,7 @@ internal object DevicePhrases {
             autoBrightnessPattern.containsMatchIn(lower) -> CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_AUTO)
             mentions && Regex("максим|полную|max|máxim|total").containsMatchIn(lower) ->
                 CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_SET, MAX_LEVEL)
-            mentions && Regex("миним|min|mínim").containsMatchIn(lower) ->
+            mentions && Regex("миним|\\bmin(?:imum)?\\b|mínim").containsMatchIn(lower) ->
                 CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_SET, MIN_BRIGHTNESS)
             Regex("(?:^|\\s)ярче(?:\\s|$)|экран ярче|brighter").containsMatchIn(lower) ||
                 mentions && Regex("прибав|увелич|повыс|up|aument|elevar").containsMatchIn(lower) ->
