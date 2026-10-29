@@ -57,7 +57,7 @@ class WeatherApiService private constructor(
     /** Resolves a place name to coordinates. Null when the place is unknown. */
     suspend fun geocode(name: String, russian: Boolean): Place? = withContext(Dispatchers.IO) {
         try {
-            val lang = if (russian) "ru" else "en"
+            val lang = if (russian) "ru" else "pt"
             val url = "$GEOCODE_URL?name=${java.net.URLEncoder.encode(name, "UTF-8")}" +
                 "&count=1&language=$lang&format=json"
             val body = get(url) ?: return@withContext null
@@ -114,12 +114,12 @@ class WeatherApiService private constructor(
             val lo = Math.round(minTemp).toInt()
             val hi = Math.round(maxTemp).toInt()
             val day = when (dayOffset) {
-                1 -> if (russian) "Завтра" else "Tomorrow"
-                2 -> if (russian) "Послезавтра" else "The day after tomorrow"
-                else -> if (russian) "Сегодня" else "Today"
+                1 -> if (russian) "Завтра" else "Amanhã"
+                2 -> if (russian) "Послезавтра" else "Depois de amanhã"
+                else -> if (russian) "Сегодня" else "Hoje"
             }
             return if (russian) "$day в $place $condition, от $lo° до $hi°."
-            else "$day in $place: $condition, $lo° to $hi°."
+            else "$day em $place: $condition, de $lo° a $hi°."
         }
     }
 
