@@ -59,15 +59,15 @@ fun BackgroundWorkStatus(visible: Boolean) {
     Column {
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            "Android может усыплять Friday ради экономии батареи — тогда она перестаёт слышать «Пятница». " +
-                "Разрешите работу в фоне. На Samsung также: Настройки → Батарея → Ограничения фоновой " +
-                "работы → «Приложения без спящего режима» → добавьте Friday.",
+            "O Android pode suspender o Friday para economizar bateria e impedir a ativação por voz. " +
+                "Permita a execução em segundo plano. No Samsung: Configurações → Bateria → Limites de uso em " +
+                "segundo plano → Apps que nunca suspendem → adicione o Friday.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.tertiary
         )
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedButton(onClick = { requestBatteryExemption(context) }) {
-            Text("Разрешить работу в фоне")
+            Text("Permitir execução em segundo plano")
         }
     }
 }
@@ -86,7 +86,7 @@ fun WakeHealthStatus(visible: Boolean) {
         Spacer(modifier = Modifier.height(8.dp))
         val listening = health.status == WakeHealth.Status.LISTENING
         Text(
-            if (listening) "Микрофон: слушает" else "Микрофон: ${health.describe()}",
+            if (listening) "Microfone: ouvindo" else "Microfone: ${health.describe()}",
             style = MaterialTheme.typography.bodySmall,
             color = if (listening) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
         )
