@@ -27,6 +27,7 @@ object VoiceErrors {
     }
 
     /** Mensagem falada quando o modelo não retorna texto. */
+    @Suppress("FunctionOnlyReturningConstant")
     fun empty(russian: Boolean): String =
         "O modelo não retornou nenhuma resposta. Tente novamente."
 }
