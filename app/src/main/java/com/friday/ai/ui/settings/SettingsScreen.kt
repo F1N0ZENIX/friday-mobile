@@ -220,7 +220,8 @@ private fun ChatsPanel(viewModel: SettingsViewModel) {
     HudPanel("Chamadas e mensagens", index = 5) {
         HudNote(
             "O Friday reúne mensagens do WhatsApp, Telegram e SMS sem lê-las em voz alta e ignora " +
-                "publicidade. Pergunte «tenho mensagens não lidas?» para saber quem escreveu; diga «responda que estou indo». " +
+                "publicidade. Pergunte «tenho mensagens não lidas?» para saber quem escreveu; " +
+                "diga «responda que estou indo». " +
                 "É necessário permitir o acesso às notificações."
         )
         HudSwitchRow(
@@ -255,7 +256,8 @@ private fun MailPanel(viewModel: SettingsViewModel) {
             if (gmail.account != null) {
                 "O Friday consulta a caixa de entrada, lê e responde e-mails, mas só envia após sua confirmação."
             } else {
-                "Depois de conectar: «tenho e-mails novos?», «leia o e-mail do João», «responda ao João: chego às cinco»."
+                "Depois de conectar: «tenho e-mails novos?», «leia o e-mail do João», " +
+                "«responda ao João: chego às cinco»."
             }
         )
         gmail.message?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = ArcCyan) }
@@ -304,7 +306,10 @@ private fun LearnedPanel(viewModel: SettingsViewModel) {
 private fun MapsPanel(viewModel: SettingsViewModel) {
     val provider by viewModel.mapsProvider.collectAsStateWithLifecycle()
     HudPanel("Mapas", index = 8) {
-        HudNote("Escolha o aplicativo para «encontre uma cafeteria ou banco por perto». «Padrão do celular» usa seu app de mapas.")
+        HudNote(
+            "Escolha o aplicativo para «encontre uma cafeteria ou banco por perto». " +
+                "«Padrão do celular» usa seu app de mapas.",
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("auto" to "Celular", "google" to "Google", "yandex" to "Yandex").forEach { (value, label) ->
                 Box(Modifier.weight(1f)) {
