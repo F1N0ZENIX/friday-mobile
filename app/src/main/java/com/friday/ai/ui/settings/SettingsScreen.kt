@@ -96,16 +96,16 @@ fun SettingsScreen(
     HudBackground {
         Column(Modifier.fillMaxSize()) {
             HudTopBar(
-                title = "СИСТЕМЫ",
-                status = HudStatus("Настройки"),
+                title = "SISTEMAS",
+                status = HudStatus("Configurações"),
                 navigation = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад", tint = OnBackground)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = OnBackground)
                     }
                 },
                 actions = {
                     IconButton(onClick = onOpenDiagnostics) {
-                        Icon(Icons.Filled.MonitorHeart, contentDescription = "Диагностика", tint = ArcCyan)
+                        Icon(Icons.Filled.MonitorHeart, contentDescription = "Diagnóstico", tint = ArcCyan)
                     }
                 }
             )
@@ -126,22 +126,22 @@ fun SettingsScreen(
                 MailPanel(viewModel)
                 LearnedPanel(viewModel)
                 MapsPanel(viewModel)
-                HudPanel("Режимы", index = 9) {
+                HudPanel("Modos", index = 9) {
                     HudNote(
                         "Несколько действий под одним именем, созданные голосом: «создай режим отдыха: " +
                             "беззвучный и яркость на минимум». «Выключи режим» возвращает всё как было."
                     )
                     HudOutlinedButton(onClick = onOpenModes, modifier = Modifier.fillMaxWidth()) {
-                        Text("Открыть режимы")
+                        Text("Abrir modos")
                     }
                 }
-                HudPanel("Память", index = 10) {
+                HudPanel("Memória", index = 10) {
                     HudNote("Карта того, что Пятница знает о вас: факты и разговоры, из которых они взялись.")
                     HudOutlinedButton(onClick = onOpenDashboard, modifier = Modifier.fillMaxWidth()) {
                         Text("Что Пятница знает обо мне")
                     }
                 }
-                HudPanel("Перенос на другой телефон", index = 11) { TransferSection() }
+                HudPanel("Transferir para outro celular", index = 11) { TransferSection() }
                 LocationPanel()
                 QuickLinksPanel()
                 LockPanel()
@@ -163,16 +163,16 @@ private fun IntelligencePanel(viewModel: SettingsViewModel) {
     val models by viewModel.models.collectAsStateWithLifecycle()
     var expanded by remember { mutableStateOf(false) }
 
-    HudPanel("Интеллект · Groq", index = 1) {
+    HudPanel("Inteligência · Groq", index = 1) {
         HudReadout(
-            "Статус",
-            if (apiKey.isBlank()) "НЕТ КЛЮЧА" else "КЛЮЧ ЗАДАН",
+            "Status",
+            if (apiKey.isBlank()) "SEM CHAVE" else "CHAVE CONFIGURADA",
             valueColor = if (apiKey.isBlank()) ErrorColor else ArcCyan
         )
         OutlinedTextField(
             value = apiKey,
             onValueChange = viewModel::onApiKeyChange,
-            label = { Text("Ключ Groq API") },
+            label = { Text("Chave da API Groq") },
             placeholder = { Text("gsk_…") },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
@@ -184,7 +184,7 @@ private fun IntelligencePanel(viewModel: SettingsViewModel) {
                 value = model,
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Модель") },
+                label = { Text("Modelo") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 colors = hudFieldColors(),
                 modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
@@ -202,7 +202,7 @@ private fun IntelligencePanel(viewModel: SettingsViewModel) {
             }
         }
         HudButton(onClick = viewModel::saveSettings, modifier = Modifier.fillMaxWidth()) {
-            Text(if (isSaved) "Сохранено" else "Сохранить")
+            Text(if (isSaved) "Salvo" else "Salvar")
         }
         HudNote("Ключ хранится зашифрованным (Android Keystore) и уходит только в Groq.")
     }
@@ -217,14 +217,14 @@ private fun ChatsPanel(viewModel: SettingsViewModel) {
     val needsAccess = { on: Boolean ->
         if (on && !FridayNotificationListener.isEnabled(context)) FridayNotificationListener.openSettings(context)
     }
-    HudPanel("Звонки и сообщения", index = 5) {
+    HudPanel("Chamadas e mensagens", index = 5) {
         HudNote(
             "Пятница собирает сообщения WhatsApp, Telegram и SMS, не читая их вслух, и пропускает " +
                 "рекламу. Спросите «есть непрочитанные?» — назовёт, кто писал; ответ: «ответь ему, что еду». " +
                 "Нужен доступ к уведомлениям."
         )
         HudSwitchRow(
-            title = "Объявлять звонки",
+            title = "Anunciar chamadas",
             subtitle = "Говорит, кто звонит: телефон, WhatsApp или Telegram",
             checked = announceCalls,
             onChange = { needsAccess(it); viewModel.onAnnounceCallsChange(it) }
@@ -245,10 +245,10 @@ private fun MailPanel(viewModel: SettingsViewModel) {
     LaunchedEffect(gmail.consent) {
         gmail.consent?.let { consentLauncher.launch(IntentSenderRequest.Builder(it).build()) }
     }
-    HudPanel("Почта · Gmail", index = 6) {
+    HudPanel("E-mail · Gmail", index = 6) {
         HudReadout(
-            "Аккаунт",
-            gmail.account ?: "НЕ ПОДКЛЮЧЁН",
+            "Conta",
+            gmail.account ?: "NÃO CONECTADA",
             valueColor = if (gmail.account != null) ArcCyan else OnBackground
         )
         HudNote(
@@ -261,10 +261,10 @@ private fun MailPanel(viewModel: SettingsViewModel) {
         gmail.message?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = ArcCyan) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             HudButton(onClick = viewModel::connectGmail, enabled = !gmail.busy, modifier = Modifier.weight(1f)) {
-                Text(if (gmail.account == null) "Подключить Gmail" else "Переподключить")
+                Text(if (gmail.account == null) "Conectar Gmail" else "Reconectar")
             }
             if (gmail.account != null) {
-                HudOutlinedButton(onClick = viewModel::disconnectGmail, enabled = !gmail.busy) { Text("Отключить") }
+                HudOutlinedButton(onClick = viewModel::disconnectGmail, enabled = !gmail.busy) { Text("Desconectar") }
             }
         }
     }
@@ -273,12 +273,12 @@ private fun MailPanel(viewModel: SettingsViewModel) {
 @Composable
 private fun LearnedPanel(viewModel: SettingsViewModel) {
     val learned by viewModel.learnedCommands.collectAsStateWithLifecycle()
-    HudPanel("Выученные команды", index = 7) {
+    HudPanel("Comandos aprendidos", index = 7) {
         HudNote(
             "Фразы, которые ИИ однажды разобрал, а теперь Пятница выполняет сама, без ИИ. " +
                 "Скажите «нет, не то» сразу после ошибки — и она забудет; или уберите здесь."
         )
-        if (learned.isEmpty()) HudReadout("Выучено", "0")
+        if (learned.isEmpty()) HudReadout("Aprendidos", "0")
         learned.forEach { (phrase, action) ->
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
@@ -288,14 +288,14 @@ private fun LearnedPanel(viewModel: SettingsViewModel) {
                 IconButton(onClick = { viewModel.forgetLearned(phrase) }) {
                     Icon(
                         Icons.Default.Close,
-                        contentDescription = "Забыть «$phrase»",
+                        contentDescription = "Esquecer «$phrase»",
                         tint = ArcCyan.copy(alpha = 0.7f)
                     )
                 }
             }
         }
         if (learned.isNotEmpty()) {
-            HudOutlinedButton(onClick = viewModel::forgetAllLearned) { Text("Забыть все") }
+            HudOutlinedButton(onClick = viewModel::forgetAllLearned) { Text("Esquecer todos") }
         }
     }
 }
@@ -303,10 +303,10 @@ private fun LearnedPanel(viewModel: SettingsViewModel) {
 @Composable
 private fun MapsPanel(viewModel: SettingsViewModel) {
     val provider by viewModel.mapsProvider.collectAsStateWithLifecycle()
-    HudPanel("Карты", index = 8) {
+    HudPanel("Mapas", index = 8) {
         HudNote("Чем открывать «найди ближайшую кофейню / банк / …». «Как в телефоне» — карты по умолчанию.")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("auto" to "Телефон", "google" to "Google", "yandex" to "Яндекс").forEach { (value, label) ->
+            listOf("auto" to "Celular", "google" to "Google", "yandex" to "Yandex").forEach { (value, label) ->
                 Box(Modifier.weight(1f)) {
                     HudOutlinedButton(
                         onClick = { viewModel.onMapsProviderChange(value) },
