@@ -37,7 +37,7 @@ class VoiceSession(
     }
 
     /** Whether to answer in Russian. */
-    suspend fun russian(): Boolean = (prefDao.get("prefer_russian") ?: "true") == "true"
+    suspend fun russian(): Boolean = false
 
     suspend fun id(): String = memory.getOrCreateSessionId()
 
