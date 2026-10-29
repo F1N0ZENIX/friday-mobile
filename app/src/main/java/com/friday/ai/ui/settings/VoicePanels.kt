@@ -96,17 +96,17 @@ internal fun VoicePanel(viewModel: SettingsViewModel, say: (String) -> Unit) {
         }
     }
 
-    HudPanel("Голос", index = 2) {
+    HudPanel("Voz", index = 2) {
         VoiceModelState(modelState, onDownload = viewModel::downloadVoiceModel)
         HudSwitchRow(
-            title = "Слово «Пятница»",
-            subtitle = "Тихо слушает имя и открывает панель поверх любого приложения",
+            title = "Palavra «Friday»",
+            subtitle = "Escuta a palavra de ativação e abre o painel sobre outros aplicativos",
             checked = wakeWordEnabled,
             enabled = modelState is VoskModelManager.DownloadState.Ready || wakeWordEnabled,
             onChange = { enabled ->
                 when {
                     !enabled -> viewModel.onWakeWordToggle(false)
-                    modelState !is VoskModelManager.DownloadState.Ready -> say("Сначала скачайте голосовую модель")
+                    modelState !is VoskModelManager.DownloadState.Ready -> say("Baixe primeiro o modelo de voz")
                     !wakePermissionsGranted(context) -> permissionLauncher.launch(wakePermissions())
                     !Settings.canDrawOverlays(context) -> {
                         openOverlaySettings(context)
@@ -131,7 +131,7 @@ internal fun VoicePanel(viewModel: SettingsViewModel, say: (String) -> Unit) {
             onClick = { com.friday.ai.ui.openDefaultAssistantSettings(context) },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Выбрать цифрового помощника")
+            Text("Escolher assistente digital")
         }
     }
 }
@@ -140,24 +140,24 @@ internal fun VoicePanel(viewModel: SettingsViewModel, say: (String) -> Unit) {
 private fun VoiceModelState(state: VoskModelManager.DownloadState, onDownload: () -> Unit) {
     when (state) {
         is VoskModelManager.DownloadState.NotDownloaded -> {
-            HudReadout("Модель слова", "НЕ УСТАНОВЛЕНА", valueColor = ErrorColor)
+            HudReadout("Modelo de ativação", "NÃO INSTALADO", valueColor = ErrorColor)
             HudOutlinedButton(onClick = onDownload, modifier = Modifier.fillMaxWidth()) {
-                Text("Скачать голосовую модель (~45 МБ)")
+                Text("Baixar modelo de voz (~45 MB)")
             }
         }
         is VoskModelManager.DownloadState.Downloading -> {
-            HudReadout("Модель слова", "ЗАГРУЗКА ${state.progress}%")
+            HudReadout("Modelo de ativação", "BAIXANDO ${state.progress}%")
             LinearProgressIndicator(progress = { state.progress / 100f }, modifier = Modifier.fillMaxWidth())
         }
         is VoskModelManager.DownloadState.Extracting -> {
-            HudReadout("Модель слова", "РАСПАКОВКА")
+            HudReadout("Modelo de ativação", "EXTRAINDO")
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
         }
-        is VoskModelManager.DownloadState.Ready -> HudReadout("Модель слова", "ГОТОВА", valueColor = ArcCyan)
+        is VoskModelManager.DownloadState.Ready -> HudReadout("Modelo de ativação", "PRONTO", valueColor = ArcCyan)
         is VoskModelManager.DownloadState.Error -> {
-            HudReadout("Модель слова", "ОШИБКА", valueColor = ErrorColor)
+            HudReadout("Modelo de ativação", "ERRO", valueColor = ErrorColor)
             HudNote(state.message)
-            HudOutlinedButton(onClick = onDownload, modifier = Modifier.fillMaxWidth()) { Text("Повторить загрузку") }
+            HudOutlinedButton(onClick = onDownload, modifier = Modifier.fillMaxWidth()) { Text("Tentar baixar novamente") }
         }
     }
 }
@@ -175,15 +175,15 @@ internal fun CalibrationPanel(viewModel: SettingsViewModel) {
         viewModel.startCalibration()
     }
 
-    HudPanel("Калибровка", index = 3) {
+    HudPanel("Calibração", index = 3) {
         HudNote("Подстраивает Пятницу под ваш голос и шум вокруг, чтобы слово срабатывало надёжно.")
         val current = phase
         if (current != null) {
             Text(phaseText(current), style = MaterialTheme.typography.titleMedium, color = ArcCyan)
             LinearProgressIndicator(progress = { phaseProgress(current) }, modifier = Modifier.fillMaxWidth())
-            HudReadout("Уровень", "%.0f".format(energy))
+            HudReadout("Nível", "%.0f".format(energy))
             HudOutlinedButton(onClick = viewModel::cancelCalibration, modifier = Modifier.fillMaxWidth()) {
-                Text("Отменить")
+                Text("Cancelar")
             }
         } else {
             message?.let { HudNote(it) }
@@ -195,26 +195,26 @@ internal fun CalibrationPanel(viewModel: SettingsViewModel) {
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (isCalibrated || message != null) "Откалибровать заново" else "Откалибровать")
+                Text(if (isCalibrated || message != null) "Calibrar novamente" else "Calibrar")
             }
         }
         val r = result
         if (isCalibrated && current == null && r != null) {
-            HudReadout("Фоновый шум", "%.0f".format(r.ambientNoise))
-            HudReadout("Ваш голос", "%.0f".format(r.speechEnergy))
-            HudReadout("Порог слова", "%.0f".format(r.wakeWordThreshold))
-            HudReadout("Порог речи", "%.0f".format(r.whisperThreshold))
+            HudReadout("Ruído ambiente", "%.0f".format(r.ambientNoise))
+            HudReadout("Sua voz", "%.0f".format(r.speechEnergy))
+            HudReadout("Limite de ativação", "%.0f".format(r.wakeWordThreshold))
+            HudReadout("Limite de fala", "%.0f".format(r.whisperThreshold))
         } else if (isCalibrated && current == null) {
-            HudReadout("Статус", "ОТКАЛИБРОВАНО", valueColor = ArcCyan)
+            HudReadout("Status", "CALIBRADO", valueColor = ArcCyan)
         }
     }
 }
 
 private fun phaseText(phase: VoiceCalibrator.Phase): String = when (phase) {
-    VoiceCalibrator.Phase.MEASURING_SILENCE -> "Тишина… измеряю фоновый шум"
-    VoiceCalibrator.Phase.WAITING_FOR_SPEECH -> "Теперь скажите что-нибудь, например «Пятница, открой камеру»"
-    VoiceCalibrator.Phase.MEASURING_SPEECH -> "Продолжайте… измеряю голос"
-    VoiceCalibrator.Phase.DONE -> "Готово"
+    VoiceCalibrator.Phase.MEASURING_SILENCE -> "Silêncio… medindo o ruído ambiente"
+    VoiceCalibrator.Phase.WAITING_FOR_SPEECH -> "Agora diga algo, como «Friday, abra a câmera»"
+    VoiceCalibrator.Phase.MEASURING_SPEECH -> "Continue… medindo sua voz"
+    VoiceCalibrator.Phase.DONE -> "Concluído"
 }
 
 private fun phaseProgress(phase: VoiceCalibrator.Phase): Float = when (phase) {
@@ -233,14 +233,14 @@ internal fun VoiceProfilePanel(viewModel: SettingsViewModel) {
         if (granted) viewModel.enrollVoice()
     }
 
-    HudPanel("Голосовой профиль", index = 4) {
+    HudPanel("Vozовой профиль", index = 4) {
         val current = profile
         HudReadout(
-            "Доступ",
+            "Acesso",
             when {
-                current == null -> "ЛЮБОЙ ГОЛОС"
-                !current.coversCommands -> "ТОЛЬКО СЛОВО"
-                else -> "ТОЛЬКО ВЫ"
+                current == null -> "QUALQUER VOZ"
+                !current.coversCommands -> "SÓ ATIVAÇÃO"
+                else -> "SÓ VOCÊ"
             },
             valueColor = if (current?.coversCommands == true) ArcCyan else ErrorColor
         )
@@ -249,7 +249,7 @@ internal fun VoiceProfilePanel(viewModel: SettingsViewModel) {
         val checks by com.friday.ai.service.voice.VoiceChecks.recent.collectAsStateWithLifecycle()
         checks.take(3).forEach { c ->
             HudReadout(
-                if (c.what == "wake word") "Слово «Пятница»" else "Команда",
+                if (c.what == "wake word") "Palavra «Friday»" else "Comando",
                 "%.2f / %.2f %s".format(c.score, c.threshold, if (c.passed) "✓" else "✗"),
                 valueColor = if (c.passed) ArcCyan else ErrorColor
             )
@@ -277,10 +277,10 @@ internal fun VoiceProfilePanel(viewModel: SettingsViewModel) {
                 },
                 enabled = !enrolment.recording,
                 modifier = Modifier.weight(1f)
-            ) { Text(if (current == null) "Записать голос" else "Перезаписать") }
+            ) { Text(if (current == null) "Gravar voz" else "Gravar novamente") }
             if (current != null) {
                 HudOutlinedButton(onClick = viewModel::clearVoiceProfile, enabled = !enrolment.recording) {
-                    Text("Сбросить")
+                    Text("Redefinir")
                 }
             }
         }
