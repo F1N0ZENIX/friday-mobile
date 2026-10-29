@@ -221,19 +221,19 @@ internal fun ChatLayout(
                 navigation = {
                     Row {
                         IconButton(onClick = onMenu) {
-                            Icon(Icons.Filled.Menu, contentDescription = "Журнал разговоров", tint = OnBackground)
+                            Icon(Icons.Filled.Menu, contentDescription = "Histórico de conversas", tint = OnBackground)
                         }
                         IconButton(onClick = onNotebook) {
-                            Icon(Icons.Filled.Draw, contentDescription = "Блокнот", tint = ArcCyan)
+                            Icon(Icons.Filled.Draw, contentDescription = "Bloco de notas", tint = ArcCyan)
                         }
                     }
                 },
                 actions = {
                     IconButton(onClick = onModes) {
-                        Icon(Icons.Filled.AutoAwesome, contentDescription = "Режимы", tint = ArcCyan)
+                        Icon(Icons.Filled.AutoAwesome, contentDescription = "Modos", tint = ArcCyan)
                     }
                     IconButton(onClick = onSettings) {
-                        Icon(Icons.Filled.Settings, contentDescription = "Настройки", tint = OnBackground)
+                        Icon(Icons.Filled.Settings, contentDescription = "Configurações", tint = OnBackground)
                     }
                 }
             )
@@ -276,10 +276,10 @@ internal fun ChatLayout(
 }
 
 private fun status(state: ChatUiState): HudStatus = when {
-    state.isVoiceListening -> HudStatus("Слушаю", ArcCyan, live = true)
-    state.isLoading -> HudStatus("Обрабатываю", ArcAmber, live = true)
-    state.currentMode != AssistantMode.DEFAULT -> HudStatus("На связи · ${state.currentMode.label}")
-    else -> HudStatus("На связи")
+    state.isVoiceListening -> HudStatus("Ouvindo", ArcCyan, live = true)
+    state.isLoading -> HudStatus("Processando", ArcAmber, live = true)
+    state.currentMode != AssistantMode.DEFAULT -> HudStatus("Conectado · ${state.currentMode.label}")
+    else -> HudStatus("Conectado")
 }
 
 /** Nothing said yet: the reactor, a greeting, and a few things to try. */
@@ -307,7 +307,7 @@ private fun Standby(state: ChatUiState, onSuggestion: (String) -> Unit) {
         )
         Spacer(Modifier.height(6.dp))
         Text(
-            "Скажите «Пятница» — или напишите ниже",
+            "Diga «Friday» ou escreva abaixo",
             style = MaterialTheme.typography.bodyMedium,
             color = OnSurfaceMuted,
             textAlign = TextAlign.Center
@@ -350,24 +350,24 @@ private fun ErrorStrip(error: String, onDismiss: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f).padding(vertical = 6.dp)) {
-            Text("СБОЙ", style = HudLabelStyle, color = ErrorColor)
+            Text("ERRO", style = HudLabelStyle, color = ErrorColor)
             Text(error, style = MaterialTheme.typography.bodyMedium, color = OnBackground)
         }
-        TextButton(onClick = onDismiss) { Text("Скрыть", color = ErrorColor) }
+        TextButton(onClick = onDismiss) { Text("Ocultar", color = ErrorColor) }
     }
 }
 
 private val SUGGESTIONS = listOf(
-    "Какая погода сегодня?",
-    "Прочитай новые сообщения",
-    "Включи музыку",
-    "Поставь будильник на 7:00",
-    "Что нового в мире?"
+    "Como está o tempo hoje?",
+    "Leia minhas mensagens novas",
+    "Coloque uma música",
+    "Defina um alarme para as 7h",
+    "Quais são as notícias de hoje?"
 )
 
 private fun greeting(hour: Int): String = when (hour) {
-    in 5..11 -> "Доброе утро, сэр"
-    in 12..17 -> "Добрый день, сэр"
-    in 18..22 -> "Добрый вечер, сэр"
-    else -> "Доброй ночи, сэр"
+    in 5..11 -> "Bom dia!"
+    in 12..17 -> "Boa tarde!"
+    in 18..22 -> "Boa noite!"
+    else -> "Boa madrugada!"
 }

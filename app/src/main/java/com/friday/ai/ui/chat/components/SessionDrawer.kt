@@ -62,7 +62,7 @@ fun SessionDrawer(
             modifier = Modifier.padding(horizontal = 8.dp)
         )
         Spacer(Modifier.height(16.dp))
-        HudLabel("Журнал", modifier = Modifier.padding(horizontal = 8.dp))
+        HudLabel("Histórico", modifier = Modifier.padding(horizontal = 8.dp))
 
         Spacer(Modifier.height(16.dp))
 
@@ -81,7 +81,7 @@ fun SessionDrawer(
             )
             Spacer(Modifier.height(0.dp))
             Text(
-                "Новый разговор",
+                "Nova conversa",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(start = 12.dp)
@@ -92,7 +92,7 @@ fun SessionDrawer(
 
         if (sessions.isEmpty()) {
             Text(
-                "Разговоров пока нет",
+                "Ainda não há conversas",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 modifier = Modifier.padding(12.dp)
@@ -101,7 +101,7 @@ fun SessionDrawer(
         }
 
         Text(
-            "НЕДАВНИЕ",
+            "RECENTES",
             style = HudLabelStyle,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
@@ -148,7 +148,7 @@ private fun SessionRow(
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = session.title?.takeIf { it.isNotBlank() } ?: "Новый разговор",
+                text = session.title?.takeIf { it.isNotBlank() } ?: "Nova conversa",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
@@ -163,7 +163,7 @@ private fun SessionRow(
         IconButton(onClick = onDelete) {
             Icon(
                 Icons.Filled.DeleteOutline,
-                contentDescription = "Удалить разговор",
+                contentDescription = "Excluir разговор",
                 tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
             )
         }
@@ -179,10 +179,10 @@ private fun relativeDay(timestamp: Long): String {
     val dayDiff = now.get(Calendar.DAY_OF_YEAR) - then.get(Calendar.DAY_OF_YEAR)
 
     return when {
-        sameYear && dayDiff == 0 -> "Сегодня"
-        sameYear && dayDiff == 1 -> "Вчера"
-        sameYear && dayDiff in 2..4 -> "$dayDiff дня назад"
-        sameYear && dayDiff in 5..6 -> "$dayDiff дней назад"
+        sameYear && dayDiff == 0 -> "Hoje"
+        sameYear && dayDiff == 1 -> "Ontem"
+        sameYear && dayDiff in 2..4 -> "$dayDiff dias atrás"
+        sameYear && dayDiff in 5..6 -> "$dayDiff dias atrás"
         else -> android.text.format.DateFormat.format("d MMM yyyy", timestamp).toString()
     }
 }
