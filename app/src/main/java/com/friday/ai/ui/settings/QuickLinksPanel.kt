@@ -42,8 +42,8 @@ fun QuickLinksPanel(viewModel: QuickLinksViewModel = koinViewModel()) {
 
     HudPanel("Links rápidos", index = 13) {
         HudNote(
-            "Sua frase abre um site em uma nova aba do Chrome. Variações de palavras são aceitas: «vamos assistir a um " +
-                "filme» também funciona como «quero ver filmes». Frases de uma palavra exigem pedidos curtos. " +
+            "Sua frase abre um site no Chrome. Variações são aceitas: «vamos assistir a um " +
+                "filme» funciona como «quero ver filmes». Uma palavra exige um pedido curto. " +
                 "«Silencioso»: sem resposta e sem salvar no chat ou na memória do Friday."
         )
         links.sortedBy { it.name.lowercase() }.forEach { link -> LinkRow(link) { editing = link } }
@@ -115,7 +115,7 @@ private fun LinkDialog(
                 LinkField(phrases, { phrases = it }, "Frases, separadas por vírgula", "vamos assistir a um filme, abra o cinema")
                 LinkField(address, { address = it }, "Endereço do site", "example.com")
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Открывать silencioso", Modifier.weight(1f))
+                    Text("Abrir silenciosamente", Modifier.weight(1f))
                     Switch(checked = silent, onCheckedChange = { silent = it })
                 }
                 problem?.let { Text(it, color = ErrorColor, style = MaterialTheme.typography.bodySmall) }
