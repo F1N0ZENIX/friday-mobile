@@ -82,7 +82,10 @@ object Diagnostics {
     }
 
     private fun essentials(c: FridayCapabilities) = listOf(
-        Check("groq", "Chave da API Groq", "Configurada", "Não configurada: o Friday não consegue responder", Fix.FRIDAY_SETTINGS)
+        Check(
+            "groq", "Chave da API Groq", "Configurada",
+            "Não configurada: o Friday não consegue responder", Fix.FRIDAY_SETTINGS
+        )
             .row(Group.ESSENTIALS, c.integrations.groqKey),
         Check("microphone", "Microfone", "Permitido", "Sem permissão: o Friday não consegue ouvir você", Fix.MICROPHONE)
             .row(Group.ESSENTIALS, c.permissions.microphone),
