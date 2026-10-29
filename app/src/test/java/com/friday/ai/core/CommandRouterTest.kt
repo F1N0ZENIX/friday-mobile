@@ -17,6 +17,21 @@ class CommandRouterTest {
     }
 
     @Test
+    fun `portuguese notification requests use local notification tool`() {
+        listOf(
+            "resuma minhas notificações",
+            "quais são minhas notificações",
+            "notificações",
+            "o que eu perdi"
+        ).forEach { request ->
+            assertTrue(
+                "Pedido deve acessar notificações locais: $request",
+                router.route(request) is CommandResult.WhatDidIMiss
+            )
+        }
+    }
+
+    @Test
     fun `route open camera in Russian`() {
         // The camera left the generic app launcher: routing it separately is
         // what lets "открой камеру и сделай фото" open in capture mode instead
