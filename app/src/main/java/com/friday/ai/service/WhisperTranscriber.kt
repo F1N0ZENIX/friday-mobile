@@ -74,13 +74,12 @@ class WhisperTranscriber(
     var endpointModel: () -> Model? = { null }
 
     /**
-     * The language to transcribe in: "ru", or null to let Whisper guess.
-     * Guessing fails on short phrases — on the owner's own recordings a
-     * four-second Russian sentence came back in Polish — while "ru" keeps
-     * the English words of mixed speech ("включи sqrt", "Backrooms") in Latin.
+     * ISO 639-1 language hint for Groq Whisper. Brazilian Portuguese uses
+     * "pt" (not "pt-BR" in the transcription API). Short voice commands
+     * are much more reliable with an explicit language hint.
      */
     @Volatile
-    var language: String? = null
+    var language: String? = "pt"
 
     @Volatile
     private var stopRequested = false
@@ -114,7 +113,7 @@ class WhisperTranscriber(
             // VOICE_RECOGNITION rather than MIC: it is the tuned path, and it
             // is what the hardware effects below expect to sit on.
             audioRecord = openVoiceRecord(SAMPLE_RATE, bufferSize, TAG) ?: run {
-                withContext(Dispatchers.Main) { listener?.onError("Microphone unavailable") }
+                withContext(Dispatchers.Main) { listener?.onError("Microfone indisponível") }
                 return@withContext VoiceTurn.Outcome.Nothing
             }
             effects = AudioEffects.attach(audioRecord.audioSessionId)
@@ -129,7 +128,7 @@ class WhisperTranscriber(
             throw e
         } catch (e: Exception) {
             Log.e(TAG, "Transcription error: ${e.message}")
-            withContext(Dispatchers.Main) { listener?.onError(e.message ?: "Transcription failed") }
+            withContext(Dispatchers.Main) { listener?.onError(e.message ?: "Falha ao transcrever o áudio") }
             VoiceTurn.Outcome.Nothing
         } finally {
             // Effects first: one outliving its audio session leaks.
