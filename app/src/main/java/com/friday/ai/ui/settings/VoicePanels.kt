@@ -123,9 +123,9 @@ internal fun VoicePanel(viewModel: SettingsViewModel, say: (String) -> Unit) {
         WakeHealthStatus(visible = wakeWordEnabled)
         BackgroundWorkStatus(visible = wakeWordEnabled)
         HudNote(
-            "Боковая кнопка: выберите Пятницу цифровым помощником — и долгое нажатие будет звать её, " +
-                "даже когда слово выключено. На Samsung также: Дополнительные функции → Боковая кнопка → " +
-                "Нажатие и удержание → Цифровой помощник."
+            "Botão lateral: escolha Friday como assistente digital para chamá-lo ao manter pressionado, " +
+                "mesmo sem a palavra de ativação. No Samsung: Recursos avançados → Botão lateral → " +
+                "Manter pressionado → Assistente digital."
         )
         HudOutlinedButton(
             onClick = { com.friday.ai.ui.openDefaultAssistantSettings(context) },
@@ -176,7 +176,7 @@ internal fun CalibrationPanel(viewModel: SettingsViewModel) {
     }
 
     HudPanel("Calibração", index = 3) {
-        HudNote("Подстраивает Пятницу под ваш голос и шум вокруг, чтобы слово срабатывало надёжно.")
+        HudNote("Ajusta o Friday à sua voz e ao ruído ambiente para reconhecer a ativação com precisão.")
         val current = phase
         if (current != null) {
             Text(phaseText(current), style = MaterialTheme.typography.titleMedium, color = ArcCyan)
@@ -233,7 +233,7 @@ internal fun VoiceProfilePanel(viewModel: SettingsViewModel) {
         if (granted) viewModel.enrollVoice()
     }
 
-    HudPanel("Vozовой профиль", index = 4) {
+    HudPanel("Perfil de voz", index = 4) {
         val current = profile
         HudReadout(
             "Acesso",
@@ -285,24 +285,24 @@ internal fun VoiceProfilePanel(viewModel: SettingsViewModel) {
             }
         }
         HudNote(
-            "Записывайте там же, где обычно зовёте Пятницу: профиль, снятый в тишине, потом не узнаёт вас в машине."
+            "Grave sua voz no ambiente onde costuma usar o Friday. Um perfil gravado no silêncio pode falhar no carro."
         )
     }
 }
 
 private fun profileText(profile: VoiceProfile.Profile?): String = when {
     profile == null ->
-        "Пока Пятница откликается на любой голос. Запишите голос — " +
-            "${VoiceProfile.ENROLMENT_PHRASES.size} коротких фраз, и она перестанет реагировать на чужих."
+        "Por enquanto o Friday responde a qualquer voz. Grave a sua usando " +
+            "${VoiceProfile.ENROLMENT_PHRASES.size} frases curtas para evitar que responda a outras pessoas."
     !profile.coversCommands ->
-        "Профиль записан только на слове «Пятница», поэтому проверяется лишь пробуждение. " +
-            "Перезапишите, чтобы проверялось и то, что вы говорите дальше."
+        "O perfil foi gravado apenas para a palavra «Friday», então só a ativação é verificada. " +
+            "Grave novamente para verificar também os comandos seguintes."
     else ->
-        "Проверяется и пробуждение, и команды. Фраз: ${profile.sampleCount}, " +
-            "порог %.2f, похожесть записей %.2f.".format(profile.threshold, profile.cohesion)
+        "A ativação e os comandos são verificados. Frases: ${profile.sampleCount}, " +
+            "limite %.2f, semelhança das gravações %.2f.".format(profile.threshold, profile.cohesion)
 }
 
-private const val OVERLAY_HINT = "Разрешите «Поверх других приложений» и включите снова"
+private const val OVERLAY_HINT = "Permita «Sobrepor a outros apps» e ative novamente"
 
 private fun wakePermissions(): Array<String> = buildList {
     add(Manifest.permission.RECORD_AUDIO)
