@@ -57,7 +57,8 @@ object WeatherRequest {
 
     fun parse(text: String, dayOffset: Int): CommandResult? {
         val t = text.trim()
-        val city = (homeCity.find(t) ?: portugueseHomeCity.find(t) ?: englishHomeCity.find(t))?.groupValues?.get(1)?.trim()
+        val cityMatch = homeCity.find(t) ?: portugueseHomeCity.find(t) ?: englishHomeCity.find(t)
+        val city = cityMatch?.groupValues?.get(1)?.trim()
         val weather = CommandResult.Weather(placeIn(t, except = city), dayOffset)
             .takeIf { weatherWords.containsMatchIn(t) &&
                 (asks.containsMatchIn(t) || portugueseAsks.containsMatchIn(t)) }
