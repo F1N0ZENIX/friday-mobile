@@ -34,7 +34,8 @@ data class WakeHealth(
         Status.LISTENING -> "Ouvindo a palavra \"Friday\""
         Status.PAUSING, Status.PAUSED_FOR_COMMAND -> "Aguardando comando..."
         Status.PAUSED_FOR_CALL -> "Pausado durante a chamada"
-        Status.RECOVERING -> "Microfone indisponível. Nova tentativa em ${retryInMs / MS_PER_SECOND}s ($attempt/$MAX_SHOWN)"
+        Status.RECOVERING ->
+            "Microfone indisponível. Tentativa em ${retryInMs / MS_PER_SECOND}s ($attempt/$MAX_SHOWN)"
         Status.STOPPED -> "Parado"
     }
 
