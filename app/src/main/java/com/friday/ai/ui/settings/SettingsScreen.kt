@@ -230,14 +230,15 @@ private fun ChatsPanel(viewModel: SettingsViewModel) {
                     FridayNotificationListener.openSettings(context)
                 } else {
                     scope.launch {
-                        val dao = org.koin.java.KoinJavaComponent.get(
-                            com.friday.ai.data.local.dao.NotificationDao::class.java
-                        )
+                        val dao: com.friday.ai.data.local.dao.NotificationDao =
+                            org.koin.java.KoinJavaComponent.get(
+                                com.friday.ai.data.local.dao.NotificationDao::class.java
+                            )
                         val recent = dao.since(System.currentTimeMillis() - 24L * 60 * 60 * 1000)
                         notificationSummary = if (recent.isEmpty()) {
                             "Nenhuma notificação registrada nas últimas 24 horas."
                         } else {
-                            recent.groupBy { it.appName }.entries.joinToString("\\n") { (app, items) ->
+                            recent.groupBy { it.appName }.entries.joinToString("\n") { (app, items) ->
                                 "$app: ${items.size} notificação(ões). " +
                                     items.take(3).joinToString("; ") { it.title.ifBlank { it.text } }
                             }
