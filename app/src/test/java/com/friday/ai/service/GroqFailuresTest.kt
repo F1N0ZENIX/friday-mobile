@@ -125,6 +125,15 @@ class QuickWinsTest {
     }
 
     @Test
+    fun `every spoken greeting is Brazilian Portuguese`() {
+        assertTrue(Acknowledgements.all.isNotEmpty())
+        assertTrue(Acknowledgements.all.all { greeting ->
+            greeting.none { it in 'Ѐ'..'ӿ' } &&
+                !greeting.contains(Regex("\\b(sir|listening|help)\\b", RegexOption.IGNORE_CASE))
+        })
+    }
+
+    @Test
     fun `every greeting is prefetched`() {
         val seen = (1..200).map { Acknowledgements().next(null) }.toSet() +
             (1..200).map { Acknowledgements().next(com.friday.ai.core.WakePhrases.Language.ENGLISH) }.toSet()
