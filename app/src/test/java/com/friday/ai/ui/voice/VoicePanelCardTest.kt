@@ -61,7 +61,7 @@ class VoicePanelCardTest {
                         },
                         onClose = { closed++ },
                         actions = if (expanded || locked) {
-                            listOf(PanelAction("Закрыть") { closed++ }, PanelAction("Открыть в Friday", primary = true) {})
+                            listOf(PanelAction("Fechar") { closed++ }, PanelAction("Открыть в Friday", primary = true) {})
                         } else {
                             emptyList()
                         }
@@ -85,7 +85,7 @@ class VoicePanelCardTest {
     @Test
     fun `the close button is labelled, large enough, and closes`() {
         show()
-        compose.onNodeWithContentDescription("Закрыть Пятницу")
+        compose.onNodeWithContentDescription("Fechar Friday")
             .assertIsDisplayed()
             .assertWidthIsAtLeast(48.dp)
             .assertHeightIsAtLeast(48.dp)
@@ -96,7 +96,7 @@ class VoicePanelCardTest {
     @Test
     fun `actions are at least 48 dp tall`() {
         show(locked = true)
-        compose.onNodeWithText("Закрыть").assertHeightIsAtLeast(48.dp)
+        compose.onNodeWithText("Fechar").assertHeightIsAtLeast(48.dp)
         compose.onNodeWithText("Открыть в Friday").assertHeightIsAtLeast(48.dp)
     }
 
@@ -114,6 +114,6 @@ class VoicePanelCardTest {
     fun `the stage is announced politely and the close button survives the largest font`() {
         show(fontScale = 2f)
         compose.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.LiveRegion)).assertIsDisplayed()
-        compose.onNodeWithContentDescription("Закрыть Пятницу").assertIsDisplayed().assertWidthIsAtLeast(48.dp)
+        compose.onNodeWithContentDescription("Fechar Friday").assertIsDisplayed().assertWidthIsAtLeast(48.dp)
     }
 }
