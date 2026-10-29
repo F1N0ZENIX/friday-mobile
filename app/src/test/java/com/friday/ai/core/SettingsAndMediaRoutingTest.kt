@@ -138,24 +138,54 @@ class SettingsAndMediaRoutingTest {
 
     @Test
     fun `Brazilian Portuguese device controls keep their intended actions`() {
-        mapOf(
-            "aumente o volume" to DeviceAction.VOLUME_UP,
-            "diminua o volume" to DeviceAction.VOLUME_DOWN,
-            "ligar wifi" to DeviceAction.WIFI_ON,
-            "desligar bluetooth" to DeviceAction.BLUETOOTH_OFF,
-            "desative o modo não perturbe" to DeviceAction.DND_OFF,
-            "ative o modo não perturbe" to DeviceAction.DND_ON,
-            "brilho automático" to DeviceAction.BRIGHTNESS_AUTO,
-            "aumentar brilho" to DeviceAction.BRIGHTNESS_UP,
-            "diminuir brilho" to DeviceAction.BRIGHTNESS_DOWN,
-            "modo silencioso" to DeviceAction.RINGER_SILENT,
-            "modo vibração" to DeviceAction.RINGER_VIBRATE,
-            "desativar modo silencioso" to DeviceAction.RINGER_NORMAL
-        ).forEach { (phrase, expected) ->
-            val result = router.route(phrase)
-            assertTrue("'$phrase' -> $result", result is CommandResult.DeviceControl)
-            assertEquals("'$phrase'", expected, (result as CommandResult.DeviceControl).action)
-        }
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.VOLUME_UP),
+            router.route("aumente o volume")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.VOLUME_DOWN),
+            router.route("diminua o volume")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.WIFI_ON),
+            router.route("ligar wifi")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.BLUETOOTH_OFF),
+            router.route("desligar bluetooth")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.DND_OFF),
+            router.route("desative o modo não perturbe")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.DND_ON),
+            router.route("ative o modo não perturbe")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_AUTO),
+            router.route("brilho automático")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_UP),
+            router.route("aumentar brilho")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_DOWN),
+            router.route("diminuir brilho")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.RINGER_SILENT),
+            router.route("modo silencioso")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.RINGER_VIBRATE),
+            router.route("modo vibração")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.RINGER_NORMAL),
+            router.route("desativar modo silencioso")
+        )
         assertEquals(
             CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_SET, 30),
             router.route("brilho em 30%")
