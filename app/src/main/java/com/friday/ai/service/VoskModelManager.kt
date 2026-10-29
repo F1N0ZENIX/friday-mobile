@@ -27,10 +27,10 @@ class VoskModelManager(private val context: Context) {
         private const val TAG = "VoskModelManager"
         private const val MODEL_DIR_NAME = "vosk-model-pt-0.3"
         private const val MODEL_URL = "https://alphacephei.com/vosk/models/vosk-model-small-pt-0.3.zip"
-        private const val MODEL_MARKER = "conf/model.conf"
+        private const val MODEL_MARKER = "final.mdl"
 
         /**
-         * vosk-model-small-ru-0.22.zip as published at [MODEL_URL]: 32,453,112
+         * vosk-model-small-pt-0.3.zip as published at [MODEL_URL]: 32,453,112
          * bytes, this SHA-256 (cross-checked against the published Hugging Face LFS object). A changed upstream file
          * fails the install until this is deliberately updated.
          */
@@ -117,7 +117,7 @@ class VoskModelManager(private val context: Context) {
             val read = input.read(buffer)
             if (read < 0) break
             downloaded += read
-            if (downloaded > ARTIFACT.maxBytes) throw ModelInstaller.Rejected("The download is larger than the model")
+            if (downloaded > ARTIFACT.maxBytes) throw ModelInstaller.Rejected("O download excede o tamanho permitido do modelo")
             output.write(buffer, 0, read)
             if (totalSize > 0) {
                 _downloadState.value = DownloadState.Downloading((downloaded * PERCENT / totalSize).toInt())
