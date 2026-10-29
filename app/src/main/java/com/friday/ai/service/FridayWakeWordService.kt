@@ -328,7 +328,8 @@ class FridayWakeWordService : Service() {
         val secret = get<AndroidNfcTags>(AndroidNfcTags::class.java).secret()
         when (val read = com.friday.ai.core.modes.ModeTags.read(payload, secret)) {
             is com.friday.ai.core.modes.ModeTags.Read.Mode -> toggle(read.id)
-            com.friday.ai.core.modes.ModeTags.Read.Forged -> say("Esta etiqueta não foi criada neste celular. Ação cancelada.")
+            com.friday.ai.core.modes.ModeTags.Read.Forged ->
+                say("Esta etiqueta não foi criada neste celular. Ação cancelada.")
             com.friday.ai.core.modes.ModeTags.Read.NotATag -> Unit
         }
     }
