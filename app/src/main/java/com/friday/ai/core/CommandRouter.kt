@@ -394,7 +394,7 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
 
     private fun stripDayWords(text: String): String = text
         .replace(
-            Regex("(?:на\\s+)?(?:сегодня|завтра|послезавтра|today|tomorrow|day after tomorrow)",
+            Regex("(?:на\\s+)?(?:сегодня|завтра|послезавтра|today|tomorrow|day after tomorrow|hoje|depois de amanhã|depois de amanha|amanhã|amanha)",
                 RegexOption.IGNORE_CASE),
             " "
         )
@@ -567,8 +567,10 @@ class CommandRouter(private val now: () -> java.time.LocalDateTime = java.time.L
 private fun dayOffsetOf(text: String): Int {
     val lower = text.lowercase()
     return when {
-        lower.contains("послезавтра") || lower.contains("day after tomorrow") -> 2
-        lower.contains("завтра") || lower.contains("tomorrow") -> 1
+        lower.contains("послезавтра") || lower.contains("day after tomorrow") ||
+            lower.contains("depois de amanhã") || lower.contains("depois de amanha") -> 2
+        lower.contains("завтра") || lower.contains("tomorrow") ||
+            lower.contains("amanhã") || lower.contains("amanha") -> 1
         else -> 0
     }
 }
