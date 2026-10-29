@@ -94,16 +94,16 @@ class SystemTtsSpeaker(context: Context) {
         }
     }
 
-    /** Picks a voice language so Russian isn't read with an English accent. */
+    /** Always requests a Brazilian Portuguese voice; flags untranslated output. */
     private fun applyLanguageFor(text: String) {
-        val cyrillic = text.count { it in 'Ѐ'..'ӿ' }
-        val latin = text.count { it in 'A'..'Z' || it in 'a'..'z' }
+        if (text.any { it in 'Ѐ'..'ӿ' }) {
+            Log.w(TAG, "TTS received untranslated Cyrillic output")
+        }
         val locale = Locale.forLanguageTag("pt-BR")
 
         val status = runCatching { tts.setLanguage(locale) }.getOrNull()
         if (status == TextToSpeech.LANG_MISSING_DATA || status == TextToSpeech.LANG_NOT_SUPPORTED) {
             Log.w(TAG, "No voice data for $locale; falling back to the engine default")
-            runCatching { tts.setLanguage(Locale.forLanguageTag("pt-BR")) }
         }
     }
 }
