@@ -132,10 +132,7 @@ object EdgeTtsProtocol {
         return digest.joinToString("") { "%02x".format(it) } + ".mp3"
     }
 
-    /** Picks a voice by script, so a Russian reply isn't read with an English accent. */
-    fun detectVoice(text: String): String {
-        val cyrillic = text.count { it in 'Ѐ'..'ӿ' }
-        val latin = text.count { it in 'A'..'Z' || it in 'a'..'z' }
-        return VOICE_EN
-    }
+    /** Output speech is always synthesized in pt-BR. Keep the argument for existing callers. */
+    @Suppress("UnusedParameter", "FunctionOnlyReturningConstant")
+    fun detectVoice(text: String): String = VOICE_EN
 }
