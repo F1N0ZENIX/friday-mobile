@@ -117,7 +117,9 @@ class VoskModelManager(private val context: Context) {
             val read = input.read(buffer)
             if (read < 0) break
             downloaded += read
-            if (downloaded > ARTIFACT.maxBytes) throw ModelInstaller.Rejected("O download excede o tamanho permitido do modelo")
+            if (downloaded > ARTIFACT.maxBytes) {
+                throw ModelInstaller.Rejected("O download excede o tamanho permitido do modelo")
+            }
             output.write(buffer, 0, read)
             if (totalSize > 0) {
                 _downloadState.value = DownloadState.Downloading((downloaded * PERCENT / totalSize).toInt())
