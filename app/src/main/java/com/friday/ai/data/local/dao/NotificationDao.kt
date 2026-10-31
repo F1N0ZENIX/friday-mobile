@@ -21,6 +21,20 @@ interface NotificationDao {
     @Query("SELECT * FROM notifications WHERE postedAt >= :since ORDER BY postedAt DESC LIMIT :limit")
     suspend fun since(since: Long, limit: Int = 50): List<NotificationEntity>
 
+    @Query(
+        "SELECT * FROM notifications WHERE postedAt >= :since AND " +
+            "(LOWER(appName) LIKE '%' || LOWER(:appQuery) || '%' OR packageName LIKE '%' || :appQuery || '%') " +
+            "ORDER BY postedAt DESC LIMIT :limit"
+    )
+    suspend fun byApp(since: Long, appQuery: String, limit: Int = 100): List<NotificationEntity>
+
+    @Query(
+        "SELECT * FROM notifications WHERE postedAt >= :since AND " +
+            "(LOWER(title) LIKE '%' || LOWER(:query) || '%' OR LOWER(text) LIKE '%' || LOWER(:query) || '%') " +
+            "ORDER BY postedAt DESC LIMIT :limit"
+    )
+    suspend fun searchText(since: Long, query: String, limit: Int = 100): List<NotificationEntity>
+
     @Query("UPDATE notifications SET seenByUser = 1 WHERE postedAt <= :upTo")
     suspend fun markSeen(upTo: Long)
 
