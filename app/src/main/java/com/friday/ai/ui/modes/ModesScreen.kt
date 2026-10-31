@@ -1,3 +1,5 @@
+@file:Suppress("MaxLineLength")
+
 package com.friday.ai.ui.modes
 
 import androidx.compose.foundation.layout.Arrangement

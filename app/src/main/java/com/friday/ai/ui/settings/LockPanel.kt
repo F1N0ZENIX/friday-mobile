@@ -30,16 +30,16 @@ import org.koin.androidx.compose.koinViewModel
 
 private val choices = listOf(
     Triple(
-        LockPolicy.Level.SAFE_ONLY, "Только безопасные",
-        "Музыка, будильники, фонарик, погода. Звонки и сообщения — после разблокировки."
+        LockPolicy.Level.SAFE_ONLY, "Somente ações seguras",
+        "Música, alarmes, lanterna e clima. Chamadas e mensagens exigem desbloqueio."
     ),
     Triple(
-        LockPolicy.Level.VOICE, "После проверки голоса",
-        "Записанный голосовой профиль подтверждает вас; без него — экран разблокировки Android."
+        LockPolicy.Level.VOICE, "Após verificar a voz",
+        "O perfil de voz confirma sua identidade; sem ele, será usada a tela de desbloqueio do Android."
     ),
     Triple(
-        LockPolicy.Level.UNLOCK, "Только после разблокировки",
-        "Звонки и сообщения всегда сначала через отпечаток, лицо или PIN."
+        LockPolicy.Level.UNLOCK, "Somente após desbloquear",
+        "Chamadas e mensagens sempre exigem impressão digital, rosto ou PIN."
     )
 )
 
@@ -56,10 +56,10 @@ fun LockPanel(viewModel: LockLevelViewModel = koinViewModel()) {
         onPauseOrDispose { }
     }
 
-    HudPanel("Заблокированный экран", index = 14) {
+    HudPanel("Tela bloqueada", index = 14) {
         HudNote(
-            "Что Пятница делает, пока телефон заблокирован. Разблокировка — экран самого Android: " +
-                "Пятница не видит и не хранит ваш PIN."
+            "O que o Friday pode fazer enquanto o celular está bloqueado. O desbloqueio é feito pelo Android: " +
+                "O Friday não vê nem armazena seu PIN."
         )
         choices.forEach { (option, title, note) ->
             HudSwitchRow(
@@ -71,17 +71,17 @@ fun LockPanel(viewModel: LockLevelViewModel = koinViewModel()) {
             )
         }
         HudNote(
-            "На экране блокировки видно только, что Пятница делает: слушает, обрабатывает, отвечает. " +
-                "Ваши слова и ответ — после «Разблокировать для деталей»."
+            "Na tela bloqueada aparece apenas o estado do Friday: ouvindo, processando ou respondendo. " +
+                "Sua fala e a resposta aparecem após tocar em «Desbloquear para ver detalhes»."
         )
         HudReadout(
-            "Уведомления",
-            if (notifications) "РАЗРЕШЕНЫ" else "ВЫКЛЮЧЕНЫ",
+            "Notificações",
+            if (notifications) "PERMITIDAS" else "DESATIVADAS",
             valueColor = if (notifications) ArcCyan else ErrorColor
         )
         HudReadout(
-            "Полноэкранные уведомления",
-            if (fullScreen) "РАЗРЕШЕНЫ" else "НЕ РАЗРЕШЕНЫ",
+            "Notificações em tela cheia",
+            if (fullScreen) "РАЗРЕШЕНЫ" else "NÃO PERMITIDAS",
             valueColor = if (fullScreen) ArcCyan else ErrorColor
         )
         HudReadout("Последний показ", outcomeText(outcome))
@@ -99,12 +99,12 @@ fun LockPanel(viewModel: LockLevelViewModel = koinViewModel()) {
 
 /** What the last attempt really showed — an allowed permission alone proves nothing. */
 private fun outcomeText(outcome: LockScreen.Outcome?): String = when (outcome) {
-    null -> "ЕЩЁ НЕ БЫЛО"
-    LockScreen.Outcome.ACTIVITY_VISIBLE -> "ПАНЕЛЬ НА ЭКРАНЕ"
-    LockScreen.Outcome.NOTIFICATION_ONLY -> "ТОЛЬКО УВЕДОМЛЕНИЕ"
-    LockScreen.Outcome.FSI_DENIED -> "УВЕДОМЛЕНИЕ (НЕТ ПОЛНОЭКРАННЫХ)"
-    LockScreen.Outcome.NOTIFICATIONS_BLOCKED -> "ТОЛЬКО ГОЛОС"
-    LockScreen.Outcome.FAILED -> "НЕ УДАЛОСЬ"
+    null -> "AINDA NÃO HOUVE"
+    LockScreen.Outcome.ACTIVITY_VISIBLE -> "PAINEL NA TELA"
+    LockScreen.Outcome.NOTIFICATION_ONLY -> "SOMENTE NOTIFICAÇÃO"
+    LockScreen.Outcome.FSI_DENIED -> "NOTIFICAÇÃO (SEM TELA CHEIA)"
+    LockScreen.Outcome.NOTIFICATIONS_BLOCKED -> "SOMENTE VOZ"
+    LockScreen.Outcome.FAILED -> "NÃO FOI POSSÍVEL"
 }
 
 private fun openFullScreenSettings(context: Context) {

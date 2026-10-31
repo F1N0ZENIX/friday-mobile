@@ -35,7 +35,7 @@ import kotlinx.coroutines.launch
  *    notification or its extras
  *  - Friday's own foreground notification and silent/ongoing system noise are
  *    ignored
- *  - rows older than [RETENTION_MS] are deleted on every write
+ *  - rows older than [RETENTION_MS] are deleted on every write (30-day local history)
  *  - nothing is sent anywhere; it stays in the local database
  *
  * It also passes chats to [MessengerInbox] (kept in memory only, so Friday
@@ -48,7 +48,7 @@ class FridayNotificationListener : NotificationListenerService() {
         private const val TAG = "FridayNotifications"
 
         /** A week is plenty to answer "what did I miss" without hoarding. */
-        private const val RETENTION_MS = 7L * 24 * 60 * 60 * 1000
+        private const val RETENTION_MS = 30L * 24 * 60 * 60 * 1000
 
         private const val MAX_TEXT_CHARS = 300
 

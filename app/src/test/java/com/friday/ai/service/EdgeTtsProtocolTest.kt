@@ -97,20 +97,20 @@ class EdgeTtsProtocolTest {
     }
 
     @Test
-    fun `russian text selects the russian voice`() {
-        assertEquals(EdgeTtsProtocol.VOICE_RU, EdgeTtsProtocol.detectVoice("Привет, как дела?"))
+    fun `Portuguese text selects the Brazilian Portuguese voice`() {
+        assertEquals(EdgeTtsProtocol.VOICE_PT, EdgeTtsProtocol.detectVoice("Olá, tudo bem?"))
     }
 
     @Test
-    fun `english text selects the english voice`() {
-        assertEquals(EdgeTtsProtocol.VOICE_EN, EdgeTtsProtocol.detectVoice("Hello, how are you?"))
+    fun `english text still selects the Brazilian Portuguese voice`() {
+        assertEquals(EdgeTtsProtocol.VOICE_PT, EdgeTtsProtocol.detectVoice("Hello, how are you?"))
     }
 
     @Test
-    fun `punctuation and digits do not sway voice detection`() {
+    fun `voice detection always selects Brazilian Portuguese`() {
         // Previously the latin counter used the range 'A'..'z', which also
         // swept up [ \ ] ^ _ ` and could outvote real Cyrillic letters.
-        assertEquals(EdgeTtsProtocol.VOICE_RU, EdgeTtsProtocol.detectVoice("Готово: 100% [___]"))
+        assertEquals(EdgeTtsProtocol.VOICE_PT, EdgeTtsProtocol.detectVoice("Pronto: 100% [___]"))
     }
 
     @Test

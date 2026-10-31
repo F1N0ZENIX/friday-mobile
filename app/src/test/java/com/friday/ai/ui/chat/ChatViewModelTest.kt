@@ -381,16 +381,16 @@ class ChatViewModelTest {
     @Test
     fun `a refused or failed capture says why instead of clearing the error`() = runTest {
         val screen = mockk<ScreenCapture>()
-        coEvery { screen.capture(any(), any()) } returns ScreenCapture.Result.Failed("Снимок экрана остановлен")
+        coEvery { screen.capture(any(), any()) } returns ScreenCapture.Result.Failed("Captura de tela interrompida")
         viewModel = createViewModel(screen = screen)
         advanceUntilIdle()
 
         viewModel.onScreenConsent(Activity.RESULT_CANCELED, null)
-        assertEquals("Доступ к экрану не дан — анализ отменён", viewModel.uiState.value.error)
+        assertEquals("Acesso à tela não autorizado — análise cancelada", viewModel.uiState.value.error)
 
         viewModel.onScreenConsent(Activity.RESULT_OK, mockk<Intent>())
         advanceUntilIdle()
-        assertEquals("Снимок экрана остановлен", viewModel.uiState.value.error)
+        assertEquals("Captura de tela interrompida", viewModel.uiState.value.error)
         coVerify(exactly = 0) { analyzeContentUseCase.analyzeImage(any(), any()) }
     }
 
@@ -404,12 +404,15 @@ class ChatViewModelTest {
 
         viewModel.onFilePicked(uri)
         advanceUntilIdle()
-        assertEquals("Файл «photo.jpg» слишком большой (больше 30 МБ)", viewModel.uiState.value.error)
+        assertEquals("O arquivo «photo.jpg» é grande demais (mais de 30 MB)", viewModel.uiState.value.error)
 
         coEvery { files.read(uri) } returns FileAnalyzer.Outcome.Unsupported("doc.pdf", "application/pdf")
         viewModel.onFilePicked(uri)
         advanceUntilIdle()
-        assertEquals("PDF пока не поддерживается — пришлите текст или снимок страницы", viewModel.uiState.value.error)
+        assertEquals(
+            "PDF ainda não é compatível — envie o texto ou uma imagem da página",
+            viewModel.uiState.value.error
+        )
         coVerify(exactly = 0) { analyzeContentUseCase.analyzeText(any(), any()) }
     }
 

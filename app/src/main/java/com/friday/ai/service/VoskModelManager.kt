@@ -26,17 +26,17 @@ class VoskModelManager(private val context: Context) {
     companion object {
         private const val TAG = "VoskModelManager"
         private const val MODEL_DIR_NAME = "vosk-model"
-        private const val MODEL_URL = "https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip"
+        private const val MODEL_URL = "https://alphacephei.com/vosk/models/vosk-model-small-pt-0.3.zip"
         private const val MODEL_MARKER = "conf/model.conf"
 
         /**
-         * vosk-model-small-ru-0.22.zip as published at [MODEL_URL]: 46,236,750
+         * vosk-model-small-pt-0.3.zip as published at [MODEL_URL]
          * bytes, this SHA-256 (measured 2026-10-13). A changed upstream file
          * fails the install until this is deliberately updated.
          */
         val ARTIFACT = ModelInstaller.Artifact(
-            sha256 = "961d5ff98a17f4aa6de69864d0aa71fa5bac682301d2b5d17a3f24c5c99a46d4",
-            maxBytes = 64L * 1024 * 1024
+            sha256 = "6e1ce909032e1afa7a88e68a3d628ecafff302bdf195befab308826c395e93b7",
+            maxBytes = 40L * 1024 * 1024
         )
 
         private const val CONNECT_TIMEOUT_MS = 30_000

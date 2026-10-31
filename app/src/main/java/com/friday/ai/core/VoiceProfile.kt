@@ -28,7 +28,7 @@ object VoiceProfile {
         /**
          * Whether this profile can judge what is said *after* the wake word.
          *
-         * Version 1 was enrolled on "Пятница" alone. Measured against
+         * Version 1 was enrolled on "Friday" alone. Measured against
          * synthetic speech, such a profile rejected its own owner's commands
          * 33 times out of 60: the centroid had learned the word as much as the
          * voice. It still verifies the wake word fine, so it keeps doing that
@@ -66,14 +66,14 @@ object VoiceProfile {
      * accepted none of 360 other voices.
      */
     val ENROLMENT_PHRASES = listOf(
-        "Пятница",
-        "Какая погода завтра",
-        "Пятница",
-        "Позвони маме",
-        "Поставь будильник на семь тридцать",
-        "Пятница",
-        "Включи музыку",
-        "Напомни купить молоко"
+        "Friday",
+        "Como estará o tempo amanhã",
+        "Friday",
+        "Ligue para minha mãe",
+        "Defina um alarme para sete e meia",
+        "Friday",
+        "Toque uma música",
+        "Lembre-me de comprar leite"
     )
 
     /**

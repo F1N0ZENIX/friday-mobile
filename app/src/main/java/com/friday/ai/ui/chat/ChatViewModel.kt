@@ -225,7 +225,7 @@ class ChatViewModel(
     fun onScreenConsent(resultCode: Int, data: Intent?) {
         val capture = screen ?: return
         if (resultCode != Activity.RESULT_OK || data == null) {
-            showError("Доступ к экрану не дан — анализ отменён")
+            showError("Acesso à tela não autorizado — análise cancelada")
             return
         }
         if (!begin {
@@ -259,14 +259,14 @@ class ChatViewModel(
             }
             is FileAnalyzer.Outcome.Unsupported -> fail(
                 if (file.mimeType == "application/pdf") {
-                    "PDF пока не поддерживается — пришлите текст или снимок страницы"
+                    "PDF ainda não é compatível — envie o texto ou uma imagem da página"
                 } else {
-                    "Этот тип файла не поддерживается: «${file.name}»"
+                    "Este tipo de arquivo não é compatível: «${file.name}»"
                 }
             )
             is FileAnalyzer.Outcome.TooLarge ->
-                fail("Файл «${file.name}» слишком большой (больше ${file.limitBytes / (1024 * 1024)} МБ)")
-            is FileAnalyzer.Outcome.Unreadable -> fail("Не удалось прочитать файл «${file.name}»")
+                fail("O arquivo «${file.name}» é grande demais (mais de ${file.limitBytes / (1024 * 1024)} MB)")
+            is FileAnalyzer.Outcome.Unreadable -> fail("Não foi possível ler o arquivo «${file.name}»")
         }
     }
 
@@ -276,7 +276,7 @@ class ChatViewModel(
      */
     fun onNotebook(page: com.friday.ai.ui.notebook.NotebookInbox.Page) {
         val started = begin {
-            persist("[Блокнот] " + page.question.ifBlank { "что здесь написано?" }, MessageRole.USER)
+            persist("[Bloco de notas] " + page.question.ifBlank { "o que está escrito aqui?" }, MessageRole.USER)
             stream(analyzeContent.analyzeImage(page.imageBase64, notebookPrompt(page.question)))
         }
         if (!started) busy()
@@ -321,7 +321,7 @@ class ChatViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                request.fail(e.message ?: "Ошибка")
+                request.fail(e.message ?: "Erro")
             } finally {
                 request.streamId?.let(::removeStreamingMessage)
                 if (active === request) finishLoading(request)
@@ -369,7 +369,7 @@ class ChatViewModel(
         _uiState.update { it.copy(error = reason) }
     }
 
-    private fun busy() = showError("Пятница ещё отвечает — подождите немного")
+    private fun busy() = showError("Friday ainda está respondendo — aguarde um momento")
 
     private fun updateStreamingMessage(id: String, content: String) {
         _uiState.update { state ->

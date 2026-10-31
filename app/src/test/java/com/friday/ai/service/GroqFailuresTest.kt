@@ -44,10 +44,10 @@ class GroqFailuresTest {
     @Test
     fun `each failure says something the user can act on`() {
         // Before, every one of these was "Something went wrong".
-        assertTrue(VoiceErrors.spoken(retired, true).contains("сменил модель"))
-        assertTrue(VoiceErrors.spoken(GroqApiException(401, "x"), true).contains("Ключ Groq"))
-        assertTrue(VoiceErrors.spoken(GroqApiException(429, "x"), true).contains("лимит"))
-        assertTrue(VoiceErrors.spoken(IOException("timeout"), true).contains("интернет"))
+        assertTrue(VoiceErrors.spoken(retired, false).contains("A Groq mudou o modelo"))
+        assertTrue(VoiceErrors.spoken(GroqApiException(401, "x"), false).contains("chave da Groq"))
+        assertTrue(VoiceErrors.spoken(GroqApiException(429, "x"), false).contains("limite"))
+        assertTrue(VoiceErrors.spoken(IOException("timeout"), false).contains("conectar à Groq"))
         assertTrue(VoiceErrors.spoken(GroqApiException(500, "boom"), false).contains("boom"))
     }
 
@@ -102,24 +102,25 @@ class QuickWinsTest {
     fun `the persona speaks of herself in the feminine and follows the user's language`() {
         val prompt = SystemPromptBuilder().build(AssistantMode.DEFAULT)
         assertTrue(prompt.contains("feminine"))
-        assertTrue(prompt.contains("сэр"))
-        assertTrue(prompt.contains("latest message"))
+        assertTrue(prompt.contains("Always answer in Brazilian Portuguese"))
+        assertTrue(prompt.contains("Never use Russian honorifics or Russian phrases"))
         assertTrue(prompt.contains("Never invent"))
     }
 
     @Test
     fun `the voice is female in both languages`() {
         // Every fixed phrase is feminine ("не расслышала"); a male voice clashed.
-        assertEquals("ru-RU-SvetlanaNeural", EdgeTtsProtocol.VOICE_RU)
+        assertEquals("pt-BR-FranciscaNeural", EdgeTtsProtocol.VOICE_PT)
         assertEquals("en-IE-EmilyNeural", EdgeTtsProtocol.VOICE_EN)
     }
 
     @Test
     fun `the cache key changes with the voice and is a safe file name`() {
-        val a = EdgeTtsProtocol.cacheKey("ru-RU-SvetlanaNeural", "Да, сэр?")
-        val b = EdgeTtsProtocol.cacheKey("ru-RU-DmitryNeural", "Да, сэр?")
+        val a = EdgeTtsProtocol.cacheKey("pt-BR-FranciscaNeural", "Sim?")
+        val b = EdgeTtsProtocol.cacheKey("pt-BR-AntonioNeural", "Sim?")
         assertNotEquals("a new voice must not replay the old one's audio", a, b)
-        assertEquals(a, EdgeTtsProtocol.cacheKey("ru-RU-SvetlanaNeural", "Да, сэр?"))
+        assertEquals(a, EdgeTtsProtocol.cacheKey("pt-BR-FranciscaNeural", "Sim?"))
+        assertNotEquals(a, EdgeTtsProtocol.cacheKey("pt-BR-FranciscaNeural", "Não?"))
         assertTrue(a, a.matches(Regex("[0-9a-f]{40}\\.mp3")))
     }
 

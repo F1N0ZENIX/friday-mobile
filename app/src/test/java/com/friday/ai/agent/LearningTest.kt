@@ -218,10 +218,10 @@ class SourceLabelTest {
 
     @Test
     fun `the panel says who answered`() {
-        assertEquals("ИИ", sourceLabel(CommandResult.ChatMessage("привет"), learned = false, russian = true))
-        assertEquals("команда", sourceLabel(CommandResult.ToggleFlashlight, learned = false, russian = true))
-        assertEquals("команда · выучена", sourceLabel(CommandResult.SetAlarm(7, 30, null), learned = true, russian = true))
-        assertEquals("AI", sourceLabel(CommandResult.ChatMessage("hi"), learned = false, russian = false))
+        assertEquals("IA", sourceLabel(CommandResult.ChatMessage("olá"), learned = false, russian = true))
+        assertEquals("comando", sourceLabel(CommandResult.ToggleFlashlight, learned = false, russian = true))
+        assertEquals("comando aprendido", sourceLabel(CommandResult.SetAlarm(7, 30, null), learned = true, russian = true))
+        assertEquals("IA", sourceLabel(CommandResult.ChatMessage("hi"), learned = false, russian = false))
     }
 }
 
