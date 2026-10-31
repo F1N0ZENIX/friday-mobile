@@ -44,10 +44,10 @@ class GroqFailuresTest {
     @Test
     fun `each failure says something the user can act on`() {
         // Before, every one of these was "Something went wrong".
-        assertTrue(VoiceErrors.spoken(retired, false).contains("Groq changed its models"))
-        assertTrue(VoiceErrors.spoken(GroqApiException(401, "x"), false).contains("Groq key"))
-        assertTrue(VoiceErrors.spoken(GroqApiException(429, "x"), false).contains("limit"))
-        assertTrue(VoiceErrors.spoken(IOException("timeout"), false).contains("connection"))
+        assertTrue(VoiceErrors.spoken(retired, false).contains("A Groq mudou o modelo"))
+        assertTrue(VoiceErrors.spoken(GroqApiException(401, "x"), false).contains("chave da Groq"))
+        assertTrue(VoiceErrors.spoken(GroqApiException(429, "x"), false).contains("limite"))
+        assertTrue(VoiceErrors.spoken(IOException("timeout"), false).contains("conectar à Groq"))
         assertTrue(VoiceErrors.spoken(GroqApiException(500, "boom"), false).contains("boom"))
     }
 
@@ -102,8 +102,8 @@ class QuickWinsTest {
     fun `the persona speaks of herself in the feminine and follows the user's language`() {
         val prompt = SystemPromptBuilder().build(AssistantMode.DEFAULT)
         assertTrue(prompt.contains("feminine"))
-        assertTrue(prompt.contains("сэр"))
-        assertTrue(prompt.contains("latest message"))
+        assertTrue(prompt.contains("Always answer in Brazilian Portuguese"))
+        assertTrue(prompt.contains("Never use Russian honorifics or Russian phrases"))
         assertTrue(prompt.contains("Never invent"))
     }
 
