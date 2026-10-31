@@ -2,8 +2,8 @@ package com.friday.ai.core
 
 /** Detects when the user addresses Friday using Brazilian Portuguese speech recognition. */
 object WakePhrases {
-    private val FRIDAY_NAMES = listOf("friday", "fraide", "fráide", "fradi")
-    private val ATTENTION_PREFIXES = listOf("ok", "okay", "ei", "hey", "oi")
+    private val FRIDAY_NAMES = listOf("friday", "fraide", "fráide", "fradi", "пятница", "пятницу", "пятницы")
+    private val ATTENTION_PREFIXES = listOf("ok", "okay", "ei", "hey", "oi", "слушай", "слушай-ка")
 
     private val ALL_NAMES = FRIDAY_NAMES.sortedByDescending { it.length }
 
@@ -28,7 +28,7 @@ object WakePhrases {
     enum class Language { PORTUGUESE, ENGLISH }
 
     private val leadingCall = Regex(
-        "^\\s*(?:(?:ok|okay|ei|hey|oi)[\\s,!.]+)?(?:friday|fraide|fráide|fradi)[\\s,!.:;—–-]*",
+        "^\\s*(?:(?:ok|okay|ei|hey|oi|слушай|слушай-ка)[\\s,!.]+)?(?:friday|fraide|fráide|fradi|пятница|пятницу|пятницы)[\\s,!.:;—–-]*",
         RegexOption.IGNORE_CASE
     )
 
