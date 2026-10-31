@@ -114,6 +114,6 @@ class VoicePanelCardTest {
     fun `the stage is announced politely and the close button survives the largest font`() {
         show(fontScale = 2f)
         compose.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.LiveRegion)).assertIsDisplayed()
-        compose.onNodeWithContentDescription("Закрыть Пятницу").assertIsDisplayed().assertWidthIsAtLeast(48.dp)
+        compose.onNodeWithContentDescription("Fechar o Friday").assertIsDisplayed().assertWidthIsAtLeast(48.dp)
     }
 }
