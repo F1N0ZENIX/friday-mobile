@@ -1,3 +1,5 @@
+@file:Suppress("MagicNumber")
+
 package com.friday.ai.localai
 
 import android.content.Context
