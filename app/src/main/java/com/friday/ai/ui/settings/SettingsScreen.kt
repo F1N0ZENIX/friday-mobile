@@ -1,3 +1,5 @@
+@file:Suppress("MaxLineLength")
+
 package com.friday.ai.ui.settings
 
 import android.Manifest
@@ -119,6 +121,7 @@ fun SettingsScreen(
             ) {
                 Spacer(Modifier.height(4.dp))
                 IntelligencePanel(viewModel)
+                LocalAiPanel()
                 VoicePanel(viewModel, say)
                 CalibrationPanel(viewModel)
                 VoiceProfilePanel(viewModel)

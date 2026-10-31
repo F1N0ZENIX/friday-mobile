@@ -44,10 +44,10 @@ class GroqFailuresTest {
     @Test
     fun `each failure says something the user can act on`() {
         // Before, every one of these was "Something went wrong".
-        assertTrue(VoiceErrors.spoken(retired, true).contains("сменил модель"))
-        assertTrue(VoiceErrors.spoken(GroqApiException(401, "x"), true).contains("Ключ Groq"))
-        assertTrue(VoiceErrors.spoken(GroqApiException(429, "x"), true).contains("лимит"))
-        assertTrue(VoiceErrors.spoken(IOException("timeout"), true).contains("интернет"))
+        assertTrue(VoiceErrors.spoken(retired, false).contains("Groq changed its models"))
+        assertTrue(VoiceErrors.spoken(GroqApiException(401, "x"), false).contains("Groq key"))
+        assertTrue(VoiceErrors.spoken(GroqApiException(429, "x"), false).contains("limit"))
+        assertTrue(VoiceErrors.spoken(IOException("timeout"), false).contains("connection"))
         assertTrue(VoiceErrors.spoken(GroqApiException(500, "boom"), false).contains("boom"))
     }
 
@@ -110,14 +110,14 @@ class QuickWinsTest {
     @Test
     fun `the voice is female in both languages`() {
         // Every fixed phrase is feminine ("не расслышала"); a male voice clashed.
-        assertEquals("ru-RU-SvetlanaNeural", EdgeTtsProtocol.VOICE_RU)
+        assertEquals("pt-BR-FranciscaNeural", EdgeTtsProtocol.VOICE_PT)
         assertEquals("en-IE-EmilyNeural", EdgeTtsProtocol.VOICE_EN)
     }
 
     @Test
     fun `the cache key changes with the voice and is a safe file name`() {
-        val a = EdgeTtsProtocol.cacheKey("ru-RU-SvetlanaNeural", "Да, сэр?")
-        val b = EdgeTtsProtocol.cacheKey("ru-RU-DmitryNeural", "Да, сэр?")
+        val a = EdgeTtsProtocol.cacheKey("pt-BR-FranciscaNeural", "Sim?")
+        val b = EdgeTtsProtocol.cacheKey("pt-BR-AntonioNeural", "Sim?")
         assertNotEquals("a new voice must not replay the old one's audio", a, b)
         assertEquals(a, EdgeTtsProtocol.cacheKey("ru-RU-SvetlanaNeural", "Да, сэр?"))
         assertTrue(a, a.matches(Regex("[0-9a-f]{40}\\.mp3")))
