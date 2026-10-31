@@ -113,7 +113,12 @@ private fun LinkDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 LinkField(name, { name = it }, "Nome", "Filmes")
-                LinkField(phrases, { phrases = it }, "Frases, separadas por vírgula", "quero assistir a um filme, abrir cinema")
+                LinkField(
+                    phrases,
+                    { phrases = it },
+                    "Frases, separadas por vírgula",
+                    "quero assistir a um filme, abrir cinema",
+                )
                 LinkField(address, { address = it }, "Endereço do site", "example.com")
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Abrir em silêncio", Modifier.weight(1f))
