@@ -80,7 +80,7 @@ class VoicePresentationTest {
         session = 1, phase = VoicePhase.SPEAKING,
         heard = "Напиши Фердавсу Гетисбургу, что я свободен",
         answer = "Отправить SMS для «Firdavs Gettysburg»: «я свободен»? Да или нет.",
-        source = "команда"
+        source = "comando"
     )
 
     @Test
