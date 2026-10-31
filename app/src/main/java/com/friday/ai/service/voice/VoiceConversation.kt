@@ -87,7 +87,7 @@ class VoiceConversation(
     /**
      * The owner said "Friday" (already verified by the wake listener).
      *
-     * With [continuing], they went straight on ("Friday, включи музыку"):
+     * With [continuing], they went straight on ("Friday, toque música"):
      * no greeting — it would talk over them — and the recording starts at
      * once, with [lead] (the audio up to the name) in front so the first
      * words of the command aren't lost.
@@ -218,9 +218,9 @@ class VoiceConversation(
             }
             VoiceTurn.Next.END_QUIETLY -> {
                 if (outcome is VoiceTurn.Outcome.Stranger) Log.i(TAG, "Follow-up from another voice ignored")
-                // "Enviar?" with no answer heard: it does not wait for a "да" said later.
+                // "Enviar?" with no answer heard: it does not wait for a "sim" said later.
                 if (commands.dropPending()) {
-                    io.overlay.showResult("Não entendi ответ — ничего не отправила", NOTICE_MS)
+                    io.overlay.showResult("Não entendi a resposta — não enviei nada", NOTICE_MS)
                 } else {
                     io.overlay.dismiss()
                 }
@@ -235,17 +235,17 @@ class VoiceConversation(
     private suspend fun heard(mine: Int, text: String) {
         val russian = session.russian()
         // A pending "Enviar?" is answered before anything else — in
-        // particular before "нет" can be taken for a goodbye.
+        // particular before "não" can be taken for a goodbye.
         val confirmed = commands.answerPending(text, russian)
         when {
             confirmed != null -> {
                 session.mirror(text, confirmed)
-                // A name picked from "чьё прочитать?" is read out; "ответь …" may follow.
+                // A name picked from "de quem devo ler?" is read out; "ответь …" may follow.
                 speakAndContinue(mine, confirmed, allowFollowUp = commands.awaitsMore())
             }
             ConversationControl.isFarewell(text) -> endConversation()
             else -> {
-                // "Открой камеру, на этом пока": done, answered, and then quiet.
+                // "Abra a câmera e pare por aqui": done, answered, and then quiet.
                 val request = ConversationControl.beforeFarewell(text)
                 process(mine, request ?: text, russian, last = request != null)
             }
