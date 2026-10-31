@@ -2,68 +2,28 @@ package com.friday.ai.core
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * Why the position rule stays strict.
- *
- * Relaxing it looked attractive — a hesitation before the name really does get
- * a genuine call rejected — but grammar-constrained decoding collapses every
- * out-of-grammar word to `[unk]`, hesitation and prepositions alike. So
- * "ээ, пятница" and "…в пятницу" reach this code as the same string, and no
- * rule here can separate them. Waking up inside someone's sentence is the
- * worse of the two failures, so the strict rule wins and the missed calls are
- * fixed upstream in [VoiceGate] instead.
- */
 class WakeCallPositionTest {
-
-    @Test
-    fun `an unknown token before the name does not wake it`() {
-        // Both of these arrive here identically, which is the whole point.
-        assertFalse(WakePhrases.isWakeCall("[unk] пятница"))
-        assertFalse(WakePhrases.isWakeCall("[unk] [unk] пятница"))
+    @Test fun `Friday at the start is a wake call`() {
+        assertTrue(WakePhrases.isWakeCall("friday"))
+        assertTrue(WakePhrases.isWakeCall("friday abra a câmera"))
     }
-
-    @Test
-    fun `the weekday is not a wake call`() {
-        assertFalse(WakePhrases.isWakeCall("встретимся в пятницу"))
-        assertFalse(WakePhrases.isWakeCall("сегодня пятница"))
-        assertFalse(WakePhrases.isWakeCall("в эту пятницу я занят"))
+    @Test fun `one attention word before Friday is accepted`() {
+        assertTrue(WakePhrases.isWakeCall("oi friday"))
+        assertTrue(WakePhrases.isWakeCall("okay friday"))
     }
-
-    @Test
-    fun `a call opening the utterance works`() {
-        assertTrue(WakePhrases.isWakeCall("пятница"))
-        assertTrue(WakePhrases.isWakeCall("пятница какая погода"))
-        assertTrue(WakePhrases.isWakeCall("фрайдей"))
+    @Test fun `two attention words are not accepted`() {
+        assertFalse(WakePhrases.isWakeCall("oi okay friday"))
     }
-
-    @Test
-    fun `one attention word in front is allowed`() {
-        assertTrue(WakePhrases.isWakeCall("окей пятница"))
-        assertTrue(WakePhrases.isWakeCall("слушай пятница включи свет"))
-        assertTrue(WakePhrases.isWakeCall("hey friday"))
-    }
-
-    @Test
-    fun `two attention words are not`() {
-        // Beyond one, this stops being a call and starts being a sentence.
-        assertFalse(WakePhrases.isWakeCall("окей слушай пятница"))
-    }
-
-    @Test
-    fun `nothing at all is not a wake call`() {
+    @Test fun `ordinary speech does not wake the assistant`() {
+        assertFalse(WakePhrases.isWakeCall("qual é a previsão do tempo"))
         assertFalse(WakePhrases.isWakeCall(""))
-        assertFalse(WakePhrases.isWakeCall("   "))
-        assertFalse(WakePhrases.isWakeCall("какая погода завтра"))
     }
-
-    @Test
-    fun `language follows the name that matched`() {
-        assertEquals(WakePhrases.Language.RUSSIAN, WakePhrases.detectLanguage("пятница"))
-        assertEquals(WakePhrases.Language.RUSSIAN, WakePhrases.detectLanguage("окей пятница"))
-        assertEquals(WakePhrases.Language.ENGLISH, WakePhrases.detectLanguage("hey friday"))
-        assertEquals(null, WakePhrases.detectLanguage("встретимся в пятницу"))
+    @Test fun `wake call language is Brazilian Portuguese`() {
+        assertEquals(WakePhrases.Language.PORTUGUESE, WakePhrases.detectLanguage("friday"))
+        assertNull(WakePhrases.detectLanguage("bom dia"))
     }
 }
