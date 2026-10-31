@@ -9,6 +9,7 @@ object VoiceErrors {
     private const val UNAUTHORISED = 401
     private const val RATE_LIMITED = 429
 
+    @Suppress("UnusedParameter") // Kept for compatibility with the voice caller; all speech is now PT-BR.
     fun spoken(e: Throwable, russian: Boolean): String = when {
         e is GroqApiException && e.modelMissing ->
             "A Groq mudou o modelo; já selecionei outro. Diga novamente, por favor."
@@ -23,6 +24,7 @@ object VoiceErrors {
     }
 
     /** Said when the model answered with nothing at all. */
+    @Suppress("UnusedParameter", "FunctionOnlyReturningConstant")
     fun empty(russian: Boolean): String =
         "A IA não retornou uma resposta. Tente novamente."
 }
