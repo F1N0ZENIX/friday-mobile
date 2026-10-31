@@ -119,6 +119,7 @@ fun SettingsScreen(
             ) {
                 Spacer(Modifier.height(4.dp))
                 IntelligencePanel(viewModel)
+                LocalAiPanel()
                 VoicePanel(viewModel, say)
                 CalibrationPanel(viewModel)
                 VoiceProfilePanel(viewModel)
