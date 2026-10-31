@@ -38,8 +38,8 @@ class VoicePanelCardTest {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
 
-    private val answer = "Отправить SMS для «Firdavs Gettysburg»: «я свободен»? Да или нет."
-    private val panel = VoicePanel(session = 1, phase = VoicePhase.SPEAKING, heard = "напиши Фердавсу", answer = answer)
+    private val answer = "Enviar SMS para Firdavs Gettysburg: estou livre? Sim ou não."
+    private val panel = VoicePanel(session = 1, phase = VoicePhase.SPEAKING, heard = "mande mensagem para Firdavs", answer = answer)
 
     private var closed = 0
     private var expandedTaps = 0
@@ -61,7 +61,7 @@ class VoicePanelCardTest {
                         },
                         onClose = { closed++ },
                         actions = if (expanded || locked) {
-                            listOf(PanelAction("Закрыть") { closed++ }, PanelAction("Открыть в Friday", primary = true) {})
+                            listOf(PanelAction("Fechar") { closed++ }, PanelAction("Abrir no Friday", primary = true) {})
                         } else {
                             emptyList()
                         }
@@ -79,13 +79,13 @@ class VoicePanelCardTest {
         compose.mainClock.advanceTimeBy(500)
         assertEquals(1, expandedTaps)
         assertEquals(0, closed)
-        compose.onNodeWithText("Открыть в Friday").assertIsDisplayed()
+        compose.onNodeWithText("Abrir no Friday").assertIsDisplayed()
     }
 
     @Test
     fun `the close button is labelled, large enough, and closes`() {
         show()
-        compose.onNodeWithContentDescription("Закрыть Пятницу")
+        compose.onNodeWithContentDescription("Fechar o Friday")
             .assertIsDisplayed()
             .assertWidthIsAtLeast(48.dp)
             .assertHeightIsAtLeast(48.dp)
@@ -96,8 +96,8 @@ class VoicePanelCardTest {
     @Test
     fun `actions are at least 48 dp tall`() {
         show(locked = true)
-        compose.onNodeWithText("Закрыть").assertHeightIsAtLeast(48.dp)
-        compose.onNodeWithText("Открыть в Friday").assertHeightIsAtLeast(48.dp)
+        compose.onNodeWithText("Fechar").assertHeightIsAtLeast(48.dp)
+        compose.onNodeWithText("Abrir no Friday").assertHeightIsAtLeast(48.dp)
     }
 
     @Test
