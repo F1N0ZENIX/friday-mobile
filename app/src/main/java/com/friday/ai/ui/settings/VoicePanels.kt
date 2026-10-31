@@ -123,9 +123,9 @@ internal fun VoicePanel(viewModel: SettingsViewModel, say: (String) -> Unit) {
         WakeHealthStatus(visible = wakeWordEnabled)
         BackgroundWorkStatus(visible = wakeWordEnabled)
         HudNote(
-            "Боковая кнопка: выберите Пятницу цифровым помощником — и долгое нажатие будет звать её, " +
-                "даже когда слово выключено. На Samsung также: Дополнительные функции → Боковая кнопка → " +
-                "Нажатие и удержание → Цифровой помощник."
+            "Botão lateral: selecione Friday como assistente digital; manter o botão pressionado irá chamá-la, " +
+                "mesmo quando a palavra de ativação estiver desligada. Em aparelhos Samsung: Recursos avançados → Botão lateral → " +
+                "Manter pressionado → Assistente digital."
         )
         HudOutlinedButton(
             onClick = { com.friday.ai.ui.openDefaultAssistantSettings(context) },
@@ -181,9 +181,9 @@ internal fun CalibrationPanel(viewModel: SettingsViewModel) {
         if (current != null) {
             Text(phaseText(current), style = MaterialTheme.typography.titleMedium, color = ArcCyan)
             LinearProgressIndicator(progress = { phaseProgress(current) }, modifier = Modifier.fillMaxWidth())
-            HudReadout("Уровень", "%.0f".format(energy))
+            HudReadout("Nível", "%.0f".format(energy))
             HudOutlinedButton(onClick = viewModel::cancelCalibration, modifier = Modifier.fillMaxWidth()) {
-                Text("Отменить")
+                Text("Cancelar")
             }
         } else {
             message?.let { HudNote(it) }
@@ -214,7 +214,7 @@ private fun phaseText(phase: VoiceCalibrator.Phase): String = when (phase) {
     VoiceCalibrator.Phase.MEASURING_SILENCE -> "Silêncio… medindo o ruído ambiente"
     VoiceCalibrator.Phase.WAITING_FOR_SPEECH -> "Agora diga algo, por exemplo: “Friday, abra a câmera”"
     VoiceCalibrator.Phase.MEASURING_SPEECH -> "Continue falando… medindo sua voz"
-    VoiceCalibrator.Phase.DONE -> "Готово"
+    VoiceCalibrator.Phase.DONE -> "Concluído"
 }
 
 private fun phaseProgress(phase: VoiceCalibrator.Phase): Float = when (phase) {
@@ -236,7 +236,7 @@ internal fun VoiceProfilePanel(viewModel: SettingsViewModel) {
     HudPanel("Perfil de voz", index = 4) {
         val current = profile
         HudReadout(
-            "Доступ",
+            "Acesso",
             when {
                 current == null -> "QUALQUER VOZ"
                 !current.coversCommands -> "SOMENTE ATIVAÇÃO"
@@ -293,13 +293,13 @@ internal fun VoiceProfilePanel(viewModel: SettingsViewModel) {
 private fun profileText(profile: VoiceProfile.Profile?): String = when {
     profile == null ->
         "Por enquanto, Friday responde a qualquer voz. Grave sua voz — " +
-            "${VoiceProfile.ENROLMENT_PHRASES.size} коротких фраз, и она перестанет реагировать на чужих."
+            "${VoiceProfile.ENROLMENT_PHRASES.size} frases curtas, e ela deixará de responder a outras pessoas."
     !profile.coversCommands ->
         "O perfil foi gravado apenas com a palavra “Friday”, então somente a ativação é verificada. " +
             "Grave novamente para verificar também os comandos seguintes."
     else ->
-        "Проверяется и пробуждение, и команды. Фраз: ${profile.sampleCount}, " +
-            "порог %.2f, похожесть записей %.2f.".format(profile.threshold, profile.cohesion)
+        "A ativação e os comandos são verificados. Frases: ${profile.sampleCount}, " +
+            "limite %.2f, similaridade das gravações %.2f.".format(profile.threshold, profile.cohesion)
 }
 
 private const val OVERLAY_HINT = "Permita “Sobrepor a outros aplicativos” e ative novamente"
