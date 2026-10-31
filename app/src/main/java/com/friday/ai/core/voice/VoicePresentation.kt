@@ -23,7 +23,7 @@ data class PanelView(
  * On an unlocked phone the panel shows what was said and answered. Over the
  * lock screen anyone nearby can read it, so by default it shows only the
  * stage — never the owner's words, contact names, a dictated message or the
- * model's answer; "Разблокировать для деталей" asks Android to unlock first.
+ * model's answer; "Desbloqueie para ver os detalhes" asks Android to unlock first.
  * This is separate from [com.friday.ai.command.LockPolicy]: being allowed
  * to run a command is not being allowed to put its result on the lock
  * screen.
@@ -33,19 +33,19 @@ object VoicePresentation {
     /** The unlocked phone: the floating panel, the in-app layer, the lock panel once unlocked. */
     fun open(p: VoicePanel): PanelView = when (p.phase) {
         VoicePhase.GREETING -> PanelView(
-            "Пятница", PanelView.Tone.CYAN, PanelView.Mood.SPEAKING, p.answer?.ifBlank { null } ?: "Пятница здесь"
+            "Friday", PanelView.Tone.CYAN, PanelView.Mood.SPEAKING, p.answer?.ifBlank { null } ?: "Friday está aqui"
         )
         VoicePhase.LISTENING -> PanelView(
-            "Слушаю", PanelView.Tone.CYAN, PanelView.Mood.LISTENING, if (p.hearing) "Слышу вас…" else null
+            "Ouvindo", PanelView.Tone.CYAN, PanelView.Mood.LISTENING, if (p.hearing) "Estou ouvindo você…" else null
         )
         VoicePhase.PROCESSING -> when {
-            !p.answer.isNullOrBlank() -> PanelView("Думаю", PanelView.Tone.AMBER, PanelView.Mood.THINKING, p.answer)
-            p.heard.isNullOrBlank() -> PanelView("Распознаю", PanelView.Tone.AMBER, PanelView.Mood.THINKING, null)
-            else -> PanelView("Думаю", PanelView.Tone.AMBER, PanelView.Mood.THINKING, "«${p.heard}»")
+            !p.answer.isNullOrBlank() -> PanelView("Pensando", PanelView.Tone.AMBER, PanelView.Mood.THINKING, p.answer)
+            p.heard.isNullOrBlank() -> PanelView("Reconhecendo", PanelView.Tone.AMBER, PanelView.Mood.THINKING, null)
+            else -> PanelView("Pensando", PanelView.Tone.AMBER, PanelView.Mood.THINKING, "«${p.heard}»")
         }
         VoicePhase.SPEAKING -> PanelView(speaker(p), PanelView.Tone.CYAN, PanelView.Mood.SPEAKING, p.answer)
         VoicePhase.RESULT -> PanelView(speaker(p), PanelView.Tone.MUTED, PanelView.Mood.IDLE, p.answer)
-        VoicePhase.ERROR -> PanelView("Не получилось", PanelView.Tone.ERROR, PanelView.Mood.IDLE, p.answer)
+        VoicePhase.ERROR -> PanelView("Não foi possível concluir", PanelView.Tone.ERROR, PanelView.Mood.IDLE, p.answer)
     }
 
     /**
@@ -58,24 +58,24 @@ object VoicePresentation {
         // Says that something is hidden, never what.
         val hint = if (withheld) HIDDEN else null
         return when (p.phase) {
-            VoicePhase.GREETING -> PanelView("Пятница здесь", PanelView.Tone.CYAN, PanelView.Mood.SPEAKING, null)
-            VoicePhase.LISTENING -> PanelView("Слушаю", PanelView.Tone.CYAN, PanelView.Mood.LISTENING, null)
+            VoicePhase.GREETING -> PanelView("Friday está aqui", PanelView.Tone.CYAN, PanelView.Mood.SPEAKING, null)
+            VoicePhase.LISTENING -> PanelView("Ouvindo", PanelView.Tone.CYAN, PanelView.Mood.LISTENING, null)
             VoicePhase.PROCESSING ->
-                PanelView("Обрабатываю запрос", PanelView.Tone.AMBER, PanelView.Mood.THINKING, null)
+                PanelView("Processando solicitação", PanelView.Tone.AMBER, PanelView.Mood.THINKING, null)
             VoicePhase.SPEAKING ->
-                PanelView("Отвечаю", PanelView.Tone.CYAN, PanelView.Mood.SPEAKING, hint, canReveal = withheld)
+                PanelView("Respondendo", PanelView.Tone.CYAN, PanelView.Mood.SPEAKING, hint, canReveal = withheld)
             VoicePhase.RESULT ->
-                PanelView("Ответ готов", PanelView.Tone.MUTED, PanelView.Mood.IDLE, hint, canReveal = withheld)
+                PanelView("Resposta pronta", PanelView.Tone.MUTED, PanelView.Mood.IDLE, hint, canReveal = withheld)
             VoicePhase.ERROR -> PanelView(
-                "Не получилось", PanelView.Tone.ERROR, PanelView.Mood.IDLE, hint, canReveal = withheld
+                "Não foi possível concluir", PanelView.Tone.ERROR, PanelView.Mood.IDLE, hint, canReveal = withheld
             )
         }
     }
 
     /** The only text a locked panel shows besides its stage. */
-    const val HIDDEN = "Текст скрыт, пока телефон заблокирован"
+    const val HIDDEN = "Conteúdo oculto enquanto o celular está bloqueado"
 
-    private fun speaker(p: VoicePanel): String = p.source?.let { "Пятница · $it" } ?: "Пятница"
+    private fun speaker(p: VoicePanel): String = p.source?.let { "Friday · $it" } ?: "Friday"
 }
 
 /**
