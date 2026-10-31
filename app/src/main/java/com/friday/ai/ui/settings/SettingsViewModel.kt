@@ -90,7 +90,7 @@ class SettingsViewModel(
     fun disconnectGmail() {
         viewModelScope.launch {
             gmailConnector.disconnect()
-            _gmail.value = Gmail(message = "Отключено")
+            _gmail.value = Gmail(message = "Desconectado")
         }
     }
 
@@ -98,7 +98,7 @@ class SettingsViewModel(
         _gmail.value = when (step) {
             is GmailConnector.Step.NeedsConsent -> _gmail.value.copy(consent = step.intent)
             is GmailConnector.Step.Failed -> _gmail.value.copy(busy = false, message = step.reason)
-            is GmailConnector.Step.Connected -> Gmail(account = step.account, message = "Подключено")
+            is GmailConnector.Step.Connected -> Gmail(account = step.account, message = "Conectado")
         }
     }
 
@@ -155,7 +155,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             val embedder = SpeakerEmbedder(appContext)
             if (!embedder.isAvailable()) {
-                _enrolment.value = Enrolment(message = "Модель распознавания голоса не загрузилась")
+                _enrolment.value = Enrolment(message = "O modelo de reconhecimento de voz não foi carregado")
                 return@launch
             }
             val phrases = VoiceProfile.ENROLMENT_PHRASES
@@ -168,7 +168,7 @@ class SettingsViewModel(
                 while (embeddings.size < phrases.size && attempts < phrases.size * 3) {
                     attempts++
                     val phrase = phrases[embeddings.size]
-                    val prompt = "Скажите: «$phrase»"
+                    val prompt = "Diga: “$phrase”"
                     _enrolment.value = Enrolment(
                         embeddings.size, phrases.size, recording = true,
                         message = problem?.let { "$it $prompt" } ?: prompt
@@ -176,8 +176,8 @@ class SettingsViewModel(
                     val audio = enroller.recordOne()
                     val e = audio?.let { embedder.embed(it) }
                     problem = when {
-                        audio == null -> "Не расслышал."
-                        e == null -> "Слишком коротко."
+                        audio == null -> "Não consegui ouvir."
+                        e == null -> "Áudio muito curto."
                         else -> null
                     }
                     if (e != null) embeddings.add(e)
@@ -185,14 +185,14 @@ class SettingsViewModel(
 
                 val profile = VoiceProfile.enroll(embeddings)
                 if (profile == null) {
-                    _enrolment.value = Enrolment(message = "Не хватило чистых записей — попробуйте в тишине")
+                    _enrolment.value = Enrolment(message = "Não houve gravações claras suficientes. Tente novamente em um local silencioso.")
                     return@launch
                 }
                 prefDao.set(UserPreferenceEntity(PREF_VOICE_PROFILE, VoiceProfile.serialise(profile)))
                 _voiceProfile.value = profile
                 _enrolment.value = Enrolment(
                     recorded = profile.sampleCount, total = phrases.size,
-                    message = "Готово. Похожесть записей: %.2f".format(profile.cohesion)
+                    message = "Concluído. Similaridade das gravações: %.2f".format(profile.cohesion)
                 )
             } finally {
                 embedder.close()
