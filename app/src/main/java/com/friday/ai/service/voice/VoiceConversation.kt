@@ -372,6 +372,7 @@ class VoiceConversation(
 }
 
 /** The panel's note on who answers: the phone directly, a learned phrase, or the model. */
+@Suppress("UNUSED_PARAMETER")
 internal fun sourceLabel(command: CommandResult, learned: Boolean, russian: Boolean): String =
     when {
         command is CommandResult.ChatMessage -> "IA"
