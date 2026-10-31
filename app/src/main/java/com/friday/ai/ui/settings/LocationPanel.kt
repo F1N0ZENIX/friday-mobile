@@ -48,8 +48,9 @@ fun LocationPanel(viewModel: LocationViewModel = koinViewModel()) {
 
     HudPanel("Localização", index = 12) {
         HudNote(
-            "Para consultar o clima sem informar um lugar. A cidade definida aqui (ou dita como «minha cidade é ...») " +
-                "tem prioridade; sem ela, o Friday usa a localização do celular, se autorizada, ou a cidade do fuso horário."
+            "Para consultar o clima sem informar um lugar. A cidade definida aqui (ou dita como " +
+                "«minha cidade é ...») tem prioridade; sem ela, o Friday usa a localização do celular, " +
+                "se autorizada, ou a cidade do fuso horário."
         )
         OutlinedTextField(
             value = typed,
