@@ -206,7 +206,7 @@ internal fun CalibrationPanel(viewModel: SettingsViewModel) {
             HudReadout("Limite da palavra", "%.0f".format(r.wakeWordThreshold))
             HudReadout("Limite de voz", "%.0f".format(r.whisperThreshold))
         } else if (isCalibrated && current == null) {
-            HudReadout("Статус", "CALIBRADO", valueColor = ArcCyan)
+            HudReadout("Status", "CALIBRADO", valueColor = ArcCyan)
         }
     }
 }
