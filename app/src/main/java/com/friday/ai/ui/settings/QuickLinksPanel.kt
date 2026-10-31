@@ -42,9 +42,10 @@ fun QuickLinksPanel(viewModel: QuickLinksViewModel = koinViewModel()) {
 
     HudPanel("Links rápidos", index = 13) {
         HudNote(
-            "Sua frase abre seu site em uma nova aba do Chrome. Variações da frase também funcionam: «quero assistir " +
-                "um filme» também funciona com «quero ver filmes». Frases de uma palavra só funcionam apenas em pedidos curtos. " +
-                "«Abrir em silêncio»: sem resposta, e nada é salvo no chat ou na memória do Friday."
+            "Sua frase abre seu site em uma nova aba do Chrome. Variações também funcionam: " +
+                "«quero assistir um filme» ou «quero ver filmes». Frases de uma palavra só funcionam " +
+                "apenas em pedidos curtos. «Abrir em silêncio»: sem resposta, e nada é salvo no chat " +
+                "ou na memória do Friday."
         )
         links.sortedBy { it.name.lowercase() }.forEach { link -> LinkRow(link) { editing = link } }
         HudOutlinedButton(
@@ -108,12 +109,12 @@ private fun LinkDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (link.id.isEmpty()) "Novo link" else "Ссылка") },
+        title = { Text(if (link.id.isEmpty()) "Novo link" else "Editar link") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                LinkField(name, { name = it }, "Nome", "Фильмы")
+                LinkField(name, { name = it }, "Nome", "Filmes")
                 LinkField(phrases, { phrases = it }, "Frases, separadas por vírgula", "quero assistir a um filme, abrir cinema")
-                LinkField(address, { address = it }, "Адрес сайта", "example.com")
+                LinkField(address, { address = it }, "Endereço do site", "example.com")
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Abrir em silêncio", Modifier.weight(1f))
                     Switch(checked = silent, onCheckedChange = { silent = it })
