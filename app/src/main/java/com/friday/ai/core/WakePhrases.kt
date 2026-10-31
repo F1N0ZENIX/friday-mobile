@@ -1,3 +1,4 @@
+@file:Suppress("MaxLineLength")
 package com.friday.ai.core
 
 /** Detects when the user addresses Friday using Brazilian Portuguese speech recognition. */
