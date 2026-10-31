@@ -1,3 +1,4 @@
+@file:Suppress("UnusedParameter")
 package com.friday.ai.service
 
 
