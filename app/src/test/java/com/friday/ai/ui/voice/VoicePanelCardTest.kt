@@ -103,7 +103,7 @@ class VoicePanelCardTest {
     @Test
     fun `the locked panel shows the stage, never the answer`() {
         show(locked = true)
-        compose.onNodeWithText("Отвечаю").assertIsDisplayed()
+        compose.onNodeWithText("Respondendo").assertIsDisplayed()
         assertTrue(compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text))
             .fetchSemanticsNodes().none { node ->
                 node.config[SemanticsProperties.Text].any { it.text.contains("Gettysburg") }
