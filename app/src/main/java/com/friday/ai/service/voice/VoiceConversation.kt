@@ -77,7 +77,7 @@ class VoiceConversation(
      * What this conversation is transcribed in: Russian when the owner called
      * "Пятница", Whisper's own guess when they called "Friday".
      */
-    private var language: String? = "ru"
+    private var language: String? = "pt"
 
     /** True while Friday is talking, so a wake word means "interrupt". */
     @Volatile
@@ -85,7 +85,7 @@ class VoiceConversation(
         private set
 
     /**
-     * The owner said "Пятница" (already verified by the wake listener).
+     * The owner said "Friday" (already verified by the wake listener).
      *
      * With [continuing], they went straight on ("Пятница, включи музыку"):
      * no greeting — it would talk over them — and the recording starts at
@@ -197,9 +197,9 @@ class VoiceConversation(
 
     private suspend fun transcriptionLanguage(heard: String): String? = when (WakePhrases.detectLanguage(heard)) {
         WakePhrases.Language.ENGLISH -> null
-        WakePhrases.Language.RUSSIAN -> "ru"
+        WakePhrases.Language.PORTUGUESE -> "pt"
         // The side button, the tile: no name was said, so the owner's usual language.
-        null -> if (session.russian()) "ru" else null
+        null -> "pt"
     }
 
     private suspend fun next(
