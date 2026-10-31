@@ -17,23 +17,23 @@ object VoiceErrors {
 
     fun spoken(e: Throwable, russian: Boolean): String = when {
         e is GroqApiException && e.modelMissing ->
-            if (russian) "Groq сменил модель, я уже переключилась. Повторите, пожалуйста."
-            else "Groq changed its models; I've switched over. Please say that again."
+            "A Groq mudou o modelo; já selecionei outro. Diga novamente, por favor."
+            "A Groq mudou os modelos; selecionei outro. Diga novamente, por favor."
         e is GroqApiException && e.code == UNAUTHORISED ->
-            if (russian) "Ключ Groq не подходит. Проверьте его в настройках."
-            else "The Groq key was rejected. Please check it in settings."
+            "A chave da Groq foi rejeitada. Confira-a nas configurações."
+            "A chave da Groq foi rejeitada. Confira-a nas configurações."
         e is GroqApiException && e.code == RATE_LIMITED ->
-            if (russian) "Groq просит подождать: исчерпан лимит запросов."
-            else "Groq asks me to wait: the request limit is used up."
+            "A Groq pediu para aguardar: o limite de solicitações foi atingido."
+            "A Groq pediu para aguardar: o limite de solicitações foi atingido."
         e is IOException ->
-            if (russian) "Не могу связаться с Groq. Проверьте интернет."
-            else "I can't reach Groq. Check the connection."
+            "Não consegui conectar à Groq. Verifique sua internet."
+            "Não consegui conectar à Groq. Verifique sua internet."
         else ->
-            if (russian) "Groq не ответил: ${e.message ?: e::class.simpleName}"
-            else "Groq didn't answer: ${e.message ?: e::class.simpleName}"
+            "A Groq não respondeu: ${e.message ?: e::class.simpleName}"
+            "A Groq não respondeu: ${e.message ?: e::class.simpleName}"
     }
 
     /** Said when the model answered with nothing at all. */
     fun empty(russian: Boolean): String =
-        if (russian) "Модель ответила пустотой. Попробуйте ещё раз." else "The model came back empty. Please try again."
+        "A IA não retornou uma resposta. Tente novamente."
 }
