@@ -409,7 +409,10 @@ class ChatViewModelTest {
         coEvery { files.read(uri) } returns FileAnalyzer.Outcome.Unsupported("doc.pdf", "application/pdf")
         viewModel.onFilePicked(uri)
         advanceUntilIdle()
-        assertEquals("PDF ainda não é compatível — envie o texto ou uma imagem da página", viewModel.uiState.value.error)
+        assertEquals(
+            "PDF ainda não é compatível — envie o texto ou uma imagem da página",
+            viewModel.uiState.value.error
+        )
         coVerify(exactly = 0) { analyzeContentUseCase.analyzeText(any(), any()) }
     }
 
