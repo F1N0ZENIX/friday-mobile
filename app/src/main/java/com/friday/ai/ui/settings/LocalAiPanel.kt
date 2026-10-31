@@ -1,3 +1,5 @@
+@file:Suppress("MaxLineLength")
+
 package com.friday.ai.ui.settings
 
 import android.content.Intent
