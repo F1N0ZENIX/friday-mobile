@@ -102,8 +102,8 @@ class EdgeTtsProtocolTest {
     }
 
     @Test
-    fun `english text selects the english voice`() {
-        assertEquals(EdgeTtsProtocol.VOICE_EN, EdgeTtsProtocol.detectVoice("Hello, how are you?"))
+    fun `english text still selects the Brazilian Portuguese voice`() {
+        assertEquals(EdgeTtsProtocol.VOICE_PT, EdgeTtsProtocol.detectVoice("Hello, how are you?"))
     }
 
     @Test
