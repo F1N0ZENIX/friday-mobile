@@ -390,7 +390,7 @@ class ChatViewModelTest {
 
         viewModel.onScreenConsent(Activity.RESULT_OK, mockk<Intent>())
         advanceUntilIdle()
-        assertEquals("Снимок экрана остановлен", viewModel.uiState.value.error)
+        assertEquals("Captura de tela interrompida", viewModel.uiState.value.error)
         coVerify(exactly = 0) { analyzeContentUseCase.analyzeImage(any(), any()) }
     }
 
