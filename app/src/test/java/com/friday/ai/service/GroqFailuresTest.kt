@@ -119,7 +119,8 @@ class QuickWinsTest {
         val a = EdgeTtsProtocol.cacheKey("pt-BR-FranciscaNeural", "Sim?")
         val b = EdgeTtsProtocol.cacheKey("pt-BR-AntonioNeural", "Sim?")
         assertNotEquals("a new voice must not replay the old one's audio", a, b)
-        assertEquals(a, EdgeTtsProtocol.cacheKey("ru-RU-SvetlanaNeural", "Да, сэр?"))
+        assertEquals(a, EdgeTtsProtocol.cacheKey("pt-BR-FranciscaNeural", "Sim?"))
+        assertNotEquals(a, EdgeTtsProtocol.cacheKey("pt-BR-FranciscaNeural", "Não?"))
         assertTrue(a, a.matches(Regex("[0-9a-f]{40}\\.mp3")))
     }
 
