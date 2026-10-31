@@ -91,7 +91,9 @@ class FridayWakeWordService : Service() {
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                 e is android.app.ForegroundServiceStartNotAllowedException ->
                 "O Android não permitiu iniciar a escuta em segundo plano — abra o Friday"
-            e is SecurityException -> "O Android não permitiu que o serviço usasse o microfone em segundo plano — abra o Friday"
+            e is SecurityException ->
+                "O Android não permitiu que o serviço usasse o microfone " +
+                    "em segundo plano — abra o Friday"
             else -> "A escuta não iniciou (${e.javaClass.simpleName}) — abra o Friday"
         }
 
@@ -328,7 +330,8 @@ class FridayWakeWordService : Service() {
         val secret = get<AndroidNfcTags>(AndroidNfcTags::class.java).secret()
         when (val read = com.friday.ai.core.modes.ModeTags.read(payload, secret)) {
             is com.friday.ai.core.modes.ModeTags.Read.Mode -> toggle(read.id)
-            com.friday.ai.core.modes.ModeTags.Read.Forged -> say("Esta marca não foi criada por este celular — não vou iniciar.")
+            com.friday.ai.core.modes.ModeTags.Read.Forged ->
+                say("Esta marca não foi criada por este celular — não vou iniciar.")
             com.friday.ai.core.modes.ModeTags.Read.NotATag -> Unit
         }
     }
