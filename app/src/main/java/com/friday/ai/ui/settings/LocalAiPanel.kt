@@ -1,3 +1,4 @@
+@file:Suppress("CyclomaticComplexMethod")
 @file:Suppress("MaxLineLength")
 
 package com.friday.ai.ui.settings
