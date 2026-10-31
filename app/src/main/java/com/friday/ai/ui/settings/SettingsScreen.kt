@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MonitorHeart
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -37,6 +38,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
@@ -182,25 +184,26 @@ private fun IntelligencePanel(viewModel: SettingsViewModel) {
             singleLine = true,
             colors = hudFieldColors()
         )
-        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-            OutlinedTextField(
-                value = model,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Modelo") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                colors = hudFieldColors(),
-                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
-            )
-            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                models.forEach { name ->
-                    DropdownMenuItem(
-                        text = { Text(name) },
-                        onClick = {
-                            viewModel.onModelChange(name)
-                            expanded = false
-                        }
-                    )
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("Modelo", style = MaterialTheme.typography.labelSmall, color = ArcCyan)
+            Box {
+                OutlinedButton(
+                    onClick = { expanded = true },
+                    modifier = Modifier.fillMaxWidth().height(40.dp)
+                ) {
+                    Text(model, modifier = Modifier.weight(1f), maxLines = 1)
+                    Text(if (expanded) "▴" else "▾")
+                }
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    models.forEach { name ->
+                        DropdownMenuItem(
+                            text = { Text(name, maxLines = 1) },
+                            onClick = {
+                                viewModel.onModelChange(name)
+                                expanded = false
+                            }
+                        )
+                    }
                 }
             }
         }
