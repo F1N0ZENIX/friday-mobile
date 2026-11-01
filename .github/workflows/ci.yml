@@ -25,7 +25,22 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Unit tests
-        run: ./gradlew testDebugUnitTest --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew testDebugUnitTest --stacktrace 2>&1 | tee /tmp/friday-unit-tests.log
+      - name: Publish build diagnostics
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          log = pathlib.Path('/tmp/friday-unit-tests.log')
+          if log.exists():
+              lines = log.read_text().splitlines()
+              start = next((i for i, line in enumerate(lines) if line.startswith('FAILURE:')), max(0, len(lines)-80))
+              selected = [line for line in lines if line.startswith('e:')] + lines[start:start+45]
+              for line in selected[:80]:
+                  print('::error::' + line.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A'))
+          PY
 
       - name: Static analysis
         run: ./gradlew detekt
