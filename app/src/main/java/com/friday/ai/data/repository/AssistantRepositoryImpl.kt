@@ -17,9 +17,9 @@ import com.friday.ai.domain.model.MessageRole
 import com.friday.ai.domain.repository.AssistantRepository
 import com.friday.ai.localai.LocalAiPreferences
 import com.friday.ai.localai.LocalChatRouting
+import com.friday.ai.localai.LocalConversationFacts
 import com.friday.ai.localai.LocalGroundedReplies
 import com.friday.ai.localai.LocalInferenceEngine
-import com.friday.ai.localai.LocalPrompt
 import com.friday.ai.localai.LocalResponseQuality
 import com.friday.ai.service.FridayMemory
 import com.friday.ai.service.ModelCatalog
@@ -60,8 +60,9 @@ class AssistantRepositoryImpl(
                 throw IllegalStateException("A IA local não está disponível neste aparelho.")
             }
             return flow {
-                val answer = LocalGroundedReplies.reply(prompt)
-                    ?: engine.reply(LocalPrompt.conversationTurn(prompt, history))
+                val answer = LocalConversationFacts.reply(prompt, history)
+                    ?: LocalGroundedReplies.reply(prompt)
+                    ?: engine.replyWithHistory(prompt, history)
                 emit(LocalResponseQuality.checked(prompt, answer))
             }
         }
