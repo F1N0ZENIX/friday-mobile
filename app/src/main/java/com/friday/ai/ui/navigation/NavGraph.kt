@@ -3,8 +3,14 @@ package com.friday.ai.ui.navigation
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -23,8 +29,15 @@ import org.koin.compose.koinInject
 @Composable
 fun FridayNavGraph(activity: MainActivity) {
     val navController = rememberNavController()
+    val setup = activity.getSharedPreferences("friday_ai_setup", Context.MODE_PRIVATE)
+    val complete = remember { mutableStateOf(setup.getBoolean("ai_setup_complete", false)) }
+    if (!complete.value) {
+        com.friday.ai.ui.onboarding.AiOnboardingScreen { complete.value = true }
+        return
+    }
 
-    NavHost(navController = navController, startDestination = "chat") {
+    Box(Modifier.fillMaxSize()) {
+        NavHost(navController = navController, startDestination = "chat") {
         composable("chat") {
             val viewModel: ChatViewModel = koinViewModel()
             val screenCapture: ScreenCapture = koinInject()
@@ -94,8 +107,11 @@ fun FridayNavGraph(activity: MainActivity) {
                 }
             )
         }
-        composable("lazuri_dashboard") {
-            LazuriDashboardScreen(onNavigateBack = { navController.popBackStack() })
+            composable("lazuri_dashboard") {
+                LazuriDashboardScreen(onNavigateBack = { navController.popBackStack() })
+            }
         }
+        // It is created only after setup, and reacts immediately when onboarding completes.
+        com.friday.ai.ui.voice.InAppVoiceLayer()
     }
 }
