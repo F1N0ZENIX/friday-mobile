@@ -46,7 +46,7 @@ object LocalConversationFacts {
      * Parses only a complete first-person declaration. The captured spelling is
      * returned unchanged (apart from surrounding whitespace) for the reply.
      */
-    private fun declaredName(text: String): String? {
+    fun declaredName(text: String): String? {
         val match = declaration.matchEntire(text) ?: return null
         val name = match.groups["name"]?.value?.trim() ?: return null
         return name.takeIf { it.codePointCount(0, it.length) <= MAX_NAME_CODE_POINTS }
