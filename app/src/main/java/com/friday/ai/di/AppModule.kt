@@ -69,7 +69,7 @@ val appModule = module {
     }
 
     // Network
-    single { GroqApiService.create() }
+    single { GroqApiService.create(androidContext()) }
     single { LazuriApiService.create() }
     single { WeatherApiService.create() }
     single { NearbyPlacesService.create() }
@@ -220,6 +220,11 @@ val appModule = module {
     single { FridayMemory(get(), get(), get(), get(), get(), get()) }
     single { com.friday.ai.service.capture.ScreenCapture(androidContext()) }
     single { FileAnalyzer(androidContext()) }
+    single { com.friday.ai.localai.LocalAiPreferences(androidContext()) }
+    single { com.friday.ai.localai.LocalModelStore(androidContext()) }
+    single<com.friday.ai.localai.LocalInferenceEngine> {
+        com.friday.ai.localai.LlamaLocalInferenceEngine(get())
+    }
 
     // Repository
     single<AssistantRepository> {
@@ -230,7 +235,9 @@ val appModule = module {
             promptBuilder = get(),
             memory = get(),
             catalog = get(),
-            agent = get()
+            agent = get(),
+            localPreferences = get(),
+            localEngine = get()
         )
     }
 
