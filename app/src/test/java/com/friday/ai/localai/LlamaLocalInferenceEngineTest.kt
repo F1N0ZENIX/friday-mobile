@@ -1,5 +1,7 @@
 package com.friday.ai.localai
 
+import com.friday.ai.domain.model.Message
+import com.friday.ai.domain.model.MessageRole
 import dev.ffmpegkit.llama.LlamaConfig
 import java.io.File
 import kotlinx.coroutines.awaitCancellation
@@ -43,6 +45,22 @@ class LlamaLocalInferenceEngineTest {
         assertSame(native.handle, native.released)
     }
 
+    @Test
+    fun `native user input excludes transcript and history is separate`() = runBlocking {
+        val native = FakeNative(answer = "Tudo bem")
+        val history = listOf(
+            Message(role = MessageRole.USER, content = "Como foi ontem?"),
+            Message(role = MessageRole.ASSISTANT, content = "Foi bem."),
+            Message(role = MessageRole.USER, content = "E hoje?")
+        )
+        engine(native).replyWithHistory("E hoje?", history)
+        assertEquals("E hoje?", native.receivedPrompt)
+        assertTrue(native.receivedSystem.contains("Como foi ontem?"))
+        assertTrue(native.receivedSystem.contains("Foi bem."))
+        assertTrue(!native.receivedSystem.contains("E hoje?"))
+        assertTrue(!native.receivedPrompt.endsWith("Friday:"))
+    }
+
     private fun engine(native: NativeLlama) =
         LlamaLocalInferenceEngine(activeFile = { File("model.gguf") }, native = native)
 
@@ -53,6 +71,8 @@ class LlamaLocalInferenceEngineTest {
     ) : NativeLlama {
         val handle = Any()
         var released: Any? = null
+        var receivedPrompt = ""
+        var receivedSystem = ""
         val completionStarted = kotlinx.coroutines.CompletableDeferred<Unit>()
 
         override suspend fun load(file: File, config: LlamaConfig): Any = handle
@@ -63,6 +83,8 @@ class LlamaLocalInferenceEngineTest {
             systemPrompt: String,
             maxTokens: Int
         ): String {
+            receivedPrompt = prompt
+            receivedSystem = systemPrompt
             completionStarted.complete(Unit)
             completionError?.let { throw it }
             if (blockCompletion) awaitCancellation()
