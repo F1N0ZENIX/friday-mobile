@@ -1,0 +1,120 @@
+package com.friday.ai.localai
+
+import dev.ffmpegkit.llama.Llama
+import dev.ffmpegkit.llama.LlamaConfig
+import dev.ffmpegkit.llama.LlamaException
+import java.io.File
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+
+/**
+ * Minimal contract around native inference so routing and prompts can be tested
+ * without loading a JNI library on the JVM.
+ */
+interface LocalInferenceEngine {
+    suspend fun reply(prompt: String): String
+}
+
+/** Fixed limits for an on-device chat turn. Do not use cloud-sized defaults here. */
+object LocalInferenceLimits {
+    const val CONTEXT_TOKENS = 1024
+    const val MAX_REPLY_TOKENS = 128
+    const val MAX_CPU_THREADS = 4
+}
+
+/**
+ * Loads one selected GGUF only for the duration of a turn. llama.cpp models are
+ * not thread-safe and can use substantial native RAM, so all process-local
+ * inference is serialized and the native handle is always released.
+ */
+class LlamaLocalInferenceEngine(
+    private val activeFile: () -> File?,
+    private val native: NativeLlama
+) : LocalInferenceEngine {
+    constructor(models: LocalModelStore, native: NativeLlama = NativeLlamaApi) :
+        this(models::activeFile, native)
+
+    override suspend fun reply(prompt: String): String = inferenceMutex.withLock {
+        currentCoroutineContext().ensureActive()
+        val modelFile = activeFile() ?: throw LocalInferenceException.ModelMissing()
+        val config = LlamaConfig(
+            contextSize = LocalInferenceLimits.CONTEXT_TOKENS,
+            threads = Runtime.getRuntime().availableProcessors().coerceIn(1, LocalInferenceLimits.MAX_CPU_THREADS),
+            gpuLayers = 0
+        )
+        var model: Any? = null
+        try {
+            // Once JNI returns a handle we own it, even if the caller cancelled meanwhile.
+            model = withContext(NonCancellable) { native.load(modelFile, config) }
+            currentCoroutineContext().ensureActive()
+            val answer = native.complete(
+                model = model,
+                prompt = prompt,
+                systemPrompt = LocalPrompt.SYSTEM_PROMPT,
+                maxTokens = LocalInferenceLimits.MAX_REPLY_TOKENS
+            ).trim()
+            currentCoroutineContext().ensureActive()
+            if (answer.isBlank()) throw LocalInferenceException.Failed("O modelo não retornou texto.")
+            answer
+        } catch (error: LocalInferenceException) {
+            throw error
+        } catch (error: LlamaException.ModelLoadFailed) {
+            throw LocalInferenceException.LoadFailed(error)
+        } catch (error: LlamaException) {
+            throw LocalInferenceException.Failed("A inferência local falhou: ${error.message.orEmpty()}", error)
+        } catch (error: UnsatisfiedLinkError) {
+            throw LocalInferenceException.LibraryUnavailable(error)
+        } catch (error: OutOfMemoryError) {
+            throw LocalInferenceException.OutOfMemory(error)
+        } finally {
+            if (model != null) native.release(model)
+        }
+    }
+
+    private companion object {
+        /** One mutex for every engine instance in this process. */
+        val inferenceMutex = Mutex()
+    }
+}
+
+/** Native boundary kept tiny so tests never load libllama_jni.so. */
+interface NativeLlama {
+    suspend fun load(file: File, config: LlamaConfig): Any
+    suspend fun complete(model: Any, prompt: String, systemPrompt: String, maxTokens: Int): String
+    fun release(model: Any)
+}
+
+private object NativeLlamaApi : NativeLlama {
+    override suspend fun load(file: File, config: LlamaConfig): Any =
+        Llama.loadModel(file.absolutePath, config)
+
+    override suspend fun complete(model: Any, prompt: String, systemPrompt: String, maxTokens: Int): String =
+        Llama.complete(model as dev.ffmpegkit.llama.LlamaModel, prompt, systemPrompt, maxTokens).text
+
+    override fun release(model: Any) {
+        Llama.releaseModel(model as dev.ffmpegkit.llama.LlamaModel)
+    }
+}
+
+sealed class LocalInferenceException(
+    message: String,
+    cause: Throwable? = null
+) : IllegalStateException(message, cause) {
+    class ModelMissing(cause: Throwable? = null) : LocalInferenceException(
+        "Nenhum modelo local foi selecionado. Instale ou escolha um arquivo GGUF nas configurações.", cause
+    )
+    class LoadFailed(cause: Throwable? = null) : LocalInferenceException(
+        "Não foi possível carregar o modelo local. Verifique o arquivo e a memória disponível.", cause
+    )
+    class LibraryUnavailable(cause: Throwable? = null) : LocalInferenceException(
+        "A biblioteca de IA local não está disponível neste aparelho.", cause
+    )
+    class OutOfMemory(cause: Throwable? = null) : LocalInferenceException(
+        "Memória insuficiente para executar o modelo local. Tente um modelo menor.", cause
+    )
+    class Failed(detail: String, cause: Throwable? = null) : LocalInferenceException(detail, cause)
+}
