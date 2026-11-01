@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.friday.ai.ui.voice.InAppVoiceLayer
 import com.friday.ai.MainActivity
 import com.friday.ai.core.FileAnalyzer
 import com.friday.ai.service.capture.ScreenCapture
@@ -112,6 +113,6 @@ fun FridayNavGraph(activity: MainActivity) {
             }
         }
         // It is created only after setup, and reacts immediately when onboarding completes.
-        com.friday.ai.ui.voice.InAppVoiceLayer()
+        InAppVoiceLayer()
     }
 }
