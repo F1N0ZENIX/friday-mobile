@@ -241,6 +241,11 @@ class VoiceConversation(
 
     /** @param last the owner said goodbye after this: answer, then stop listening. */
     private suspend fun process(mine: Int, text: String, russian: Boolean, last: Boolean = false) {
+        commands.memoryReply(text)?.let { reply ->
+            session.mirror(text, reply)
+            if (mine == turn) speakAndContinue(mine, reply, allowFollowUp = !last)
+            return
+        }
         val command = commands.route(text)
         // A silent quick link: opened, and nothing shown, said or kept.
         if (command is CommandResult.OpenLink && command.silent) {
@@ -287,6 +292,10 @@ class VoiceConversation(
 
     private suspend fun runOffline(mine: Int, heard: String) {
         io.overlay.processing(heard)
+        commands.memoryReply(heard)?.let { reply ->
+            speakAndContinue(mine, reply, allowFollowUp = true)
+            return
+        }
         val command = commands.route(heard)
         if (!OfflineCommands.isOfflineCapable(command)) {
             speakAndContinue(mine, OfflineCommands.offlineRefusal(true), allowFollowUp = false)
