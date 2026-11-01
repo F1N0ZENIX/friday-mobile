@@ -14,9 +14,27 @@ friday.signing.keyAlias=…
 friday.signing.keyPassword=…
 ```
 
-On CI, the same values come from secrets as the environment variables
-`FRIDAY_SIGNING_STORE_FILE`, `FRIDAY_SIGNING_STORE_PASSWORD`,
-`FRIDAY_SIGNING_KEY_ALIAS` and `FRIDAY_SIGNING_KEY_PASSWORD`.
+## Configuring GitHub Actions
+
+In GitHub, open **Settings → Secrets and variables → Actions → New repository
+secret**. Add these four secrets exactly:
+
+| Secret | Value |
+|---|---|
+| `FRIDAY_SIGNING_KEYSTORE_BASE64` | Base64 of the original `friday.keystore` (for example, `base64 -w 0 keystore/friday.keystore`) |
+| `FRIDAY_SIGNING_STORE_PASSWORD` | Keystore password |
+| `FRIDAY_SIGNING_KEY_ALIAS` | Key alias |
+| `FRIDAY_SIGNING_KEY_PASSWORD` | Key password |
+
+The workflow decodes the keystore only into the runner's temporary directory
+with mode `0600`; it does not commit it or print secrets. It supplies the
+temporary path as `FRIDAY_SIGNING_STORE_FILE`. Keep passwords out of chat,
+issues, logs, and source control.
+
+`android-apk.yml` is a distribution workflow and fails if any secret is
+missing. `ci.yml` intentionally still tests pull requests without secrets; it
+warns in the job summary that its ephemeral-debug-key artifact cannot update
+an installed Friday.
 
 ## What gets built
 
@@ -45,3 +63,6 @@ The key was first generated as the Android SDK debug key on the machine Friday
 was first built on. Its private key exists only in this file and its backups;
 it is fine for an app installed on its owner's phone. A store-published build
 would need a dedicated release key.
+
+There is no way to recover this private key from an APK. To update an existing
+install, restore and use the same original keystore (or its backup).

@@ -17,6 +17,11 @@ plugins {
 /** How the owner's builds are signed; null when this machine has not been given the key. */
 data class OwnerSigning(val storeFile: File, val storePassword: String, val keyAlias: String, val keyPassword: String)
 
+val ciVersionCode: Int = System.getenv("FRIDAY_VERSION_CODE")?.takeIf { it.isNotBlank() }?.let { raw ->
+    raw.toIntOrNull()?.takeIf { it in 1..2_100_000_000 }
+        ?: throw GradleException("FRIDAY_VERSION_CODE must be a positive integer no greater than 2100000000.")
+} ?: 23
+
 val ownerSigning: OwnerSigning? = run {
     val local = Properties().apply {
         rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
@@ -51,7 +56,7 @@ android {
         applicationId = "com.friday.ai"
         minSdk = 26
         targetSdk = 35
-        versionCode = 23
+        versionCode = ciVersionCode
         versionName = "0.18.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
