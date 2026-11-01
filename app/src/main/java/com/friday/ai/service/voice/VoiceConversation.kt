@@ -73,21 +73,15 @@ class VoiceConversation(
     /** Current turn. Only touched on [scope]'s thread. */
     private var turn = 0
 
-    /**
-     * What this conversation is transcribed in: Russian when the owner called
-     * "Friday", Whisper's own guess when they called "Friday".
-     */
-    private var language: String? = "pt"
-
     /** True while Friday is talking, so a wake word means "interrupt". */
     @Volatile
     var speaking = false
         private set
 
     /**
-     * The owner said "Friday" (already verified by the wake listener).
+     * The owner said "Пятница" (already verified by the wake listener).
      *
-     * With [continuing], they went straight on ("Friday, toque música"):
+     * With [continuing], they went straight on ("Пятница, включи музыку"):
      * no greeting — it would talk over them — and the recording starts at
      * once, with [lead] (the audio up to the name) in front so the first
      * words of the command aren't lost.
@@ -97,7 +91,6 @@ class VoiceConversation(
             // The owner called: their session, which may light the lock screen.
             io.overlay.begin(userInitiated = true)
             val mine = ++turn
-            language = transcriptionLanguage(heard)
             // Music stops before anything is said or heard: the recording is
             // the user's voice, not the user's voice over a song.
             io.focus?.take()
@@ -138,7 +131,7 @@ class VoiceConversation(
     /**
      * Says something unprompted — who is calling, a new message — and, if
      * [listenAfter], keeps listening so the user can answer it without the
-     * wake word ("responda que estou a caminho"). Never cuts into a conversation already
+     * wake word ("ответь, что еду"). Never cuts into a conversation already
      * under way: that one is the user's.
      */
     fun announce(text: String, listenAfter: Boolean) {
@@ -159,13 +152,13 @@ class VoiceConversation(
     /**
      * Records one voice turn and handles it. A follow-up (Friday has just
      * answered and listens on, with no new wake word) ends quietly on silence
-     * instead of complaining "não entendi".
+     * instead of complaining "не расслышала".
      */
     internal suspend fun listen(mine: Int, isFollowUp: Boolean, attempt: Int = 1, lead: FloatArray? = null) {
         io.transcriber.listener = overlayFeedback
         // The wake listener may still hold the microphone (it listens while
         // Friday speaks, so she can be interrupted). Two recorders at once
-        // left one of them with silence: "Não entendi" for no reason.
+        // left one of them with silence: "Não consegui ouvir" for no reason.
         io.wake.stop()
         // With no network Whisper cannot transcribe at all; fall back to the
         // on-device grammar rather than failing silently.
@@ -175,11 +168,12 @@ class VoiceConversation(
         }
         val apiKey = session.apiKey()
         if (apiKey.isBlank()) {
-            io.overlay.error("Não foi configurada uma chave da API Groq. Abra as configurações do Friday.", ERROR_MS)
+            io.overlay.error("Chave Groq não configurada. Abra as configurações do Friday.", ERROR_MS)
             return
         }
 
-        io.transcriber.language = language
+        // Friday Brasil must also use Portuguese after announcements and shortcuts.
+        io.transcriber.language = "pt"
         val outcome = if (lead != null) io.transcriber.recordAndTranscribe(apiKey, gate.commandCheck(), lead)
         else io.transcriber.recordAndTranscribe(apiKey, gate.commandCheck())
         if (mine != turn) {
@@ -193,13 +187,6 @@ class VoiceConversation(
         // Only the name after all: greet and listen, as for a plain call.
         if (lead != null && command != null && command.isBlank()) onWake("", continuing = false)
         else next(mine, outcome, command, isFollowUp, attempt)
-    }
-
-    private suspend fun transcriptionLanguage(heard: String): String? = when (WakePhrases.detectLanguage(heard)) {
-        WakePhrases.Language.ENGLISH -> null
-        WakePhrases.Language.PORTUGUESE -> "pt"
-        // The side button, the tile: no name was said, so the owner's usual language.
-        null -> "pt"
     }
 
     private suspend fun next(
@@ -218,34 +205,34 @@ class VoiceConversation(
             }
             VoiceTurn.Next.END_QUIETLY -> {
                 if (outcome is VoiceTurn.Outcome.Stranger) Log.i(TAG, "Follow-up from another voice ignored")
-                // "Enviar?" with no answer heard: it does not wait for a "sim" said later.
+                // "Отправить?" with no answer heard: it does not wait for a "да" said later.
                 if (commands.dropPending()) {
-                    io.overlay.showResult("Não entendi a resposta — não enviei nada", NOTICE_MS)
+                    io.overlay.showResult("Não entendi a resposta. Nada foi enviado.", NOTICE_MS)
                 } else {
                     io.overlay.dismiss()
                 }
             }
             // On screen only: saying it aloud adds noise to a turn that
             // already went nowhere.
-            VoiceTurn.Next.SAY_NOT_HEARD -> io.overlay.showResult("Não entendi", NOTICE_MS)
-            VoiceTurn.Next.SAY_NOT_RECOGNISED -> io.overlay.showResult("Não reconheci sua voz", NOTICE_MS)
+            VoiceTurn.Next.SAY_NOT_HEARD -> io.overlay.showResult("Não consegui ouvir", NOTICE_MS)
+            VoiceTurn.Next.SAY_NOT_RECOGNISED -> io.overlay.showResult("Não reconheci a voz", NOTICE_MS)
         }
     }
 
     private suspend fun heard(mine: Int, text: String) {
         val russian = session.russian()
-        // A pending "Enviar?" is answered before anything else — in
-        // particular before "não" can be taken for a goodbye.
+        // A pending "Отправить?" is answered before anything else — in
+        // particular before "нет" can be taken for a goodbye.
         val confirmed = commands.answerPending(text, russian)
         when {
             confirmed != null -> {
                 session.mirror(text, confirmed)
-                // A name picked from "de quem devo ler?" is read out; "ответь …" may follow.
+                // A name picked from "чьё прочитать?" is read out; "ответь …" may follow.
                 speakAndContinue(mine, confirmed, allowFollowUp = commands.awaitsMore())
             }
             ConversationControl.isFarewell(text) -> endConversation()
             else -> {
-                // "Abra a câmera e pare por aqui": done, answered, and then quiet.
+                // "Открой камеру, на этом пока": done, answered, and then quiet.
                 val request = ConversationControl.beforeFarewell(text)
                 process(mine, request ?: text, russian, last = request != null)
             }
@@ -313,7 +300,7 @@ class VoiceConversation(
     /**
      * Speaks [text], then — unless [allowFollowUp] is false — keeps listening
      * for a reply without needing the wake word again, like a real
-     * conversation. The wake word stays live meanwhile, so saying "Friday"
+     * conversation. The wake word stays live meanwhile, so saying "Пятница"
      * cuts the answer short instead of queueing behind it.
      */
     private fun speakAndContinue(mine: Int, text: String, allowFollowUp: Boolean) {
@@ -372,12 +359,11 @@ class VoiceConversation(
 }
 
 /** The panel's note on who answers: the phone directly, a learned phrase, or the model. */
-@Suppress("UNUSED_PARAMETER")
 internal fun sourceLabel(command: CommandResult, learned: Boolean, russian: Boolean): String =
     when {
-        command is CommandResult.ChatMessage -> "IA"
-        learned -> "comando aprendido"
-        else -> "comando"
+        command is CommandResult.ChatMessage -> if (russian) "ИИ" else "AI"
+        learned -> if (russian) "команда · выучена" else "command · learned"
+        else -> if (russian) "команда" else "command"
     }
 
 /** What a spoken turn makes of an outcome that is not plain conversation. */
