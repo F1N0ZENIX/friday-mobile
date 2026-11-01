@@ -58,6 +58,72 @@ class PersistentMemoryTest {
     }
 
     @Test
+    fun `saves and retrieves screenshot word across facades`() = runTest {
+        val dao = FakeMemoryDao()
+        val first = PersistentMemory(dao)
+
+        assertEquals(
+            "Certo, salvei a palavra Jorge na memória.",
+            first.reply("salve a palavra Jorge na memória para teste")
+        )
+        assertEquals(
+            "A palavra salva é Jorge.",
+            PersistentMemory(dao).reply("qual a palavra que pedi para vc salvar?")
+        )
+
+        val word = dao.getByCategory("fact").single { it.key == "saved_word" }
+        assertEquals("Jorge", word.value)
+        assertEquals("explicit_local", word.source)
+    }
+
+    @Test
+    fun `updates word without duplicates and handles variants`() = runTest {
+        val dao = FakeMemoryDao()
+        val memory = PersistentMemory(dao)
+
+        assertEquals("Certo, salvei a palavra JORGE na memória.", memory.reply("SALVA a palavra JORGE na MEMÓRIA pra teste"))
+        assertEquals("Certo, salvei a palavra Bia na memória.", memory.reply("guarde a palavra Bia na memória"))
+        assertEquals("A palavra salva é Bia.", memory.reply("qual é a palavra que eu pedi pra você salvar?"))
+
+        val words = dao.getByCategory("fact").filter { it.key == "saved_word" }
+        assertEquals(1, words.size)
+        assertEquals("Bia", words.single().value)
+    }
+
+    @Test
+    fun `word memory is bounded truthful and never inferred from a quote`() = runTest {
+        val dao = FakeMemoryDao()
+        val memory = PersistentMemory(dao)
+
+        assertEquals(
+            "Você ainda não me pediu para salvar uma palavra.",
+            memory.reply("qual a palavra que pedi para vc salvar?")
+        )
+        assertEquals(
+            "Não salvei: informe uma palavra.",
+            memory.reply("salve a palavra na memória para teste")
+        )
+        assertNull(memory.reply("\"salve a palavra Jorge na memória para teste\""))
+        assertNull(memory.reply("salve a palavra Jorge na memória?"))
+        assertEquals(
+            "Não salvei: a palavra deve ter no máximo 100 caracteres.",
+            memory.reply("salvar a palavra " + "x".repeat(101) + " na memória para teste")
+        )
+        assertEquals(
+            "Você ainda não me pediu para salvar uma palavra.",
+            memory.reply("qual a palavra que pedi para vc salvar?")
+        )
+
+        memory.reply("salve a palavra Jorge na memória")
+        val saved = dao.getByCategory("fact").single { it.key == "saved_word" }
+        assertEquals("Memória ${saved.id} apagada.", memory.reply("apagar memória ${saved.id}"))
+        assertEquals(
+            "Você ainda não me pediu para salvar uma palavra.",
+            memory.reply("qual a palavra que pedi para vc salvar?")
+        )
+    }
+
+    @Test
     fun `ignores non explicit names and leaves assistant questions for caller`() = runTest {
         val memory = PersistentMemory(FakeMemoryDao())
         listOf(

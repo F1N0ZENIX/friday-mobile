@@ -17,18 +17,28 @@ import kotlinx.coroutines.sync.withLock
  */
 class PersistentMemory(private val dao: MemoryDao) {
 
-    @Suppress("ReturnCount") // Each recognized command finishes without falling through to another action.
     suspend fun reply(prompt: String): String? {
         val normalized = normalized(prompt)
 
-        when {
+        return commandReply(normalized)
+            ?: LocalConversationFacts.declaredName(prompt)?.let { name ->
+                saveName(name)
+                "Certo, salvei seu nome como $name."
+            }
+            ?: saveWordReply(prompt)
+            ?: saveNoteReply(prompt)
+            ?: answerQuestion(normalized)
+    }
+
+    private suspend fun commandReply(normalized: String): String? {
+        return when {
             normalized in forgetNameCommands -> {
                 writeMutex.withLock {
                     dao.getByCategory(FACT_CATEGORY)
                         .filter { it.key == NAME_KEY }
                         .forEach { dao.delete(it.id) }
                 }
-                return "Certo, apaguei seu nome salvo."
+                "Certo, apaguei seu nome salvo."
             }
             normalized.startsWith(DELETE_PREFIX) -> {
                 val id = normalized.removePrefix(DELETE_PREFIX).trim().toLongOrNull() ?: return null
@@ -39,18 +49,18 @@ class PersistentMemory(private val dao: MemoryDao) {
                         true
                     }
                 }
-                return if (deleted) "Memória $id apagada." else "Não encontrei uma memória com esse id."
+                if (deleted) "Memória $id apagada." else "Não encontrei uma memória com esse id."
             }
-            normalized in listCommands -> return listMemories()
+            normalized in listCommands -> listMemories()
+            else -> null
         }
+    }
 
-        LocalConversationFacts.declaredName(prompt)?.let { name ->
-            saveName(name)
-            return "Certo, salvei seu nome como $name."
-        }
-
+    private suspend fun saveNoteReply(prompt: String): String? {
         noteValue(prompt)?.let { note ->
-            if (note.length > MAX_NOTE_CHARS) return "Não salvei: a nota deve ter no máximo 500 caracteres."
+            if (note.length > MAX_NOTE_CHARS) {
+                return "Não salvei: a nota deve ter no máximo 500 caracteres."
+            }
             writeMutex.withLock {
                 dao.insert(
                     MemoryEntity(
@@ -63,13 +73,32 @@ class PersistentMemory(private val dao: MemoryDao) {
             }
             return "Certo, guardei essa nota."
         }
+        return null
+    }
 
-        return when (normalized) {
+    private suspend fun answerQuestion(normalized: String): String? =
+        when (normalized) {
+            in savedWordQuestions -> dao.findByKey(WORD_KEY, FACT_CATEGORY)
+                ?.let { "A palavra salva é ${it.value}." }
+                ?: "Você ainda não me pediu para salvar uma palavra."
             in userNameQuestions -> dao.findByKey(NAME_KEY, FACT_CATEGORY)
                 ?.let { "Seu nome salvo é ${it.value}." }
                 ?: "Você ainda não me disse seu nome."
             in assistantNameQuestions -> null
             else -> null
+        }
+
+    private suspend fun saveWordReply(prompt: String): String? {
+        val match = wordDeclaration.matchEntire(prompt) ?: return null
+        val word = match.groups["word"]?.value?.trim().orEmpty()
+        return when {
+            word.isEmpty() -> "Não salvei: informe uma palavra."
+            word.length > MAX_WORD_CHARS ->
+                "Não salvei: a palavra deve ter no máximo $MAX_WORD_CHARS caracteres."
+            else -> {
+                saveWord(word)
+                "Certo, salvei a palavra $word na memória."
+            }
         }
     }
 
@@ -86,6 +115,22 @@ class PersistentMemory(private val dao: MemoryDao) {
             )
         } else {
             dao.updateValue(existing.id, name)
+        }
+    }
+
+    private suspend fun saveWord(word: String) = writeMutex.withLock {
+        val existing = dao.findByKey(WORD_KEY, FACT_CATEGORY)
+        if (existing == null) {
+            dao.insert(
+                MemoryEntity(
+                    category = FACT_CATEGORY,
+                    key = WORD_KEY,
+                    value = word,
+                    source = EXPLICIT_LOCAL_SOURCE
+                )
+            )
+        } else {
+            dao.updateValue(existing.id, word)
         }
     }
 
@@ -118,13 +163,21 @@ class PersistentMemory(private val dao: MemoryDao) {
         val writeMutex = Mutex()
         const val FACT_CATEGORY = "fact"
         const val NAME_KEY = "name"
+        const val WORD_KEY = "saved_word"
         const val EXPLICIT_LOCAL_SOURCE = "explicit_local"
         const val MAX_LIST = 20
         const val MAX_NOTE_CHARS = 500
+        const val MAX_WORD_CHARS = 100
         const val DELETE_PREFIX = "apagar memoria "
         val COMBINING_MARKS = Regex("\\p{M}+")
         val noteDeclaration = Regex(
             """^\s*(?:lembre|lembra|guarde)\s+que\s+(?<note>.*?)\s*$""",
+            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+        )
+        val wordDeclaration = Regex(
+            """^\s*(?:salve|salva|salvar|guarde|guarda)\s+a\s+palavra""" +
+                """(?:\s+(?<word>.*?))?\s+na\s+mem[oó]ria""" +
+                """(?:\s+(?:pra|para)\s+teste)?\s*[!.]*\s*$""",
             setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
         )
         val userNameQuestions = setOf(
@@ -133,6 +186,18 @@ class PersistentMemory(private val dao: MemoryDao) {
         )
         val assistantNameQuestions = setOf(
             "qual seu nome", "qual e seu nome", "qual o seu nome", "qual e o seu nome"
+        )
+        val savedWordQuestions = setOf(
+            "qual a palavra que pedi para vc salvar", "qual e a palavra que pedi para vc salvar",
+            "qual a palavra que eu pedi para vc salvar", "qual e a palavra que eu pedi para vc salvar",
+            "qual a palavra que pedi para voce salvar", "qual e a palavra que pedi para voce salvar",
+            "qual a palavra que eu pedi para voce salvar", "qual e a palavra que eu pedi para voce salvar",
+            "qual a palavra que pedi pra vc salvar", "qual e a palavra que pedi pra vc salvar",
+            "qual a palavra que eu pedi pra vc salvar", "qual e a palavra que eu pedi pra vc salvar",
+            "qual a palavra que pedi pra voce salvar", "qual e a palavra que pedi pra voce salvar",
+            "qual a palavra que eu pedi pra voce salvar", "qual e a palavra que eu pedi pra voce salvar",
+            "qual a palavra que pedi para salvar", "qual palavra eu pedi pra voce salvar",
+            "qual a palavra salva"
         )
         val listCommands = setOf("listar memorias", "o que voce lembra de mim")
         val forgetNameCommands = setOf("esqueca meu nome", "apagar meu nome")
