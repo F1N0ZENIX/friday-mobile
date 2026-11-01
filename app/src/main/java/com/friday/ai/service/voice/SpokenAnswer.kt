@@ -84,8 +84,8 @@ class SpokenAnswer(
             remember(userText, response, assistantSpokeBefore = history.isNotEmpty())
             speech.endInput()
             speech.awaitCompletion()
-            // If Friday herself just said goodbye the exchange is over: don’t
-            // reopen the microphone and sit there in the user’s way.
+            // If Friday herself just said goodbye the exchange is over: don't
+            // reopen the microphone and sit there in the user's way.
             Result.Finished(response, followUp = !ConversationControl.isFarewell(response))
         } catch (e: CancellationException) {
             speech.cancel()
