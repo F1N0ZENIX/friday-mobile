@@ -6,7 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PortugueseDeviceCommandsTest {
-    private val router = CommandRouter()
+    private val router = PortugueseDeviceCommands
 
     @Test
     fun `relative alarm from screenshot is a real device timer`() {
@@ -23,7 +23,7 @@ class PortugueseDeviceCommandsTest {
     @Test
     fun `mentions and invalid times cannot create an alarm`() {
         for (text in listOf("por que meu alarme falhou", "alarme às 25:90", "alarme em 0 minutos")) {
-            assertTrue(text, router.route(text) is CommandResult.ChatMessage)
+            assertEquals(text, null, router.route(text))
         }
     }
 
