@@ -359,11 +359,12 @@ class VoiceConversation(
 }
 
 /** The panel's note on who answers: the phone directly, a learned phrase, or the model. */
-internal fun sourceLabel(command: CommandResult, learned: Boolean, russian: Boolean): String =
+internal @Suppress("UNUSED_PARAMETER") // Kept for call-site compatibility; Friday Brasil always uses Portuguese.
+fun sourceLabel(command: CommandResult, learned: Boolean, russian: Boolean): String =
     when {
-        command is CommandResult.ChatMessage -> if (russian) "ИИ" else "AI"
-        learned -> if (russian) "команда · выучена" else "command · learned"
-        else -> if (russian) "команда" else "command"
+        command is CommandResult.ChatMessage -> "IA"
+        learned -> "comando aprendido"
+        else -> "comando"
     }
 
 /** What a spoken turn makes of an outcome that is not plain conversation. */
