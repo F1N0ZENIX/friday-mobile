@@ -103,7 +103,7 @@ class CommandExecutor(
             lastRouteLearned = false
             return it
         }
-        val routed = router.route(text)
+        val routed = com.friday.ai.core.PortugueseDeviceCommands.route(text) ?: router.route(text)
         val fromLesson = if (routed is CommandResult.ChatMessage) learned?.command(text, now()) else null
         lastRouteLearned = fromLesson != null
         return fromLesson ?: routed
