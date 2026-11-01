@@ -1,1 +1,145 @@
-cGFja2FnZSBjb20uZnJpZGF5LmFpLmRhdGEucmVwb3NpdG9yeQoKaW1wb3J0IGNvbS5mcmlkYXkuYWkuYWdlbnQuRnJpZGF5QWdlbnQKaW1wb3J0IGNvbS5mcmlkYXkuYWkuYWdlbnQuUHJvbXB0QnVkZ2V0CmltcG9ydCBjb20uZnJpZGF5LmFpLmNvcmUuU3lzdGVtUHJvbXB0QnVpbGRlcgppbXBvcnQgY29tLmZyaWRheS5haS5kYXRhLmxvY2FsLmRhby5DaGF0TWVzc2FnZURhbwppbXBvcnQgY29tLmZyaWRheS5haS5kYXRhLmxvY2FsLmRhby5DaGF0U2Vzc2lvblN1bW1hcnkKaW1wb3J0IGNvbS5mcmlkYXkuYWkuZGF0YS5sb2NhbC5kYW8uVXNlclByZWZlcmVuY2VEYW8KaW1wb3J0IGNvbS5mcmlkYXkuYWkuZGF0YS5sb2NhbC5tYXBwZXIudG9Eb21haW4KaW1wb3J0IGNvbS5mcmlkYXkuYWkuZGF0YS5sb2NhbC5tYXBwZXIudG9FbnRpdHkKaW1wb3J0IGNvbS5mcmlkYXkuYWkuZGF0YS5yZW1vdGUuR3JvcUFwaUV4Y2VwdGlvbgppbXBvcnQgY29tLmZyaWRheS5haS5kYXRhLnJlbW90ZS5Hcm9xQXBpU2VydmljZQppbXBvcnQgY29tLmZyaWRheS5haS5kYXRhLnJlbW90ZS5kdG8uQXBpTWVzc2FnZQppbXBvcnQgY29tLmZyaWRheS5haS5kb21haW4ubW9kZWwuQXNzaXN0YW50TW9kZQppbXBvcnQgY29tLmZyaWRheS5haS5kb21haW4ubW9kZWwuTWVzc2FnZQppbXBvcnQgY29tLmZyaWRheS5haS5kb21haW4ubW9kZWwuTWVzc2FnZVJvbGUKaW1wb3J0IGNvbS5mcmlkYXkuYWkuZG9tYWluLnJlcG9zaXRvcnkuQXNzaXN0YW50UmVwb3NpdG9yeQppbXBvcnQgY29tLmZyaWRheS5haS5sb2NhbGFpLkxvY2FsQWlQcmVmZXJlbmNlcwppbXBvcnQgY29tLmZyaWRheS5haS5sb2NhbGFpLkxvY2FsQ2hhdFJvdXRpbmcKaW1wb3J0IGNvbS5mcmlkYXkuYWkubG9jYWxhaS5Mb2NhbEdyb3VuZGVkUmVwbGllcwppbXBvcnQgY29tLmZyaWRheS5haS5sb2NhbGFpLkxvY2FsSW5mZXJlbmNlRW5naW5lCmltcG9ydCBjb20uZnJpZGF5LmFpLmxvY2FsYWkuTG9jYWxQcm9tcHQKaW1wb3J0IGNvbS5mcmlkYXkuYWkubG9jYWxhaS5Mb2NhbFJlc3BvbnNlUXVhbGl0eQppbXBvcnQgY29tLmZyaWRheS5haS5zZXJ2aWNlLkZyaWRheU1lbW9yeQppbXBvcnQgY29tLmZyaWRheS5haS5zZXJ2aWNlLk1vZGVsQ2F0YWxvZwppbXBvcnQga290bGlueC5jb3JvdXRpbmVzLmZsb3cuRmxvdwppbXBvcnQga290bGlueC5jb3JvdXRpbmVzLmZsb3cuY2F0Y2gKaW1wb3J0IGtvdGxpbnguY29yb3V0aW5lcy5mbG93LmZsb3cKaW1wb3J0IGtvdGxpbnguY29yb3V0aW5lcy5mbG93Lm1hcAppbXBvcnQga290bGlueC5jb3JvdXRpbmVzLmZsb3cub25Db21wbGV0aW9uCgovLyBTZXZlbiBjb2xsYWJvcmF0b3JzLCBlYWNoIHVzZWQ6IHRoZSBjaGF0IG5lZWRzIHRoZSBtb2RlbCwgaGlzdG9yeSwgc2V0dGluZ3MsCi8vIHByb21wdCwgbWVtb3J5LCBtb2RlbCBjaG9pY2UgYW5kIHRoZSBhZ2VudC4gQnVuZGxpbmcgdGhlbSB3b3VsZCBvbmx5IGhpZGUgdGhhdC4KQFN1cHByZXNzKCJMb25nUGFyYW1ldGVyTGlzdCIpCmNsYXNzIEFzc2lzdGFudFJlcG9zaXRvcnlJbXBsKAogICAgcHJpdmF0ZSB2YWwgZ3JvcUFwaTogR3JvcUFwaVNlcnZpY2UsCiAgICBwcml2YXRlIHZhbCBjaGF0RGFvOiBDaGF0TWVzc2FnZURhbywKICAgIHByaXZhdGUgdmFsIHByZWZEYW86IFVzZXJQcmVmZXJlbmNlRGFvLAogICAgcHJpdmF0ZSB2YWwgcHJvbXB0QnVpbGRlcjogU3lzdGVtUHJvbXB0QnVpbGRlciwKICAgIHByaXZhdGUgdmFsIG1lbW9yeTogRnJpZGF5TWVtb3J5LAogICAgcHJpdmF0ZSB2YWwgY2F0YWxvZzogTW9kZWxDYXRhbG9nLAogICAgcHJpdmF0ZSB2YWwgYWdlbnQ6IEZyaWRheUFnZW50LAogICAgcHJpdmF0ZSB2YWwgbG9jYWxQcmVmZXJlbmNlczogTG9jYWxBaVByZWZlcmVuY2VzPyA9IG51bGwsCiAgICBwcml2YXRlIHZhbCBsb2NhbEVuZ2luZTogTG9jYWxJbmZlcmVuY2VFbmdpbmU/ID0gbnVsbAopIDogQXNzaXN0YW50UmVwb3NpdG9yeSB7CgogICAgY29tcGFuaW9uIG9iamVjdCB7CiAgICAgICAgY29uc3QgdmFsIFBSRUZfQVBJX0tFWSA9ICJncm9xX2FwaV9rZXkiCiAgICB9CgogICAgb3ZlcnJpZGUgc3VzcGVuZCBmdW4gc2VuZE1lc3NhZ2UoCiAgICAgICAgcHJvbXB0OiBTdHJpbmcsCiAgICAgICAgaGlzdG9yeTogTGlzdDxNZXNzYWdlPiwKICAgICAgICBtb2RlOiBBc3Npc3RhbnRNb2RlCiAgICApOiBGbG93PFN0cmluZz4gewogICAgICAgIC8vIFRoaXMgbXVzdCBzdGF5IGJlZm9yZSBldmVyeSBjb2xsYWJvcmF0b3IgYmVsb3c6IGNhdGFsb2csIHByb21wdCwKICAgICAgICAvLyBtZW1vcnkgYW5kIGFnZW50IGNhbiBpbml0aWF0ZSBjbG91ZCB3b3JrIG9yIGNvbnN0cnVjdCB0b29sIHByb21wdHMuCiAgICAgICAgaWYgKExvY2FsQ2hhdFJvdXRpbmcudXNlTG9jYWwobG9jYWxQcmVmZXJlbmNlcz8ubW9kZSkpIHsKICAgICAgICAgICAgdmFsIGVuZ2luZSA9IGxvY2FsRW5naW5lID86IHJldHVybiBmbG93IHsKICAgICAgICAgICAgICAgIHRocm93IElsbGVnYWxTdGF0ZUV4Y2VwdGlvbigiQSBJQSBsb2NhbCBuw6NvIGVzdMOhIGRpc3BvbsOtdmVsIG5lc3RlIGFwYXJlbGhvLiIpCiAgICAgICAgICAgIH0KICAgICAgICAgICAgcmV0dXJuIGZsb3cgewogICAgICAgICAgICAgICAgdmFsIGFuc3dlciA9IExvY2FsR3JvdW5kZWRSZXBsaWVzLnJlcGx5KHByb21wdCkKICAgICAgICAgICAgICAgICAgICA/OiBlbmdpbmUucmVwbHkoTG9jYWxQcm9tcHQuY29udmVyc2F0aW9uVHVybihwcm9tcHQsIGhpc3RvcnkpKQogICAgICAgICAgICAgICAgZW1pdChMb2NhbFJlc3BvbnNlUXVhbGl0eS5jaGVja2VkKHByb21wdCwgYW5zd2VyKSkKICAgICAgICAgICAgfQogICAgICAgIH0KICAgICAgICB2YWwgYXBpS2V5ID0gcHJlZkRhby5nZXQoUFJFRl9BUElfS0VZKSA/OiAiIgogICAgICAgIHZhbCBtb2RlbCA9IGNhdGFsb2cubW9kZWwoY29tLmZyaWRheS5haS5jb3JlLkdyb3FNb2RlbHMuUm9sZS5DSEFUKQogICAgICAgIHZhbCBtZW1vcnlDb250ZXh0ID0gbWVtb3J5LmJ1aWxkTWVtb3J5Q29udGV4dCgpCiAgICAgICAgdmFsIGFwaU1lc3NhZ2VzID0gYnVpbGRBcGlNZXNzYWdlcyhwcm9tcHQsIGhpc3RvcnksIG1vZGUsIG1lbW9yeUNvbnRleHQpCgogICAgICAgIHZhbCByZXNwb25zZUJ1aWxkZXIgPSBTdHJpbmdCdWlsZGVyKCkKICAgICAgICAvLyBUeXBlZCB0ZXh0IGhhcyBubyBsYW5ndWFnZSBzZXR0aW5nOiBDeXJpbGxpYyBpbiBpdCBtZWFucyBSdXNzaWFuLgogICAgICAgIHZhbCBydXNzaWFuID0gcHJvbXB0LmFueSB7IGl0IGluICfQsCcuLifRjycgfHwgaXQgaW4gJ9CQJy4uJ9CvJyB8fCBpdCA9PSAn0ZEnIHx8IGl0ID09ICfQgScgfQogICAgICAgIHZhbCBiYWNrdXAgPSBjYXRhbG9nLm1vZGVsKGNvbS5mcmlkYXkuYWkuY29yZS5Hcm9xTW9kZWxzLlJvbGUuRkFTVCkKICAgICAgICB2YWwgc2V0dGluZ3MgPSBGcmlkYXlBZ2VudC5TZXR0aW5ncyhhcGlLZXksIG1vZGVsLCBHcm9xQXBpU2VydmljZS5ERUZBVUxUX01BWF9UT0tFTlMsIGJhY2t1cCkKICAgICAgICByZXR1cm4gYWdlbnQucmVwbHkoc2V0dGluZ3MsIGFwaU1lc3NhZ2VzLCBydXNzaWFuKQogICAgICAgICAgICAuY2F0Y2ggeyBlIC0+CiAgICAgICAgICAgICAgICAvLyBBIHJldGlyZWQgbW9kZWw6IHJlLXJlYWQgdGhlIGxpc3Qgc28gdGhlIG5leHQgbWVzc2FnZSB3b3Jrcy4KICAgICAgICAgICAgICAgIGlmIChlIGlzIEdyb3FBcGlFeGNlcHRpb24gJiYgZS5tb2RlbE1pc3NpbmcpIGNhdGFsb2cucmVmcmVzaCgpCiAgICAgICAgICAgICAgICB0aHJvdyBlCiAgICAgICAgICAgIH0KICAgICAgICAgICAgLm9uQ29tcGxldGlvbiB7CiAgICAgICAgICAgICAgICB2YWwgcmVzcG9uc2UgPSByZXNwb25zZUJ1aWxkZXIudG9TdHJpbmcoKQogICAgICAgICAgICAgICAgaWYgKHJlc3BvbnNlLmlzTm90QmxhbmsoKSkgewogICAgICAgICAgICAgICAgICAgIG1lbW9yeS5sb2dJbnRlcmFjdGlvbihwcm9tcHQsIHJlc3BvbnNlLCBudWxsKQogICAgICAgICAgICAgICAgICAgIC8vIEV4dHJhY3Rpb24gaXMgYSBzZWNvbmQgTExNIGNhbGwg4oCUIGtlZXAgaXQgb2ZmIHRoZSBzdHJlYW0ncwogICAgICAgICAgICAgICAgICAgIC8vIGNvbXBsZXRpb24gcGF0aCBzbyB0aGUgY2hhdCBVSSBpc24ndCBoZWxkIG9wZW4gd2FpdGluZy4KICAgICAgICAgICAgICAgICAgICBtZW1vcnkuZXh0cmFjdE1lbW9yaWVzSW5CYWNrZ3JvdW5kKHByb21wdCwgcmVzcG9uc2UpCiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgIH0KICAgICAgICAgICAgLm1hcCB7IHRva2VuIC0+CiAgICAgICAgICAgICAgICByZXNwb25zZUJ1aWxkZXIuYXBwZW5kKHRva2VuKQogICAgICAgICAgICAgICAgdG9rZW4KICAgICAgICAgICAgfQogICAgfQoKICAgIG92ZXJyaWRlIGZ1biBnZXRTZXNzaW9uTWVzc2FnZXMoc2Vzc2lvbklkOiBTdHJpbmcpOiBGbG93PExpc3Q8TWVzc2FnZT4+ID0KICAgICAgICBjaGF0RGFvLm9ic2VydmVTZXNzaW9uKHNlc3Npb25JZCkubWFwIHsgZW50aXRpZXMgLT4gZW50aXRpZXMubWFwIHsgaXQudG9Eb21haW4oKSB9IH0KCiAgICBvdmVycmlkZSBmdW4gZ2V0U2Vzc2lvbnMoKTogRmxvdzxMaXN0PENoYXRTZXNzaW9uU3VtbWFyeT4+ID0gY2hhdERhby5vYnNlcnZlU2Vzc2lvbnMoKQoKICAgIG92ZXJyaWRlIHN1c3BlbmQgZnVuIHNhdmVNZXNzYWdlKG1lc3NhZ2U6IE1lc3NhZ2UpIHsKICAgICAgICBjaGF0RGFvLmluc2VydChtZXNzYWdlLnRvRW50aXR5KCkpCiAgICB9CgogICAgb3ZlcnJpZGUgc3VzcGVuZCBmdW4gZGVsZXRlU2Vzc2lvbihzZXNzaW9uSWQ6IFN0cmluZykgewogICAgICAgIGNoYXREYW8uZGVsZXRlU2Vzc2lvbihzZXNzaW9uSWQpCiAgICB9CgogICAgb3ZlcnJpZGUgc3VzcGVuZCBmdW4gYW5hbHl6ZUltYWdlKGltYWdlQmFzZTY0OiBTdHJpbmcsIHByb21wdDogU3RyaW5nKTogRmxvdzxTdHJpbmc+IHsKICAgICAgICB2YWwgYXBpS2V5ID0gcHJlZkRhby5nZXQoUFJFRl9BUElfS0VZKSA/OiAiIgogICAgICAgIHZhbCBtb2RlbCA9IGNhdGFsb2cubW9kZWwoY29tLmZyaWRheS5haS5jb3JlLkdyb3FNb2RlbHMuUm9sZS5WSVNJT04pCiAgICAgICAgcmV0dXJuIGdyb3FBcGkuYW5hbHl6ZUltYWdlKGFwaUtleSwgaW1hZ2VCYXNlNjQsIHByb21wdCwgbW9kZWwpCiAgICB9CgogICAgb3ZlcnJpZGUgc3VzcGVuZCBmdW4gYW5hbHl6ZVRleHQodGV4dDogU3RyaW5nLCBwcm9tcHQ6IFN0cmluZyk6IEZsb3c8U3RyaW5nPiB7CiAgICAgICAgdmFsIGFwaUtleSA9IHByZWZEYW8uZ2V0KFBSRUZfQVBJX0tFWSkgPzogIiIKICAgICAgICByZXR1cm4gZ3JvcUFwaS5hbmFseXplVGV4dChhcGlLZXksIHRleHQsIHByb21wdCwgY2F0YWxvZy5tb2RlbChjb20uZnJpZGF5LmFpLmNvcmUuR3JvcU1vZGVscy5Sb2xlLkNIQVQpKQogICAgfQoKICAgIHByaXZhdGUgZnVuIGJ1aWxkQXBpTWVzc2FnZXMoCiAgICAgICAgcHJvbXB0OiBTdHJpbmcsCiAgICAgICAgaGlzdG9yeTogTGlzdDxNZXNzYWdlPiwKICAgICAgICBtb2RlOiBBc3Npc3RhbnRNb2RlLAogICAgICAgIG1lbW9yeUNvbnRleHQ6IFN0cmluZwogICAgKTogTGlzdDxBcGlNZXNzYWdlPiA9IGJ1aWxkTGlzdCB7CiAgICAgICAgYWRkKEFwaU1lc3NhZ2Uocm9sZSA9ICJzeXN0ZW0iLCBjb250ZW50ID0gcHJvbXB0QnVpbGRlci5idWlsZChtb2RlLCBtZW1vcnlDb250ZXh0LCB3aXRoVG9vbHMgPSB0cnVlKSkpCgogICAgICAgIHZhbCByZWNlbnQgPSBoaXN0b3J5LnRha2VMYXN0KFByb21wdEJ1ZGdldC5DSEFUX0hJU1RPUlkpCiAgICAgICAgcmVjZW50LmZvckVhY2hJbmRleGVkIHsgaSwgbXNnIC0+CiAgICAgICAgICAgIGFkZChBcGlNZXNzYWdlKAogICAgICAgICAgICAgICAgcm9sZSA9IHdoZW4gKG1zZy5yb2xlKSB7CiAgICAgICAgICAgICAgICAgICAgTWVzc2FnZVJvbGUuVVNFUiAtPiAidXNlciIKICAgICAgICAgICAgICAgICAgICBNZXNzYWdlUm9sZS5BU1NJU1RBTlQgLT4gImFzc2lzdGFudCIKICAgICAgICAgICAgICAgICAgICBNZXNzYWdlUm9sZS5TWVNURU0gLT4gInN5c3RlbSIKICAgICAgICAgICAgICAgIH0sCiAgICAgICAgICAgICAgICBjb250ZW50ID0gUHJvbXB0QnVkZ2V0Lm9sZGVyKG1zZy5jb250ZW50LCBmcm9tRW5kID0gcmVjZW50LnNpemUgLSBpKQogICAgICAgICAgICApKQogICAgICAgIH0KCiAgICAgICAgYWRkKEFwaU1lc3NhZ2Uocm9sZSA9ICJ1c2VyIiwgY29udGVudCA9IHByb21wdCkpCiAgICB9Cn0K
+package com.friday.ai.data.repository
+
+import com.friday.ai.agent.FridayAgent
+import com.friday.ai.agent.PromptBudget
+import com.friday.ai.core.SystemPromptBuilder
+import com.friday.ai.data.local.dao.ChatMessageDao
+import com.friday.ai.data.local.dao.ChatSessionSummary
+import com.friday.ai.data.local.dao.UserPreferenceDao
+import com.friday.ai.data.local.mapper.toDomain
+import com.friday.ai.data.local.mapper.toEntity
+import com.friday.ai.data.remote.GroqApiException
+import com.friday.ai.data.remote.GroqApiService
+import com.friday.ai.data.remote.dto.ApiMessage
+import com.friday.ai.domain.model.AssistantMode
+import com.friday.ai.domain.model.Message
+import com.friday.ai.domain.model.MessageRole
+import com.friday.ai.domain.repository.AssistantRepository
+import com.friday.ai.localai.LocalAiPreferences
+import com.friday.ai.localai.LocalChatRouting
+import com.friday.ai.localai.LocalGroundedReplies
+import com.friday.ai.localai.LocalInferenceEngine
+import com.friday.ai.localai.LocalPrompt
+import com.friday.ai.localai.LocalResponseQuality
+import com.friday.ai.service.FridayMemory
+import com.friday.ai.service.ModelCatalog
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
+
+// Seven collaborators, each used: the chat needs the model, history, settings,
+// prompt, memory, model choice and the agent. Bundling them would only hide that.
+@Suppress("LongParameterList")
+class AssistantRepositoryImpl(
+    private val groqApi: GroqApiService,
+    private val chatDao: ChatMessageDao,
+    private val prefDao: UserPreferenceDao,
+    private val promptBuilder: SystemPromptBuilder,
+    private val memory: FridayMemory,
+    private val catalog: ModelCatalog,
+    private val agent: FridayAgent,
+    private val localPreferences: LocalAiPreferences? = null,
+    private val localEngine: LocalInferenceEngine? = null
+) : AssistantRepository {
+
+    companion object {
+        const val PREF_API_KEY = "groq_api_key"
+    }
+
+    override suspend fun sendMessage(
+        prompt: String,
+        history: List<Message>,
+        mode: AssistantMode
+    ): Flow<String> {
+        // This must stay before every collaborator below: catalog, prompt,
+        // memory and agent can initiate cloud work or construct tool prompts.
+        if (LocalChatRouting.useLocal(localPreferences?.mode)) {
+            val engine = localEngine ?: return flow {
+                throw IllegalStateException("A IA local não está disponível neste aparelho.")
+            }
+            return flow {
+                val answer = LocalGroundedReplies.reply(prompt)
+                    ?: engine.reply(LocalPrompt.conversationTurn(prompt, history))
+                emit(LocalResponseQuality.checked(prompt, answer))
+            }
+        }
+        val apiKey = prefDao.get(PREF_API_KEY) ?: ""
+        val model = catalog.model(com.friday.ai.core.GroqModels.Role.CHAT)
+        val memoryContext = memory.buildMemoryContext()
+        val apiMessages = buildApiMessages(prompt, history, mode, memoryContext)
+
+        val responseBuilder = StringBuilder()
+        // Typed text has no language setting: Cyrillic in it means Russian.
+        val russian = prompt.any { it in 'а'..'я' || it in 'А'..'Я' || it == 'ё' || it == 'Ё' }
+        val backup = catalog.model(com.friday.ai.core.GroqModels.Role.FAST)
+        val settings = FridayAgent.Settings(apiKey, model, GroqApiService.DEFAULT_MAX_TOKENS, backup)
+        return agent.reply(settings, apiMessages, russian)
+            .catch { e ->
+                // A retired model: re-read the list so the next message works.
+                if (e is GroqApiException && e.modelMissing) catalog.refresh()
+                throw e
+            }
+            .onCompletion {
+                val response = responseBuilder.toString()
+                if (response.isNotBlank()) {
+                    memory.logInteraction(prompt, response, null)
+                    // Extraction is a second LLM call — keep it off the stream's
+                    // completion path so the chat UI isn't held open waiting.
+                    memory.extractMemoriesInBackground(prompt, response)
+                }
+            }
+            .map { token ->
+                responseBuilder.append(token)
+                token
+            }
+    }
+
+    override fun getSessionMessages(sessionId: String): Flow<List<Message>> =
+        chatDao.observeSession(sessionId).map { entities -> entities.map { it.toDomain() } }
+
+    override fun getSessions(): Flow<List<ChatSessionSummary>> = chatDao.observeSessions()
+
+    override suspend fun saveMessage(message: Message) {
+        chatDao.insert(message.toEntity())
+    }
+
+    override suspend fun deleteSession(sessionId: String) {
+        chatDao.deleteSession(sessionId)
+    }
+
+    override suspend fun analyzeImage(imageBase64: String, prompt: String): Flow<String> {
+        val apiKey = prefDao.get(PREF_API_KEY) ?: ""
+        val model = catalog.model(com.friday.ai.core.GroqModels.Role.VISION)
+        return groqApi.analyzeImage(apiKey, imageBase64, prompt, model)
+    }
+
+    override suspend fun analyzeText(text: String, prompt: String): Flow<String> {
+        val apiKey = prefDao.get(PREF_API_KEY) ?: ""
+        return groqApi.analyzeText(apiKey, text, prompt, catalog.model(com.friday.ai.core.GroqModels.Role.CHAT))
+    }
+
+    private fun buildApiMessages(
+        prompt: String,
+        history: List<Message>,
+        mode: AssistantMode,
+        memoryContext: String
+    ): List<ApiMessage> = buildList {
+        add(ApiMessage(role = "system", content = promptBuilder.build(mode, memoryContext, withTools = true)))
+
+        val recent = history.takeLast(PromptBudget.CHAT_HISTORY)
+        recent.forEachIndexed { i, msg ->
+            add(ApiMessage(
+                role = when (msg.role) {
+                    MessageRole.USER -> "user"
+                    MessageRole.ASSISTANT -> "assistant"
+                    MessageRole.SYSTEM -> "system"
+                },
+                content = PromptBudget.older(msg.content, fromEnd = recent.size - i)
+            ))
+        }
+
+        add(ApiMessage(role = "user", content = prompt))
+    }
+}
