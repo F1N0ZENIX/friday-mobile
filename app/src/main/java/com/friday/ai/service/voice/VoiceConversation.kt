@@ -73,12 +73,6 @@ class VoiceConversation(
     /** Current turn. Only touched on [scope]'s thread. */
     private var turn = 0
 
-    /**
-     * What this conversation is transcribed in: Russian when the owner called
-     * "Пятница", Whisper's own guess when they called "Friday".
-     */
-    private var language: String? = "ru"
-
     /** True while Friday is talking, so a wake word means "interrupt". */
     @Volatile
     var speaking = false
@@ -97,7 +91,6 @@ class VoiceConversation(
             // The owner called: their session, which may light the lock screen.
             io.overlay.begin(userInitiated = true)
             val mine = ++turn
-            language = transcriptionLanguage(heard)
             // Music stops before anything is said or heard: the recording is
             // the user's voice, not the user's voice over a song.
             io.focus?.take()
@@ -179,7 +172,8 @@ class VoiceConversation(
             return
         }
 
-        io.transcriber.language = language
+        // Friday Brasil must also use Portuguese after announcements and shortcuts.
+        io.transcriber.language = "pt"
         val outcome = if (lead != null) io.transcriber.recordAndTranscribe(apiKey, gate.commandCheck(), lead)
         else io.transcriber.recordAndTranscribe(apiKey, gate.commandCheck())
         if (mine != turn) {
@@ -193,13 +187,6 @@ class VoiceConversation(
         // Only the name after all: greet and listen, as for a plain call.
         if (lead != null && command != null && command.isBlank()) onWake("", continuing = false)
         else next(mine, outcome, command, isFollowUp, attempt)
-    }
-
-    private suspend fun transcriptionLanguage(heard: String): String? = when (WakePhrases.detectLanguage(heard)) {
-        WakePhrases.Language.ENGLISH -> null
-        WakePhrases.Language.RUSSIAN -> "ru"
-        // The side button, the tile: no name was said, so the owner's usual language.
-        null -> if (session.russian()) "ru" else null
     }
 
     private suspend fun next(
