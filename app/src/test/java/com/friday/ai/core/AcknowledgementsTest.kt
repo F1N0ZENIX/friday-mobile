@@ -7,18 +7,18 @@ import org.junit.Test
 class AcknowledgementsTest {
 
     @Test
-    fun `russian is the default and the requested phrasing is in the pool`() {
+    fun `default greetings are in Brazilian Portuguese`() {
         val seen = (1..40).map { Acknowledgements().next(null) }.toSet()
-        assertTrue(seen.any { it.contains("К вашим услугам") })
-        assertTrue("everything must be Russian: $seen", seen.all { it.first() in 'А'..'я' })
+        assertTrue(seen.any { it.contains("À sua disposição") })
+        assertTrue("everything must be pt-BR: $seen", seen.all { phrase -> phrase.none { it in 'Ѐ'..'ӿ' } })
     }
 
     @Test
-    fun `english wake call gets an english greeting`() {
+    fun `legacy English wake call also gets a Portuguese greeting`() {
         val a = Acknowledgements()
         repeat(20) {
             val s = a.next(WakePhrases.Language.ENGLISH)
-            assertTrue("got '$s'", s.first() in 'A'..'z')
+            assertTrue("got '$s'", s.none { it in 'Ѐ'..'ӿ' })
         }
     }
 

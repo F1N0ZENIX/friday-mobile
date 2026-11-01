@@ -64,11 +64,11 @@ class GmailConnector(
         val text = e.message.orEmpty()
         return when {
             text.contains("has not been used") || text.contains("is disabled") ->
-                "Вход прошёл, но в Google Cloud не включён Gmail API " +
+                "Login autorizado, mas a API do Gmail não está ativada no Google Cloud " +
                     "(APIs & Services → Library → Gmail API → Enable)"
             e is GmailApi.HttpError && e.code == HTTP_FORBIDDEN ->
-                "Gmail запретил доступ (403). Проверьте, что при входе вы разрешили доступ к почте"
-            else -> "Gmail не ответил: $text"
+                "O Gmail negou acesso (403). Verifique se você autorizou o acesso ao e-mail"
+            else -> "O Gmail não respondeu: $text"
         }
     }
 }

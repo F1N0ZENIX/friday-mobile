@@ -136,6 +136,66 @@ class SettingsAndMediaRoutingTest {
         assertEquals(SettingsScreens.Screen.AIRPLANE, SettingsScreens.match("режим полета"))
     }
 
+    @Test
+    fun `Brazilian Portuguese device controls keep their intended actions`() {
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.VOLUME_UP),
+            router.route("aumente o volume")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.VOLUME_DOWN),
+            router.route("diminua o volume")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.WIFI_ON),
+            router.route("ligar wifi")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.BLUETOOTH_OFF),
+            router.route("desligar bluetooth")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.DND_OFF),
+            router.route("desative o modo não perturbe")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.DND_ON),
+            router.route("ative o modo não perturbe")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_AUTO),
+            router.route("brilho automático")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_UP),
+            router.route("aumentar brilho")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_DOWN),
+            router.route("diminuir brilho")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.RINGER_SILENT),
+            router.route("modo silencioso")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.RINGER_VIBRATE),
+            router.route("modo vibração")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.RINGER_NORMAL),
+            router.route("desativar modo silencioso")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_SET, 30),
+            router.route("brilho em 30%")
+        )
+        assertEquals(
+            CommandResult.DeviceControl(DeviceAction.VOLUME_SET, 40),
+            router.route("volume em 40%")
+        )
+    }
+
     // ---------- offline ----------
 
     @Test
@@ -150,7 +210,7 @@ class SettingsAndMediaRoutingTest {
         // Guards the failure found before: phrases in the grammar that are
         // recognised but route nowhere, so the user hears silence.
         OfflineCommands.GRAMMAR
-            .filter { it !in setOf("стоп", "хватит", "пока", "отбой") }
+            .filter { it !in setOf("parar", "chega", "tchau", "encerrar") }
             .forEach { phrase ->
                 val command = router.route(phrase)
                 assertTrue(

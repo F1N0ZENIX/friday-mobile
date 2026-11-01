@@ -93,8 +93,8 @@ fun VoicePanelCard(
     onClose: () -> Unit,
     actions: List<PanelAction>,
     modifier: Modifier = Modifier,
-    closeLabel: String = "Закрыть Пятницу",
-    /** False where an action already ends the session ("Завершить"): one way out, not two. */
+    closeLabel: String = "Fechar Friday",
+    /** False where an action already ends the session ("Encerrar"): one way out, not two. */
     showClose: Boolean = true
 ) {
     val maxBody = (LocalConfiguration.current.screenHeightDp * BODY_SHARE).dp
@@ -113,7 +113,7 @@ fun VoicePanelCard(
                         .padding(horizontal = 12.dp)
                         .clickable(
                             enabled = !expanded && view.body != null,
-                            onClickLabel = "Развернуть",
+                            onClickLabel = "Expandir",
                             onClick = onExpand
                         )
                 ) {

@@ -273,7 +273,10 @@ private fun HowTo() {
         Example("«Crie um modo triste que toque músicas tristes no Spotify.»")
         Example("«Crie um modo descanso: silencioso, não perturbe e brilho mínimo.»")
         HudNote("Depois, diga «modo descanso» para ativar e «desative o modo descanso» para restaurar.")
-        HudNote("Por horário: «ative o modo descanso todos os dias às 23h» ou «desative o modo descanso às 7h nos dias úteis».")
+        HudNote(
+            "Por horário: «ative o modo descanso todos os dias às 23h» " +
+                "ou «desative o modo descanso às 7h nos dias úteis».",
+        )
         HudNote("Por evento: «quando conectar ao carro, ative o modo direção» ou «quando carregar, ative o modo sono».")
         HudNote("Etiqueta NFC: «associe o modo descanso à etiqueta» para alternar o modo com um toque.")
     }

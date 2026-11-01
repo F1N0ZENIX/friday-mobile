@@ -46,41 +46,41 @@ fun LocationPanel(viewModel: LocationViewModel = koinViewModel()) {
     var granted by remember { mutableStateOf(locationGranted(context)) }
     val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted = it }
 
-    HudPanel("Местоположение", index = 12) {
+    HudPanel("Localização", index = 12) {
         HudNote(
-            "Для погоды без названия места. Город, заданный здесь (или словами «мой город — Геттисберг»), " +
-                "главнее всего; без него — где телефон, если разрешено; иначе — город часового пояса."
+            "Para consultar o tempo sem informar um lugar. A cidade definida aqui (ou por voz) " +
+                "tem prioridade. Sem ela, usa a localização permitida ou a cidade do fuso horário."
         )
         OutlinedTextField(
             value = typed,
             onValueChange = { typed = it },
-            label = { Text("Город по умолчанию") },
-            placeholder = { Text("Пусто — по геолокации") },
+            label = { Text("Cidade padrão") },
+            placeholder = { Text("Em branco: usar localização") },
             singleLine = true,
             colors = hudFieldColors(),
             modifier = Modifier.fillMaxWidth()
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(Modifier.weight(1f)) {
-                HudButton(onClick = { viewModel.save(typed) }, modifier = Modifier.fillMaxWidth()) { Text("Сохранить") }
+                HudButton(onClick = { viewModel.save(typed) }, modifier = Modifier.fillMaxWidth()) { Text("Salvar") }
             }
             Box(Modifier.weight(1f)) {
                 HudOutlinedButton(onClick = { viewModel.save("") }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Убрать")
+                    Text("Remover")
                 }
             }
         }
         result?.let { HudNote(it) }
         HudReadout(
-            "Геолокация",
-            if (granted) "РАЗРЕШЕНА" else "НЕ РАЗРЕШЕНА",
+            "Geolocalização",
+            if (granted) "PERMITIDA" else "NÃO PERMITIDA",
             valueColor = if (granted) ArcCyan else OnBackground
         )
         if (!granted) {
             HudOutlinedButton(
                 onClick = { ask.launch(Manifest.permission.ACCESS_COARSE_LOCATION) },
                 modifier = Modifier.fillMaxWidth()
-            ) { Text("Разрешить приблизительное местоположение") }
+            ) { Text("Permitir localização aproximada") }
         }
     }
 }

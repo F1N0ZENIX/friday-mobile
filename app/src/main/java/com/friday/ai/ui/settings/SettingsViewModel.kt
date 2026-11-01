@@ -90,7 +90,7 @@ class SettingsViewModel(
     fun disconnectGmail() {
         viewModelScope.launch {
             gmailConnector.disconnect()
-            _gmail.value = Gmail(message = "Отключено")
+            _gmail.value = Gmail(message = SettingsFeedback.GMAIL_DISCONNECTED)
         }
     }
 
@@ -98,7 +98,10 @@ class SettingsViewModel(
         _gmail.value = when (step) {
             is GmailConnector.Step.NeedsConsent -> _gmail.value.copy(consent = step.intent)
             is GmailConnector.Step.Failed -> _gmail.value.copy(busy = false, message = step.reason)
-            is GmailConnector.Step.Connected -> Gmail(account = step.account, message = "Подключено")
+            is GmailConnector.Step.Connected -> Gmail(
+                account = step.account,
+                message = SettingsFeedback.GMAIL_CONNECTED
+            )
         }
     }
 
@@ -155,7 +158,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             val embedder = SpeakerEmbedder(appContext)
             if (!embedder.isAvailable()) {
-                _enrolment.value = Enrolment(message = "Модель распознавания голоса не загрузилась")
+                _enrolment.value = Enrolment(message = SettingsFeedback.VOICE_MODEL_UNAVAILABLE)
                 return@launch
             }
             val phrases = VoiceProfile.ENROLMENT_PHRASES
@@ -168,7 +171,7 @@ class SettingsViewModel(
                 while (embeddings.size < phrases.size && attempts < phrases.size * 3) {
                     attempts++
                     val phrase = phrases[embeddings.size]
-                    val prompt = "Скажите: «$phrase»"
+                    val prompt = SettingsFeedback.voicePrompt(phrase)
                     _enrolment.value = Enrolment(
                         embeddings.size, phrases.size, recording = true,
                         message = problem?.let { "$it $prompt" } ?: prompt
@@ -176,8 +179,8 @@ class SettingsViewModel(
                     val audio = enroller.recordOne()
                     val e = audio?.let { embedder.embed(it) }
                     problem = when {
-                        audio == null -> "Не расслышал."
-                        e == null -> "Слишком коротко."
+                        audio == null -> SettingsFeedback.AUDIO_NOT_HEARD
+                        e == null -> SettingsFeedback.AUDIO_TOO_SHORT
                         else -> null
                     }
                     if (e != null) embeddings.add(e)
@@ -185,14 +188,14 @@ class SettingsViewModel(
 
                 val profile = VoiceProfile.enroll(embeddings)
                 if (profile == null) {
-                    _enrolment.value = Enrolment(message = "Не хватило чистых записей — попробуйте в тишине")
+                    _enrolment.value = Enrolment(message = SettingsFeedback.INSUFFICIENT_SAMPLES)
                     return@launch
                 }
                 prefDao.set(UserPreferenceEntity(PREF_VOICE_PROFILE, VoiceProfile.serialise(profile)))
                 _voiceProfile.value = profile
                 _enrolment.value = Enrolment(
                     recorded = profile.sampleCount, total = phrases.size,
-                    message = "Готово. Похожесть записей: %.2f".format(profile.cohesion)
+                    message = SettingsFeedback.enrolmentComplete(profile.cohesion)
                 )
             } finally {
                 embedder.close()
@@ -308,14 +311,14 @@ class SettingsViewModel(
 
             if (url.isBlank() || key.isBlank()) {
                 _lazuriStatus.value = LazuriStatus.ERROR
-                _lazuriError.value = "Enter both server address and API key"
+                _lazuriError.value = SettingsFeedback.LAZURI_MISSING_CREDENTIALS
                 return@launch
             }
 
             val reachable = lazuriApi.checkHealth(url)
             if (!reachable) {
                 _lazuriStatus.value = LazuriStatus.ERROR
-                _lazuriError.value = "Can't reach Lazuri at $url"
+                _lazuriError.value = SettingsFeedback.lazuriUnreachable(url)
                 return@launch
             }
 
@@ -324,7 +327,7 @@ class SettingsViewModel(
                 onSuccess = { _lazuriStatus.value = LazuriStatus.CONNECTED },
                 onFailure = { e ->
                     _lazuriStatus.value = LazuriStatus.ERROR
-                    _lazuriError.value = e.message ?: "Registration failed"
+                    _lazuriError.value = e.message ?: SettingsFeedback.LAZURI_REGISTRATION_FAILED
                 }
             )
         }

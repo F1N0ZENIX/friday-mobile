@@ -25,17 +25,17 @@ class VoskModelManager(private val context: Context) {
 
     companion object {
         private const val TAG = "VoskModelManager"
-        private const val MODEL_DIR_NAME = "vosk-model"
-        private const val MODEL_URL = "https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip"
-        private const val MODEL_MARKER = "conf/model.conf"
+        private const val MODEL_DIR_NAME = "vosk-model-pt-0.3"
+        private const val MODEL_URL = "https://alphacephei.com/vosk/models/vosk-model-small-pt-0.3.zip"
+        private const val MODEL_MARKER = "final.mdl"
 
         /**
-         * vosk-model-small-ru-0.22.zip as published at [MODEL_URL]: 46,236,750
-         * bytes, this SHA-256 (measured 2026-10-13). A changed upstream file
+         * vosk-model-small-pt-0.3.zip as published at [MODEL_URL]: 32,453,112
+         * bytes, this SHA-256 (cross-checked against the published Hugging Face LFS object). A changed upstream file
          * fails the install until this is deliberately updated.
          */
         val ARTIFACT = ModelInstaller.Artifact(
-            sha256 = "961d5ff98a17f4aa6de69864d0aa71fa5bac682301d2b5d17a3f24c5c99a46d4",
+            sha256 = "6e1ce909032e1afa7a88e68a3d628ecafff302bdf195befab308826c395e93b7",
             maxBytes = 64L * 1024 * 1024
         )
 
@@ -84,13 +84,13 @@ class VoskModelManager(private val context: Context) {
                 _downloadState.value = DownloadState.Extracting
             }
             _downloadState.value =
-                if (isModelReady()) DownloadState.Ready else DownloadState.Error("Model not installed")
+                if (isModelReady()) DownloadState.Ready else DownloadState.Error("Modelo de português não instalado")
             Log.i(TAG, "Model installed")
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
             Log.e(TAG, "Model install failed: ${e.message}")
-            _downloadState.value = DownloadState.Error(e.message ?: "Download failed")
+            _downloadState.value = DownloadState.Error(e.message ?: "Falha ao baixar o modelo de português")
         }
     }
 
@@ -101,7 +101,9 @@ class VoskModelManager(private val context: Context) {
         connection.readTimeout = READ_TIMEOUT_MS
         connection.connect()
         val totalSize = connection.contentLengthLong
-        if (totalSize > ARTIFACT.maxBytes) throw ModelInstaller.Rejected("The download is larger than the model")
+        if (totalSize > ARTIFACT.maxBytes) {
+            throw ModelInstaller.Rejected("O download excede o tamanho permitido do modelo")
+        }
         connection.getInputStream().use { input ->
             FileOutputStream(target).use { output -> copyCapped(input, output, totalSize) }
         }
@@ -115,7 +117,9 @@ class VoskModelManager(private val context: Context) {
             val read = input.read(buffer)
             if (read < 0) break
             downloaded += read
-            if (downloaded > ARTIFACT.maxBytes) throw ModelInstaller.Rejected("The download is larger than the model")
+            if (downloaded > ARTIFACT.maxBytes) {
+                throw ModelInstaller.Rejected("O download excede o tamanho permitido do modelo")
+            }
             output.write(buffer, 0, read)
             if (totalSize > 0) {
                 _downloadState.value = DownloadState.Downloading((downloaded * PERCENT / totalSize).toInt())

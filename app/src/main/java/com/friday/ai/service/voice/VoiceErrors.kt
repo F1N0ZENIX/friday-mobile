@@ -4,12 +4,10 @@ import com.friday.ai.data.remote.GroqApiException
 import java.io.IOException
 
 /**
- * Turns a failed answer into something worth hearing.
- *
- * "Something went wrong" was all Friday ever said, whatever the cause — so when
- * Groq retired her model there was no way to tell from the phone. Each cause
- * the user can act on gets its own sentence.
+ * Mensagens faladas em português brasileiro para erros da conversa.
+ * Mantém o parâmetro histórico para não quebrar os chamadores existentes.
  */
+@Suppress("UnusedParameter")
 object VoiceErrors {
 
     private const val UNAUTHORISED = 401
@@ -17,23 +15,19 @@ object VoiceErrors {
 
     fun spoken(e: Throwable, russian: Boolean): String = when {
         e is GroqApiException && e.modelMissing ->
-            if (russian) "Groq сменил модель, я уже переключилась. Повторите, пожалуйста."
-            else "Groq changed its models; I've switched over. Please say that again."
+            "O Groq mudou o modelo. Já alterei a seleção. Pode repetir, por favor?"
         e is GroqApiException && e.code == UNAUTHORISED ->
-            if (russian) "Ключ Groq не подходит. Проверьте его в настройках."
-            else "The Groq key was rejected. Please check it in settings."
+            "A chave do Groq foi recusada. Confira a chave nas configurações."
         e is GroqApiException && e.code == RATE_LIMITED ->
-            if (russian) "Groq просит подождать: исчерпан лимит запросов."
-            else "Groq asks me to wait: the request limit is used up."
+            "O limite de solicitações do Groq foi atingido. Aguarde um pouco."
         e is IOException ->
-            if (russian) "Не могу связаться с Groq. Проверьте интернет."
-            else "I can't reach Groq. Check the connection."
+            "Não consegui me conectar ao Groq. Confira sua conexão com a internet."
         else ->
-            if (russian) "Groq не ответил: ${e.message ?: e::class.simpleName}"
-            else "Groq didn't answer: ${e.message ?: e::class.simpleName}"
+            "Não consegui obter uma resposta do Groq. Tente novamente."
     }
 
-    /** Said when the model answered with nothing at all. */
+    /** Mensagem falada quando o modelo não retorna texto. */
+    @Suppress("FunctionOnlyReturningConstant")
     fun empty(russian: Boolean): String =
-        if (russian) "Модель ответила пустотой. Попробуйте ещё раз." else "The model came back empty. Please try again."
+        "O modelo não retornou nenhuma resposta. Tente novamente."
 }

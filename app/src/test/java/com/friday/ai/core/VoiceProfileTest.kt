@@ -186,6 +186,9 @@ class VoiceProfileTest {
             "most of the set must be other speech, or the profile learns the word",
             phrases.size - wake > wake
         )
+        assertTrue("voice enrollment must be in Portuguese", phrases.all { phrase ->
+            phrase.none { it in '\u0400'..'\u04FF' }
+        })
         // A command that started with the wake word would just be another wake sample.
         phrases.filterNot { WakePhrases.isWakeCall(it) }.forEach {
             assertFalse("'$it' contains the name", it.lowercase().contains("пятниц"))

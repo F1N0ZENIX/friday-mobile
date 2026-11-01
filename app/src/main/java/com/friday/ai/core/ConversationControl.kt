@@ -18,7 +18,8 @@ object ConversationControl {
         "спасибо", "отбой", "закончили", "выйди", "отстань",
         // English
         "bye", "goodbye", "stop", "enough", "thanks", "thank", "quit",
-        "exit", "cancel", "dismiss", "nevermind"
+        "exit", "cancel", "dismiss", "nevermind",
+        "parar", "chega", "tchau", "encerrar", "obrigado", "obrigada", "falou"
     )
 
     /** Multi-word endings that close a short utterance. */
@@ -26,6 +27,7 @@ object ConversationControl {
         "that's all", "thats all", "that is all", "nothing else", "never mind", "that'll be all",
         "we're done", "i'm done", "это всё", "это все", "больше ничего", "на этом всё", "на этом все",
         "на этом пока", "на сегодня всё", "на сегодня все", "спасибо всё", "спасибо все", "до свидания",
+        "até logo", "até mais", "por hoje é só", "por hoje e so", "pode descansar", "encerrar conversa",
         "всего доброго", "до связи", "можешь отдыхать", "ты свободна", "отключайся"
     )
 
@@ -35,16 +37,18 @@ object ConversationControl {
      * clause — "пока" in "пока я готовлю" is a conjunction, and "спасибо"
      * after "открой камеру" is manners, not goodbye.
      */
-    private val CLOSING_WORDS = setOf("пока", "покеда", "отбой", "bye", "goodbye")
+    private val CLOSING_WORDS = setOf("пока", "покеда", "отбой", "bye", "goodbye", "tchau", "falou")
     private val CLOSING_PHRASES = listOf(
         "на этом пока", "на этом всё", "на этом все", "на сегодня всё", "на сегодня все", "до связи",
-        "до встречи", "до свидания", "спокойной ночи", "увидимся", "see you", "talk later", "good night"
+        "до встречи", "до свидания", "спокойной ночи", "увидимся", "see you", "talk later", "good night",
+        "até logo", "até mais", "boa noite", "por hoje é só", "por hoje e so"
     )
 
     /** Words that may stand around a closing word in its clause: "ну всё, пока", "ладно, давай пока". */
     private val CLOSING_FILLER = setOf(
         "ну", "ладно", "тогда", "давай", "окей", "ок", "всё", "все", "хорошо", "отлично", "на", "этом", "сегодня",
-        "спасибо", "ok", "okay", "alright", "thanks", "then", "for", "now"
+        "спасибо", "ok", "okay", "alright", "thanks", "then", "for", "now",
+        "beleza", "certo", "pronto", "então", "entao", "valeu", "obrigado", "obrigada"
     )
 
     /** Phrases in a longer sentence are a request that mentions them ("напомни до встречи…"). */

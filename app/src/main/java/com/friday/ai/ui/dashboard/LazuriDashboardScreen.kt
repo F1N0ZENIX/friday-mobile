@@ -91,9 +91,9 @@ fun LazuriDashboardScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("ПАМЯТЬ", style = com.friday.ai.ui.theme.HudBrandStyle)
+                        Text("MEMÓRIA", style = com.friday.ai.ui.theme.HudBrandStyle)
                         Text(
-                            "ФАКТОВ ${state.factCount} · РАЗГОВОРОВ ${state.sessionCount}",
+                            "FATOS ${state.factCount} · CONVERSAS ${state.sessionCount}",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
@@ -101,7 +101,7 @@ fun LazuriDashboardScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
                     }
                 },
                 actions = {

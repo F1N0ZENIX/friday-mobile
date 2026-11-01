@@ -86,6 +86,19 @@ class ConversationControlTest {
     }
 
     @Test
+    fun `Brazilian Portuguese farewells stop listening without dropping requests`() {
+        listOf("tchau", "Tchau!", "até logo", "até mais", "falou", "pode descansar")
+            .forEach { assertTrue(it, ConversationControl.isFarewell(it)) }
+        assertEquals("Abra a câmera", ConversationControl.beforeFarewell("Abra a câmera, tchau!"))
+        assertEquals(
+            "Coloque um alarme para sete",
+            ConversationControl.beforeFarewell("Coloque um alarme para sete. Boa noite.")
+        )
+        assertNull(ConversationControl.beforeFarewell("Abra a câmera, obrigado."))
+        assertFalse(ConversationControl.isFarewell("me lembre de dizer tchau para minha mãe"))
+    }
+
+    @Test
     fun `empty or blank input is not a farewell`() {
         assertFalse(ConversationControl.isFarewell(""))
         assertFalse(ConversationControl.isFarewell("   "))

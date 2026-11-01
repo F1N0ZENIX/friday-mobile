@@ -14,26 +14,30 @@ object Confirmation {
 
     private val yes = setOf(
         "да", "давай", "отправь", "отправляй", "отправить", "конечно", "ага", "угу",
-        "верно", "точно", "подтверждаю", "окей", "ок", "yes", "yeah", "yep", "sure", "send", "ok", "okay"
+        "верно", "точно", "подтверждаю", "окей", "ок", "yes", "yeah", "yep", "sure", "send", "ok", "okay",
+        "sim", "confirmo", "confirmado", "envie", "enviar", "mande", "mandar", "claro"
     )
 
     // Checked first: "не отправляй" contains "отправляй".
     private val no = setOf(
         "нет", "не", "отмена", "отмени", "отменить", "стоп", "погоди", "подожди",
-        "no", "nope", "cancel", "stop", "don't", "dont"
+        "no", "nope", "cancel", "stop", "don't", "dont",
+        "não", "nao", "cancele", "cancelar", "cancela", "pare", "espera", "aguarde"
     )
 
     /**
      * More words than this and it is a new request that happens to begin with
      * "да" — "да, и добавь что опоздаю" is an edit, not a go-ahead.
      */
+    private val strongNo = setOf("нет", "отмена", "não", "nao", "cancele", "cancela")
+
     private const val MAX_WORDS = 3
 
     fun classify(text: String): Answer {
         val words = SpokenText.normalise(text.replace("'", "")).split(' ').filter { it.isNotBlank() }
         return when {
             words.isEmpty() -> Answer.OTHER
-            words.first() in no || words.any { it == "нет" || it == "отмена" } -> Answer.NO
+            words.first() in no || words.any { it in strongNo } -> Answer.NO
             words.size <= MAX_WORDS && words.first() in yes -> Answer.YES
             else -> Answer.OTHER
         }

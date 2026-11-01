@@ -9,9 +9,9 @@ class WeatherCodesTest {
     @Test
     fun `known codes describe the conditions`() {
         assertEquals("ясно", WeatherCodes.describe(0, russian = true))
-        assertEquals("clear", WeatherCodes.describe(0, russian = false))
+        assertEquals("céu limpo", WeatherCodes.describe(0, russian = false))
         assertEquals("дождь", WeatherCodes.describe(63, russian = true))
-        assertEquals("thunderstorm", WeatherCodes.describe(95, russian = false))
+        assertEquals("trovoada", WeatherCodes.describe(95, russian = false))
     }
 
     @Test
@@ -45,9 +45,9 @@ class WeatherCodesTest {
     }
 
     @Test
-    fun `english summary reads naturally`() {
+    fun `Brazilian Portuguese summary reads naturally`() {
         val s = WeatherCodes.summarize("London", 12.0, 9.0, 61, russian = false)
-        assertTrue("got: $s", s.startsWith("It's 12°"))
-        assertTrue("got: $s", s.contains("light rain"))
+        assertTrue("got: $s", s.startsWith("Agora em London: 12°"))
+        assertTrue("got: $s", s.contains("chuva fraca"))
     }
 }

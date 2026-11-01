@@ -90,9 +90,9 @@ class FridayWakeWordService : Service() {
         internal fun startFailure(e: Exception): String = when {
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                 e is android.app.ForegroundServiceStartNotAllowedException ->
-                "Android не дал запустить прослушивание из фона — откройте Friday"
-            e is SecurityException -> "Android не дал службе микрофон в фоне — откройте Friday"
-            else -> "Прослушивание не запустилось (${e.javaClass.simpleName}) — откройте Friday"
+                "O Android bloqueou a escuta em segundo plano. Abra o Friday."
+            e is SecurityException -> "O Android bloqueou o microfone em segundo plano. Abra o Friday."
+            else -> "Não foi possível iniciar a escuta (${e.javaClass.simpleName}). Abra o Friday."
         }
 
         private const val ACTION_INVOKE = "com.friday.ai.INVOKE"
@@ -301,7 +301,7 @@ class FridayWakeWordService : Service() {
         val engine = get<com.friday.ai.core.modes.ModeEngine>(com.friday.ai.core.modes.ModeEngine::class.java)
         val commands = get<CommandExecutor>(CommandExecutor::class.java)
         links = LinkWatcher(this, scope, AndroidPhoneLinks(this)) { trigger, value, connected ->
-            val said = engine.onLink(trigger, value, connected, russian = true) { step ->
+            val said = engine.onLink(trigger, value, connected, russian = false) { step ->
                 (commands.execute(step, russian = true) as? CommandExecutor.Outcome.Reply)?.text.orEmpty()
             } ?: return@LinkWatcher
             val ownerIsThere = trigger == com.friday.ai.core.modes.Trigger.BLUETOOTH && connected
@@ -328,7 +328,8 @@ class FridayWakeWordService : Service() {
         val secret = get<AndroidNfcTags>(AndroidNfcTags::class.java).secret()
         when (val read = com.friday.ai.core.modes.ModeTags.read(payload, secret)) {
             is com.friday.ai.core.modes.ModeTags.Read.Mode -> toggle(read.id)
-            com.friday.ai.core.modes.ModeTags.Read.Forged -> say("Эту метку записал не этот телефон — не запускаю.")
+            com.friday.ai.core.modes.ModeTags.Read.Forged ->
+                say("Esta etiqueta não foi criada neste celular. Ação cancelada.")
             com.friday.ai.core.modes.ModeTags.Read.NotATag -> Unit
         }
     }

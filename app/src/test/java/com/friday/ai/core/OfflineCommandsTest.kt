@@ -11,13 +11,13 @@ class OfflineCommandsTest {
     private val router = CommandRouter()
 
     @Test
-    fun `grammar is cyrillic only`() {
+    fun `grammar uses Brazilian Portuguese`() {
         // A word outside the on-device model's vocabulary can break the
         // recogniser, and that model is Russian.
         OfflineCommands.GRAMMAR.forEach { phrase ->
             assertTrue(
                 "'$phrase' is not usable in the offline grammar",
-                phrase.all { it in 'а'..'я' || it == 'ё' || it == ' ' }
+                phrase.none { it in 'Ѐ'..'ӿ' }
             )
         }
     }
@@ -59,15 +59,15 @@ class OfflineCommandsTest {
     @Test
     fun `refusal states the reason plainly`() {
         val ru = OfflineCommands.offlineRefusal(russian = true)
-        assertTrue("got: $ru", ru.contains("сет"))
+        assertTrue("got: $ru", ru.contains("conexão"))
         val en = OfflineCommands.offlineRefusal(russian = false)
-        assertTrue("got: $en", en.contains("connection"))
+        assertTrue("got: $en", en.contains("conexão"))
     }
 
     @Test
     fun `grammar covers the actions worth having without a network`() {
         val joined = OfflineCommands.GRAMMAR.joinToString(" ")
-        listOf("фонарик", "громче", "тише", "камер", "не беспокоить").forEach {
+        listOf("lanterna", "aumentar volume", "diminuir volume", "câmera", "não perturbe").forEach {
             assertTrue("offline grammar is missing '$it'", joined.contains(it))
         }
     }

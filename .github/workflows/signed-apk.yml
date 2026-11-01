@@ -1,0 +1,52 @@
+name: Friday - APK atualizavel
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Preparar assinatura permanente
+        env:
+          KEYSTORE_B64: ${{ secrets.FRIDAY_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.FRIDAY_SIGNING_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.FRIDAY_SIGNING_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.FRIDAY_SIGNING_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$KEYSTORE_B64" || -z "$STORE_PASSWORD" || -z "$KEY_ALIAS" || -z "$KEY_PASSWORD" ]]; then
+            echo "::error::Configure os quatro secrets FRIDAY_* nas configuracoes do repositorio."
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/friday.keystore"
+          echo "FRIDAY_SIGNING_STORE_FILE=$RUNNER_TEMP/friday.keystore" >> "$GITHUB_ENV"
+          echo "FRIDAY_SIGNING_STORE_PASSWORD=$STORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "FRIDAY_SIGNING_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "FRIDAY_SIGNING_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+      - name: Compilar APK assinado
+        run: ./gradlew :app:ownerRelease --no-daemon
+      - name: Validar assinatura
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
+      - name: Publicar APK atualizavel
+        uses: actions/upload-artifact@v4
+        with:
+          name: Friday-APK-ASSINATURA-PERMANENTE
+          path: app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 30

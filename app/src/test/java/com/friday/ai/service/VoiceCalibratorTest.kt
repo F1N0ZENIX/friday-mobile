@@ -169,8 +169,8 @@ class VoiceCalibratorTest {
     @Test
     fun `every outcome but success explains how to retry`() {
         assertNull(Calibration.messageFor(Outcome.Completed(VoiceCalibrator.CalibrationResult(1.0, 2.0, 3.0, 4.0))))
-        assertTrue(Calibration.messageFor(Outcome.TimedOut)!!.contains("ещё раз"))
-        assertTrue(Calibration.messageFor(Outcome.AudioUnavailable)!!.contains("повторите"))
+        assertTrue(Calibration.messageFor(Outcome.TimedOut)!!.contains("novamente"))
+        assertTrue(Calibration.messageFor(Outcome.AudioUnavailable)!!.contains("tente novamente"))
     }
 
     private suspend fun CoroutineScope.cancelAndJoinChildren() {

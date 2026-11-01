@@ -21,27 +21,15 @@ object OfflineCommands {
      * the recogniser.
      */
     val GRAMMAR: List<String> = listOf(
-        // torch
-        "включи фонарик", "выключи фонарик", "фонарик", "фонарь",
-        // volume
-        "громче", "тише", "выключи звук", "включи звук",
-        // Alarms and timers are deliberately absent: they are only meaningful
-        // with a time ("будильник на 7:30"), and a closed grammar can't carry
-        // arbitrary numbers. Recognising a bare "будильник" would look like it
-        // worked while doing nothing.
-        // apps
-        "открой камеру", "открой камера", "открой музыку", "открой телефон",
-        "открой сообщения", "открой браузер",
-        // camera modes and the recorder — all of these are pure intents, so
-        // they work with no signal at all
-        "сделай фото", "сфотографируй", "селфи", "запиши видео", "диктофон",
-        // settings screens
-        "открой настройки", "открой вайфай", "открой блютус", "открой нфс",
-        "открой экран", "открой звук", "открой батарею", "открой геолокацию",
-        // do not disturb
-        "не беспокоить", "включи не беспокоить", "выключи не беспокоить",
-        // ending the conversation
-        "стоп", "хватит", "пока", "отбой"
+        "ligar lanterna", "acender lanterna", "desligar lanterna", "lanterna",
+        "aumentar volume", "diminuir volume", "silenciar", "ativar som",
+        "abrir câmera", "abrir camera", "abrir música", "abrir telefone",
+        "abrir mensagens", "abrir navegador", "tirar foto", "tirar selfie",
+        "gravar vídeo", "abrir gravador", "abrir configurações",
+        "abrir wifi", "abrir bluetooth", "abrir nfc",
+        "abrir tela", "abrir som", "abrir bateria", "abrir localização",
+        "não perturbe", "ativar não perturbe", "desativar não perturbe",
+        "parar", "chega", "tchau", "encerrar"
     )
 
     /**
@@ -67,7 +55,8 @@ object OfflineCommands {
     }
 
     /** What Friday says when it heard something it can't do without a network. */
+    // Keep the legacy argument while all callers migrate to the pt-BR-only voice flow.
+    @Suppress("UnusedParameter", "FunctionOnlyReturningConstant")
     fun offlineRefusal(russian: Boolean): String =
-        if (russian) "Нет сети — могу только управлять телефоном."
-        else "No connection — I can only control the phone right now."
+        "Sem conexão. No momento, só posso controlar o celular."
 }

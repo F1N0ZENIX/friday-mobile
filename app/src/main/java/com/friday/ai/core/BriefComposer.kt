@@ -30,7 +30,7 @@ object BriefComposer {
      */
     fun missedSummary(notifications: List<NotificationSummary>, russian: Boolean): String {
         if (notifications.isEmpty()) {
-            return if (russian) "Ничего нового." else "Nothing new."
+            return if (russian) "Ничего нового." else "Nenhuma novidade."
         }
 
         val byApp = notifications.groupBy { it.appName }
@@ -47,10 +47,10 @@ object BriefComposer {
             if (russian) {
                 append("$total ${pluralRu(total, "уведомление", "уведомления", "уведомлений")}: $named")
             } else {
-                append("$total notification${if (total == 1) "" else "s"}: $named")
+                append("$total ${if (total == 1) "notificação" else "notificações"}: $named")
             }
             if (remaining > 0) {
-                append(if (russian) " и ещё $remaining" else " and $remaining more")
+                append(if (russian) " и ещё $remaining" else " e mais $remaining")
             }
             append(".")
 
@@ -84,17 +84,17 @@ object BriefComposer {
 
         parts += when {
             agenda.isEmpty() ->
-                if (russian) "В календаре сегодня пусто." else "Nothing in the calendar today."
+                if (russian) "В календаре сегодня пусто." else "Nenhum compromisso no calendário hoje."
             else -> {
                 val shown = agenda.take(MAX_AGENDA_ITEMS)
                     .joinToString(", ") { "${it.title} в ${it.timeLabel}" }
                 val shownEn = agenda.take(MAX_AGENDA_ITEMS)
-                    .joinToString(", ") { "${it.title} at ${it.timeLabel}" }
+                    .joinToString(", ") { "${it.title} às ${it.timeLabel}" }
                 val extra = agenda.size - MAX_AGENDA_ITEMS
                 if (russian) {
                     "Сегодня: $shown" + if (extra > 0) " и ещё $extra." else "."
                 } else {
-                    "Today: $shownEn" + if (extra > 0) " and $extra more." else "."
+                    "Hoje: $shownEn" + if (extra > 0) " e mais $extra." else "."
                 }
             }
         }
@@ -103,7 +103,7 @@ object BriefComposer {
             parts += if (russian) {
                 "$missedCount ${pluralRu(missedCount, "непрочитанное", "непрочитанных", "непрочитанных")}."
             } else {
-                "$missedCount unread."
+                "$missedCount ${if (missedCount == 1) "notificação não lida" else "notificações não lidas"}."
             }
         }
 

@@ -8,29 +8,29 @@ package com.friday.ai.core
  */
 object WeatherCodes {
 
-    /** Short description in Russian or English, chosen by [russian]. */
+    /** Short description in Russian or Brazilian Portuguese, chosen by [russian]. */
     fun describe(code: Int, russian: Boolean): String = when (code) {
-        0 -> if (russian) "ясно" else "clear"
-        1 -> if (russian) "преимущественно ясно" else "mostly clear"
-        2 -> if (russian) "переменная облачность" else "partly cloudy"
-        3 -> if (russian) "пасмурно" else "overcast"
-        45, 48 -> if (russian) "туман" else "fog"
-        51, 53, 55 -> if (russian) "морось" else "drizzle"
-        56, 57 -> if (russian) "ледяная морось" else "freezing drizzle"
-        61 -> if (russian) "небольшой дождь" else "light rain"
-        63 -> if (russian) "дождь" else "rain"
-        65 -> if (russian) "сильный дождь" else "heavy rain"
-        66, 67 -> if (russian) "ледяной дождь" else "freezing rain"
-        71 -> if (russian) "небольшой снег" else "light snow"
-        73 -> if (russian) "снег" else "snow"
-        75 -> if (russian) "сильный снег" else "heavy snow"
-        77 -> if (russian) "снежная крупа" else "snow grains"
-        80, 81 -> if (russian) "ливень" else "rain showers"
-        82 -> if (russian) "сильный ливень" else "violent rain showers"
-        85, 86 -> if (russian) "снегопад" else "snow showers"
-        95 -> if (russian) "гроза" else "thunderstorm"
-        96, 99 -> if (russian) "гроза с градом" else "thunderstorm with hail"
-        else -> if (russian) "неопределённая погода" else "unclear conditions"
+        0 -> if (russian) "ясно" else "céu limpo"
+        1 -> if (russian) "преимущественно ясно" else "predomínio de sol"
+        2 -> if (russian) "переменная облачность" else "parcialmente nublado"
+        3 -> if (russian) "пасмурно" else "encoberto"
+        45, 48 -> if (russian) "туман" else "neblina"
+        51, 53, 55 -> if (russian) "морось" else "garoa"
+        56, 57 -> if (russian) "ледяная морось" else "garoa congelante"
+        61 -> if (russian) "небольшой дождь" else "chuva fraca"
+        63 -> if (russian) "дождь" else "chuva"
+        65 -> if (russian) "сильный дождь" else "chuva forte"
+        66, 67 -> if (russian) "ледяной дождь" else "chuva congelante"
+        71 -> if (russian) "небольшой снег" else "neve fraca"
+        73 -> if (russian) "снег" else "neve"
+        75 -> if (russian) "сильный снег" else "neve forte"
+        77 -> if (russian) "снежная крупа" else "grãos de neve"
+        80, 81 -> if (russian) "ливень" else "pancadas de chuva"
+        82 -> if (russian) "сильный ливень" else "pancadas de chuva intensas"
+        85, 86 -> if (russian) "снегопад" else "pancadas de neve"
+        95 -> if (russian) "гроза" else "trovoada"
+        96, 99 -> if (russian) "гроза с градом" else "trovoada com granizo"
+        else -> if (russian) "неопределённая погода" else "condições indefinidas"
     }
 
     /**
@@ -57,8 +57,8 @@ object WeatherCodes {
             }
         } else {
             buildString {
-                append("It's $t° in $place, $condition")
-                if (mentionFeels) append(", feels like $feels°")
+                append("Agora em $place: $t°, $condition")
+                if (mentionFeels) append(", sensação térmica de $feels°")
                 append(".")
             }
         }

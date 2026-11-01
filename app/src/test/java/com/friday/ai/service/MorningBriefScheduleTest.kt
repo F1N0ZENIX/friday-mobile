@@ -113,7 +113,7 @@ class MorningBriefScheduleTest {
         assertEquals("Добрый день.", BriefTiming.greeting(LocalTime.of(16, 0), true))
         assertEquals("Добрый вечер.", BriefTiming.greeting(LocalTime.of(20, 0), true))
         assertEquals("Доброй ночи.", BriefTiming.greeting(LocalTime.of(2, 0), true))
-        assertEquals("Good afternoon.", BriefTiming.greeting(LocalTime.of(16, 0), false))
+        assertEquals("Boa tarde.", BriefTiming.greeting(LocalTime.of(16, 0), false))
     }
 
     @Test

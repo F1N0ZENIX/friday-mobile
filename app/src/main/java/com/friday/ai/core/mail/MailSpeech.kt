@@ -15,7 +15,7 @@ object MailSpeech {
     const val NAMED = 3
 
     fun unread(total: Int, newest: List<GmailMessages.Mail>, russian: Boolean): String {
-        if (total <= 0 || newest.isEmpty()) return if (russian) "Новых писем нет." else "No new mail."
+        if (total <= 0 || newest.isEmpty()) return if (russian) "Новых писем нет." else "Nenhum e-mail novo."
         val count = maxOf(total, newest.size)
         val head = if (russian) {
             val noun = BriefComposer.pluralRu(
@@ -23,14 +23,14 @@ object MailSpeech {
             )
             "$count $noun."
         } else {
-            "$count unread ${if (count == 1) "email" else "emails"}."
+            "$count ${if (count == 1) "e-mail não lido" else "e-mails não lidos"}."
         }
         val named = newest.take(NAMED).joinToString(" ") { line(it) }
         val rest = count - minOf(NAMED, newest.size)
         val tail = when {
             rest <= 0 -> ""
             russian -> " И ещё $rest."
-            else -> " And $rest more."
+            else -> " E mais $rest."
         }
         return "$head $named$tail"
     }
@@ -45,19 +45,19 @@ object MailSpeech {
         val subject = m.subject.takeIf { it.isNotBlank() }?.let { "«$it»" }
         return when {
             subject == null && russian -> "${m.fromName} пишет."
-            subject == null -> "${m.fromName} writes."
+            subject == null -> "${m.fromName} escreveu."
             russian -> "${m.fromName} пишет: $subject."
-            else -> "${m.fromName} writes: $subject."
+            else -> "${m.fromName} escreveu: $subject."
         }
     }
 
     fun confirmReply(name: String, subject: String, body: String, russian: Boolean): String =
         if (russian) "Ответ на «$subject» ($name): «$body». Отправить?"
-        else "Reply to “$subject” ($name): “$body”. Send it?"
+        else "Resposta para $name sobre «$subject»: «$body». Enviar?"
 
     fun confirmNew(name: String, address: String, subject: String, body: String, russian: Boolean): String =
         if (russian) "Новое письмо: $name, $address. Тема «$subject». Текст: «$body». Отправить?"
-        else "New email: $name, $address. Subject “$subject”. Text: “$body”. Send it?"
+        else "Novo e-mail para $name ($address). Assunto: «$subject». Mensagem: «$body». Enviar?"
 
     private const val SUBJECT_FALLBACK = 60
 }
