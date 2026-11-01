@@ -64,6 +64,9 @@ class VoiceConversationTest {
         coEvery { session.apiKey() } returns "key"
         coEvery { session.russian() } returns true
         coEvery { commands.answerPending(any(), any()) } returns null
+        // A relaxed String? mock returns an empty String, not null. Only an
+        // explicitly recognised memory command should short-circuit routing.
+        coEvery { commands.memoryReply(any()) } returns null
         every { speaker.speak(any(), any()) } answers {
             said += firstArg<String>() to secondArg<(() -> Unit)?>()
         }
@@ -308,6 +311,44 @@ class VoiceConversationTest {
 
         assertEquals(OfflineCommands.offlineRefusal(true), said[1].first)
         coVerify(exactly = 0) { commands.execute(any(), any()) }
+    }
+
+    @Test
+    fun `explicit memory is answered before routing or the model`() = runTest {
+        hears(VoiceTurn.Outcome.Heard("meu nome é Antenor"), VoiceTurn.Outcome.Nothing)
+        coEvery { commands.memoryReply("meu nome é Antenor") } returns "Certo, salvei seu nome como Antenor."
+        val c = conversation()
+
+        c.onWake("friday")
+        advanceUntilIdle()
+        finishSpeaking(0)
+
+        assertEquals("Certo, salvei seu nome como Antenor.", said[1].first)
+        coVerify { session.mirror("meu nome é Antenor", "Certo, salvei seu nome como Antenor.") }
+        verify(exactly = 0) { commands.route(any()) }
+        coVerify(exactly = 0) { commands.execute(any(), any()) }
+        coVerify(exactly = 0) { answers.answer(any()) }
+        coVerify(exactly = 0) { session.log(any(), any(), any()) }
+        finishSpeaking(1)
+    }
+
+    @Test
+    fun `offline memory is answered locally without routing or a model`() = runTest {
+        every { offline.isOffline() } returns true
+        every { wake.modelPath } returns "/model"
+        coEvery { offline.listenForCommand("/model") } returns "qual meu nome"
+        coEvery { commands.memoryReply("qual meu nome") } returns "Seu nome salvo é Antenor."
+        val c = conversation()
+
+        c.onWake("friday")
+        advanceUntilIdle()
+        finishSpeaking(0)
+
+        assertEquals("Seu nome salvo é Antenor.", said[1].first)
+        verify(exactly = 0) { commands.route(any()) }
+        coVerify(exactly = 0) { commands.execute(any(), any()) }
+        coVerify(exactly = 0) { answers.answer(any()) }
+        coVerify(exactly = 0) { session.log(any(), any(), any()) }
     }
 
     @Test
