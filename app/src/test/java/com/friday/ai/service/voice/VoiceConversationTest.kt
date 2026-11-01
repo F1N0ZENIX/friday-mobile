@@ -91,6 +91,59 @@ class VoiceConversationTest {
     }
 
     @Test
+    fun `Friday wake records commands in Portuguese instead of autodetecting`() = runTest {
+        val recording = CompletableDeferred<VoiceTurn.Outcome>()
+        coEvery { transcriber.recordAndTranscribe(any(), any()) } coAnswers { recording.await() }
+        val c = conversation()
+
+        c.onWake("friday")
+        advanceUntilIdle()
+        finishSpeaking(0)
+
+        coVerifyOrder {
+            transcriber.language = "pt"
+            transcriber.recordAndTranscribe(any(), any())
+        }
+        recording.complete(VoiceTurn.Outcome.Nothing)
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun `shortcut activation keeps Portuguese even with a legacy Russian preference`() = runTest {
+        val recording = CompletableDeferred<VoiceTurn.Outcome>()
+        coEvery { transcriber.recordAndTranscribe(any(), any()) } coAnswers { recording.await() }
+        val c = conversation()
+
+        c.onWake("", continuing = true)
+        advanceUntilIdle()
+
+        coVerifyOrder {
+            transcriber.language = "pt"
+            transcriber.recordAndTranscribe(any(), any())
+        }
+        recording.complete(VoiceTurn.Outcome.Nothing)
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun `first announcement follow-up records in Portuguese without a prior wake`() = runTest {
+        val recording = CompletableDeferred<VoiceTurn.Outcome>()
+        coEvery { transcriber.recordAndTranscribe(any(), any()) } coAnswers { recording.await() }
+        val c = conversation()
+
+        c.announce("Nova mensagem. Quer responder?", listenAfter = true)
+        advanceUntilIdle()
+        finishSpeaking(0)
+
+        coVerifyOrder {
+            transcriber.language = "pt"
+            transcriber.recordAndTranscribe(any(), any())
+        }
+        recording.complete(VoiceTurn.Outcome.Nothing)
+        advanceUntilIdle()
+    }
+
+    @Test
     fun `waking greets first and only then opens the microphone`() = runTest {
         // One recording that ends the turn, so the count below is exact.
         hears(VoiceTurn.Outcome.Heard("пока"))
@@ -266,7 +319,7 @@ class VoiceConversationTest {
         advanceUntilIdle()
         finishSpeaking(0)
 
-        verify { overlay.error("Não foi configurada uma chave da API Groq. Abra as configurações do Friday.", any()) }
+        verify { overlay.error("Chave Groq não configurada. Abra as configurações do Friday.", any()) }
         coVerify(exactly = 0) { transcriber.recordAndTranscribe(any(), any()) }
     }
 
