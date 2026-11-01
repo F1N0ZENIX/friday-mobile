@@ -1,1 +1,113 @@
-cGFja2FnZSBjb20uZnJpZGF5LmFpLnNlcnZpY2Uudm9pY2UKCmltcG9ydCBhbmRyb2lkLm9zLlN5c3RlbUNsb2NrCmltcG9ydCBhbmRyb2lkLnV0aWwuTG9nCmltcG9ydCBjb20uZnJpZGF5LmFpLmFnZW50LkZyaWRheUFnZW50CmltcG9ydCBjb20uZnJpZGF5LmFpLmFnZW50LlByb21wdEJ1ZGdldAppbXBvcnQgY29tLmZyaWRheS5haS5jb3JlLkNvbnZlcnNhdGlvbkNvbnRyb2wKaW1wb3J0IGNvbS5mcmlkYXkuYWkuY29yZS5Db3JyZWN0aW9uRGV0ZWN0b3IKaW1wb3J0IGNvbS5mcmlkYXkuYWkuY29yZS5TZW50ZW5jZUNodW5rZXIKaW1wb3J0IGNvbS5mcmlkYXkuYWkuY29yZS5TeXN0ZW1Qcm9tcHRCdWlsZGVyCmltcG9ydCBjb20uZnJpZGF5LmFpLmRhdGEucmVtb3RlLkdyb3FBcGlFeGNlcHRpb24KaW1wb3J0IGNvbS5mcmlkYXkuYWkuZGF0YS5yZW1vdGUuR3JvcUFwaVNlcnZpY2UKaW1wb3J0IGNvbS5mcmlkYXkuYWkuZGF0YS5yZW1vdGUuZHRvLkFwaU1lc3NhZ2UKaW1wb3J0IGNvbS5mcmlkYXkuYWkuZG9tYWluLm1vZGVsLkFzc2lzdGFudE1vZGUKaW1wb3J0IGNvbS5mcmlkYXkuYWkuc2VydmljZS5FZGdlVHRzU3BlYWtlcgppbXBvcnQgY29tLmZyaWRheS5haS5zZXJ2aWNlLkZyaWRheU1lbW9yeQppbXBvcnQgY29tLmZyaWRheS5haS5zZXJ2aWNlLkZyaWRheU92ZXJsYXlNYW5hZ2VyCmltcG9ydCBrb3RsaW54LmNvcm91dGluZXMuQ2FuY2VsbGF0aW9uRXhjZXB0aW9uCgovKioKICogQSBjb252ZXJzYXRpb25hbCBhbnN3ZXIgZnJvbSB0aGUgbW9kZWwsIHNwb2tlbiBhcyBpdCBpcyB3cml0dGVuLgogKgogKiBFYWNoIHNlbnRlbmNlIGdvZXMgdG8gdGhlIHNwZWFrZXIgdGhlIG1vbWVudCBpdCBpcyBjb21wbGV0ZSwgc28gRnJpZGF5CiAqIHN0YXJ0cyB0YWxraW5nIHdoaWxlIHRoZSByZXN0IG9mIHRoZSBhbnN3ZXIgaXMgc3RpbGwgYmVpbmcgZ2VuZXJhdGVkLgogKi8KY2xhc3MgU3Bva2VuQW5zd2VyKAogICAgcHJpdmF0ZSB2YWwgYWdlbnQ6IEZyaWRheUFnZW50LAogICAgcHJpdmF0ZSB2YWwgcHJvbXB0czogU3lzdGVtUHJvbXB0QnVpbGRlciwKICAgIHByaXZhdGUgdmFsIG1lbW9yeTogRnJpZGF5TWVtb3J5LAogICAgcHJpdmF0ZSB2YWwgc2Vzc2lvbjogVm9pY2VTZXNzaW9uLAogICAgcHJpdmF0ZSB2YWwgc3BlYWtlcjogRWRnZVR0c1NwZWFrZXIsCiAgICBwcml2YXRlIHZhbCBvdmVybGF5OiBGcmlkYXlPdmVybGF5TWFuYWdlcgopIHsKCiAgICBzZWFsZWQgaW50ZXJmYWNlIFJlc3VsdCB7CiAgICAgICAgLyoqIFNwb2tlbiBpbiBmdWxsLiBbZm9sbG93VXBdIGlzIGZhbHNlIHdoZW4gRnJpZGF5IGhlcnNlbGYgc2FpZCBnb29kYnllLiAqLwogICAgICAgIGRhdGEgY2xhc3MgRmluaXNoZWQodmFsIHJlc3BvbnNlOiBTdHJpbmcsIHZhbCBmb2xsb3dVcDogQm9vbGVhbikgOiBSZXN1bHQKCiAgICAgICAgLyoqIE5vdGhpbmcgdXNhYmxlIGNhbWUgYmFjayA7IFttZXNzYWdlXSBzaG91bGQgYmUgc2FpZCBpbnN0ZWFkLiAqLwogICAgICAgIGRhdGEgY2xhc3MgRmFpbGVkKHZhbCBtZXNzYWdlOiBTdHJpbmcpIDogUmVzdWx0CiAgICB9CgogICAgcHJpdmF0ZSBjb21wYW5pb24gb2JqZWN0IHsKICAgICAgICBjb25zdCB2YWwgVEFHID0gIlNwb2tlbkFuc3dlciIKCiAgICAgICAgLyoqIENhcCBvbiBvdmVybGF5IHJlZHJhd3Mgd2hpbGUgdG9rZW5zIHN0cmVhbSBpbi4gKi8KICAgICAgICBjb25zdCB2YWwgT1ZFUkxBWV9SRUZSRVNIX01TID0gMTIwTAoKICAgICAgICAvKiogRWFybGllciBleGNoYW5nZXMgc2VudCB3aXRoIHRoZSBxdWVzdGlvbiwgZm9yIGNvbnRleHQuICovCiAgICAgICAgLyoqIEVhcmxpZXIgZXhjaGFuZ2VzIHNlbnQgYWxvbmc7IGVhY2ggY29zdHMgdG9rZW5zIG9uIGV2ZXJ5IHJvdW5kIG9mIGV2ZXJ5IGFuc3dlci4gKi8KICAgICAgICBjb25zdCB2YWwgSElTVE9SWV9UVVJOUyA9IDUKCiAgICAgICAgY29uc3QgdmFsIFZPSUNFX1JVTEUgPQogICAgICAgICAgICAiXG5cbllvdSBhcmUgRnJpZGF5LCBhIHZvaWNlIGFzc2lzdGFudC4gQW5zd2VyIGluIE9ORSBzaG9ydCwgbmF0dXJhbCBzZW50ZW5jZSDigJQgdGhpcyBpcyBhIHNwb2tlbiAiICsKICAgICAgICAgICAgICAgICJjb252ZXJzYXRpb24sIG5vdCBhIGNoYXQgd2luZG93LiBPbmx5IGdvIGxvbmdlciB0aGFuIG9uZSBzZW50ZW5jZSBpZiB0aGUgdXNlciBleHBsaWNpdGx5IGFza3MgZm9yICIgKwogICAgICAgICAgICAgICAgImRldGFpbCBvciB0aGUgcmVxdWVzdCBnZW51aW5lbHkgcmVxdWlyZXMgYSBsaXN0L3N0ZXBzLiBBbHdheXMgcmVzcG9uZCBpbiBCcmF6aWxpYW4gUG9ydHVndWVzZSAocHQtQlIpLiIKICAgIH0KCiAgICBzdXNwZW5kIGZ1biBhbnN3ZXIodXNlclRleHQ6IFN0cmluZyk6IFJlc3VsdCB7CiAgICAgICAgdmFsIHNlc3Npb25JZCA9IHNlc3Npb24uaWQoKQogICAgICAgIHZhbCBoaXN0b3J5ID0gbWVtb3J5LmdldFNlc3Npb25IaXN0b3J5KHNlc3Npb25JZCwgbGltaXQgPSBISVNUT1JZX1RVUk5TKQogICAgICAgIHZhbCBtZXNzYWdlcyA9IGJ1aWxkTGlzdCB7CiAgICAgICAgICAgIHZhbCBzeXN0ZW0gPSBwcm9tcHRzLmJ1aWxkKEFzc2lzdGFudE1vZGUuREVGQVVMVCwgbWVtb3J5LmJ1aWxkTWVtb3J5Q29udGV4dCgpLCB3aXRoVG9vbHMgPSB0cnVlKSArCiAgICAgICAgICAgICAgICBWT0lDRV9SVUxFCiAgICAgICAgICAgIGFkZChBcGlNZXNzYWdlKHJvbGUgPSAic3lzdGVtIiwgY29udGVudCA9IHN5c3RlbSkpCiAgICAgICAgICAgIGhpc3RvcnkuZm9yRWFjaEluZGV4ZWQgeyBpLCB0dXJuIC0+CiAgICAgICAgICAgICAgICAvLyBUd28gbWVzc2FnZXMgcGVyIHR1cm47IHRoZSBsYXRlc3QgdHVybiBpcyBrZXB0IHdob2xlLgogICAgICAgICAgICAgICAgdmFsIGZyb21FbmQgPSAoaGlzdG9yeS5zaXplIC0gaSkgKiAyCiAgICAgICAgICAgICAgICBhZGQoQXBpTWVzc2FnZShyb2xlID0gInVzZXIiLCBjb250ZW50ID0gUHJvbXB0QnVkZ2V0Lm9sZGVyKHR1cm4udXNlcklucHV0LCBmcm9tRW5kKSkpCiAgICAgICAgICAgICAgICBhZGQoQXBpTWVzc2FnZShyb2xlID0gImFzc2lzdGFudCIsIGNvbnRlbnQgPSBQcm9tcHRCdWRnZXQub2xkZXIodHVybi5hc3Npc3RhbnRSZXNwb25zZSwgZnJvbUVuZCAtIDEpKSkKICAgICAgICAgICAgfQogICAgICAgICAgICBhZGQoQXBpTWVzc2FnZShyb2xlID0gInVzZXIiLCBjb250ZW50ID0gdXNlclRleHQpKQogICAgICAgIH0KCiAgICAgICAgdmFsIHJ1c3NpYW4gPSBzZXNzaW9uLnJ1c3NpYW4oKQogICAgICAgIHZhbCBzcGVlY2ggPSBzcGVha2VyLmJlZ2luU3BlZWNoKCkKICAgICAgICByZXR1cm4gdHJ5IHsKICAgICAgICAgICAgdmFsIHJlc3BvbnNlID0gc3RyZWFtKG1lc3NhZ2VzLCBzcGVlY2gsIHJ1c3NpYW4pCiAgICAgICAgICAgIGlmIChyZXNwb25zZS5pc0JsYW5rKCkpIHsKICAgICAgICAgICAgICAgIHNwZWVjaC5jYW5jZWwoKQogICAgICAgICAgICAgICAgcmV0dXJuIFJlc3VsdC5GYWlsZWQoVm9pY2VFcnJvcnMuZW1wdHkocnVzc2lhbikpCiAgICAgICAgICAgIH0KICAgICAgICAgICAgb3ZlcmxheS5zcGVha2luZyhyZXNwb25zZSkKICAgICAgICAgICAgcmVtZW1iZXIodXNlclRleHQsIHJlc3BvbnNlLCBhc3Npc3RhbnRTcG9rZUJlZm9yZSA9IGhpc3RvcnkuaXNOb3RFbXB0eSgpKQogICAgICAgICAgICBzcGVlY2guZW5kSW5wdXQoKQogICAgICAgICAgICBzcGVlY2guYXdhaXRDb21wbGV0aW9uKCkKICAgICAgICAgICAgLy8gSWYgRnJpZGF5IGhlcnNlbGYganVzdCBzYWlkIGdvb2RieWUgdGhlIGV4Y2hhbmdlIGlzIG92ZXI6IGRvbid0CiAgICAgICAgICAgIC8vIHJlb3BlbiB0aGUgbWljcm9waG9uZSBhbmQgc2l0IHRoZXJlIGluIHRoZSB1c2VyJ3Mgd2F5LgogICAgICAgICAgICBSZXN1bHQuRmluaXNoZWQocmVzcG9uc2UsIGZvbGxvd1VwID0gIUNvbnZlcnNhdGlvbkNvbnRyb2wuaXNGYXJld2VsbChyZXNwb25zZSkpCiAgICAgICAgfSBjYXRjaCAoZTogQ2FuY2VsbGF0aW9uRXhjZXB0aW9uKSB7CiAgICAgICAgICAgIHNwZWVjaC5jYW5jZWwoKQogICAgICAgICAgICB0aHJvdyBlCiAgICAgICAgfSBjYXRjaCAoZTogR3JvcUFwaUV4Y2VwdGlvbikgewogICAgICAgICAgICBzcGVlY2guY2FuY2VsKCkKICAgICAgICAgICAgTG9nLmUoVEFHLCAiR3JvcSByZWZ1c2VkOiAke2UubWVzc2FnZX0iKQogICAgICAgICAgICAvLyBBIHJldGlyZWQgbW9kZWw6IHJlLXJlYWQgd2hhdCBleGlzdHMgc28gdGhlIG5leHQgdHVybiB3b3Jrcy4KICAgICAgICAgICAgaWYgKGUubW9kZWxNaXNzaW5nKSBzZXNzaW9uLnJlcGFpck1vZGVsKCkKICAgICAgICAgICAgUmVzdWx0LkZhaWxlZChWb2ljZUVycm9ycy5zcG9rZW4oZSwgcnVzc2lhbikpCiAgICAgICAgfSBjYXRjaCAoZTogRXhjZXB0aW9uKSB7CiAgICAgICAgICAgIHNwZWVjaC5jYW5jZWwoKQogICAgICAgICAgICBMb2cuZShUQUcsICJBbnN3ZXIgZmFpbGVkOiAke2UubWVzc2FnZX0iKQogICAgICAgICAgICBSZXN1bHQuRmFpbGVkKFZvaWNlRXJyb3JzLnNwb2tlbihlLCBydXNzaWFuKSkKICAgICAgICB9IGZpbmFsbHkgewogICAgICAgICAgICAvLyBOZXZlciBsZWF2ZSBhIHNlc3Npb24gd2FpdGluZyBvbiBpbnB1dCB0aGF0IHdpbGwgbmV2ZXIgYXJyaXZlLgogICAgICAgICAgICBzcGVlY2guZW5kSW5wdXQoKQogICAgICAgIH0KICAgIH0KCiAgICBwcml2YXRlIHN1c3BlbmQgZnVuIHN0cmVhbSgKICAgICAgICBtZXNzYWdlczogTGlzdDxBcGlNZXNzYWdlPiwKICAgICAgICBzcGVlY2g6IEVkZ2VUdHNTcGVha2VyLlNwZWVjaFNlc3Npb24sCiAgICAgICAgcnVzc2lhbjogQm9vbGVhbgogICAgKTogU3RyaW5nIHsKICAgICAgICB2YWwgcmVzcG9uc2UgPSBTdHJpbmdCdWlsZGVyKCkKICAgICAgICB2YWwgY2h1bmtlciA9IFNlbnRlbmNlQ2h1bmtlcigpCiAgICAgICAgdmFyIHNwZWFraW5nID0gZmFsc2UKICAgICAgICB2YXIgbGFzdFJlZHJhdyA9IDBMCgogICAgICAgIHZhbCBzZXR0aW5ncyA9IEZyaWRheUFnZW50LlNldHRpbmdzKAogICAgICAgICAgICBzZXNzaW9uLmFwaUtleSgpLCBzZXNzaW9uLm1vZGVsKCksIEdyb3FBcGlTZXJ2aWNlLlZPSUNFX01BWF9UT0tFTlMsIHNlc3Npb24uYmFja3VwTW9kZWwoKQogICAgICAgICkKICAgICAgICBhZ2VudC5yZXBseShzZXR0aW5ncywgbWVzc2FnZXMsIHJ1c3NpYW4pCiAgICAgICAgICAgIC5jb2xsZWN0IHsgdG9rZW4gLT4KICAgICAgICAgICAgICAgIHJlc3BvbnNlLmFwcGVuZCh0b2tlbikKICAgICAgICAgICAgICAgIGNodW5rZXIuYXBwZW5kKHRva2VuKS5mb3JFYWNoIHsgc2VudGVuY2UgLT4KICAgICAgICAgICAgICAgICAgICBzcGVlY2gub2ZmZXIoc2VudGVuY2UpCiAgICAgICAgICAgICAgICAgICAgc3BlYWtpbmcgPSB0cnVlCiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAvLyBUaHJvdHRsZWQ6IHJlZHJhd2luZyBvbiBldmVyeSB0b2tlbiBxdWV1ZWQgaHVuZHJlZHMgb2YKICAgICAgICAgICAgICAgIC8vIG1haW4tdGhyZWFkIHBvc3RzIHBlciByZXBseS4KICAgICAgICAgICAgICAgIHZhbCBub3cgPSBTeXN0ZW1DbG9jay51cHRpbWVNaWxsaXMoKQogICAgICAgICAgICAgICAgaWYgKG5vdyAtIGxhc3RSZWRyYXcgPj0gT1ZFUkxBWV9SRUZSRVNIX01TKSB7CiAgICAgICAgICAgICAgICAgICAgbGFzdFJlZHJhdyA9IG5vdwogICAgICAgICAgICAgICAgICAgIG92ZXJsYXkuc3RyZWFtaW5nKHJlc3BvbnNlLnRvU3RyaW5nKCksIHNwZWFraW5nKQogICAgICAgICAgICAgICAgfQogICAgICAgICAgICB9CiAgICAgICAgY2h1bmtlci5mbHVzaCgpPy5sZXQgeyBzcGVlY2gub2ZmZXIoaXQpIH0KICAgICAgICByZXR1cm4gcmVzcG9uc2UudG9TdHJpbmcoKQogICAgfQoKICAgIHByaXZhdGUgc3VzcGVuZCBmdW4gcmVtZW1iZXIodXNlclRleHQ6IFN0cmluZywgcmVzcG9uc2U6IFN0cmluZywgYXNzaXN0YW50U3Bva2VCZWZvcmU6IEJvb2xlYW4pIHsKICAgICAgICBzZXNzaW9uLmxvZyh1c2VyVGV4dCwgcmVzcG9uc2UsICJ2b2ljZV9jaGF0IikKICAgICAgICBtZW1vcnkuZXh0cmFjdE1lbW9yaWVzSW5CYWNrZ3JvdW5kKHVzZXJUZXh0LCByZXNwb25zZSkKICAgICAgICAvLyBBIGNvcnJlY3Rpb24gaXMgdGhlIHN0cm9uZ2VzdCBzaWduYWwgdGhlcmUgaXMsIHNvIGl0IGlzIHN0b3JlZCBvbgogICAgICAgIC8vIGl0cyBvd24gcmF0aGVyIHRoYW4gbGVmdCB0byB0aGUgZ2VuZXJhbCBleHRyYWN0b3IuCiAgICAgICAgQ29ycmVjdGlvbkRldGVjdG9yLmRldGVjdCh1c2VyVGV4dCwgYXNzaXN0YW50U2FpZFNvbWV0aGluZyA9IGFzc2lzdGFudFNwb2tlQmVmb3JlKQogICAgICAgICAgICA/LmxldCB7IG1lbW9yeS5yZWNvcmRDb3JyZWN0aW9uKGl0KSB9CiAgICAgICAgc2Vzc2lvbi5taXJyb3IodXNlclRleHQsIHJlc3BvbnNlKQogICAgfQp9Cg==
+package com.friday.ai.service.voice
+
+import android.os.SystemClock
+import android.util.Log
+import com.friday.ai.agent.FridayAgent
+import com.friday.ai.agent.PromptBudget
+import com.friday.ai.core.ConversationControl
+import com.friday.ai.core.CorrectionDetector
+import com.friday.ai.core.SentenceChunker
+import com.friday.ai.core.SystemPromptBuilder
+import com.friday.ai.data.remote.GroqApiException
+import com.friday.ai.data.remote.GroqApiService
+import com.friday.ai.data.remote.dto.ApiMessage
+import com.friday.ai.domain.model.AssistantMode
+import com.friday.ai.service.EdgeTtsSpeaker
+import com.friday.ai.service.FridayMemory
+import com.friday.ai.service.FridayOverlayManager
+import kotlinx.coroutines.CancellationException
+
+class SpokenAnswer(
+    private val agent: FridayAgent,
+    private val prompts: SystemPromptBuilder,
+    private val memory: FridayMemory,
+    private val session: VoiceSession,
+    private val speaker: EdgeTtsSpeaker,
+    private val overlay: FridayOverlayManager
+) {
+    sealed interface Result {
+        data class Finished(val response: String, val followUp: Boolean) : Result
+        data class Failed(val message: String) : Result
+    }
+
+    private companion object {
+        const val TAG = "SpokenAnswer"
+        const val OVERLAY_REFRESH_MS = 120L
+        const val HISTORY_TURNS = 5
+        const val VOICE_RULE = "\n\nYou are Friday, a voice assistant. Answer in ONE short, natural sentence — this is a spoken " +
+            "conversation, not a chat window. Only go longer than one sentence if the user explicitly asks for " +
+            "detail or the request genuinely requires a list/steps. Always respond in Brazilian Portuguese (pt-BR)."
+    }
+
+    suspend fun answer(userText: String): Result {
+        val sessionId = session.id()
+        val history = memory.getSessionHistory(sessionId, limit = HISTORY_TURNS)
+        val messages = buildList {
+            val system = prompts.build(AssistantMode.DEFAULT, memory.buildMemoryContext(), withTools = true) + VOICE_RULE
+            add(ApiMessage(role = "system", content = system))
+            history.forEachIndexed { i, turn ->
+                val fromEnd = (history.size - i) * 2
+                add(ApiMessage(role = "user", content = PromptBudget.older(turn.userInput, fromEnd)))
+                add(ApiMessage(role = "assistant", content = PromptBudget.older(turn.assistantResponse, fromEnd - 1)))
+            }
+            add(ApiMessage(role = "user", content = userText))
+        }
+        val russian = session.russian()
+        val speech = speaker.beginSpeech()
+        return try {
+            val response = stream(messages, speech, russian)
+            if (response.isBlank()) {
+                speech.cancel()
+                return Result.Failed(VoiceErrors.empty(russian))
+            }
+            overlay.speaking(response)
+            remember(userText, response, assistantSpokeBefore = history.isNotEmpty())
+            speech.endInput()
+            speech.awaitCompletion()
+            Result.Finished(response, followUp = !ConversationControl.isFarewell(response))
+        } catch (e: CancellationException) {
+            speech.cancel()
+            throw e
+        } catch (e: GroqApiException) {
+            speech.cancel()
+            Log.e(TAG, "Groq refused: ${e.message}")
+            if (e.modelMissing) session.repairModel()
+            Result.Failed(VoiceErrors.spoken(e, russian))
+        } catch (e: Exception) {
+            speech.cancel()
+            Log.e(TAG, "Answer failed: ${e.message}")
+            Result.Failed(VoiceErrors.spoken(e, russian))
+        } finally {
+            speech.endInput()
+        }
+    }
+
+    private suspend fun stream(messages: List<ApiMessage>, speech: EdgeTtsSpeaker.SpeechSession, russian: Boolean): String {
+        val response = StringBuilder()
+        val chunker = SentenceChunker()
+        var speaking = false
+        var lastRedraw = 0L
+        val settings = FridayAgent.Settings(session.apiKey(), session.model(), GroqApiService.VOICE_MAX_TOKENS, session.backupModel())
+        agent.reply(settings, messages, russian).collect { token ->
+            response.append(token)
+            chunker.append(token).forEach { sentence ->
+                speech.offer(sentence)
+                speaking = true
+            }
+            val now = SystemClock.uptimeMillis()
+            if (now - lastRedraw >= OVERLAY_REFRESH_MS) {
+                lastRedraw = now
+                overlay.streaming(response.toString(), speaking)
+            }
+        }
+        chunker.flush()?.let { speech.offer(it) }
+        return response.toString()
+    }
+
+    private suspend fun remember(userText: String, response: String, assistantSpokeBefore: Boolean) {
+        session.log(userText, response, "voice_chat")
+        memory.extractMemoriesInBackground(userText, response)
+        CorrectionDetector.detect(userText, assistantSaidSomething = assistantSpokeBefore)?.let { memory.recordCorrection(it) }
+        session.mirror(userText, response)
+    }
+}
