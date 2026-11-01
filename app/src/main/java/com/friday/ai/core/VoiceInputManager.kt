@@ -11,6 +11,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.friday.ai.localai.LocalAiPreferences
 import kotlinx.coroutines.launch
 
 class VoiceInputManager(
@@ -20,6 +21,8 @@ class VoiceInputManager(
     private val speechHints: com.friday.ai.service.SpeechHints
 ) {
 
+    private val localVoice = OnDeviceVoiceInput(context)
+    private var usingLocal = false
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val transcriber = WhisperTranscriber(groqApi, context.cacheDir).apply { hints = speechHints::prompt }
 
@@ -33,6 +36,9 @@ class VoiceInputManager(
     val error: StateFlow<String?> = _error.asStateFlow()
 
     init {
+        scope.launch { localVoice.recognizedText.collect { if (usingLocal) _recognizedText.value = it } }
+        scope.launch { localVoice.isListening.collect { if (usingLocal) _isListening.value = it } }
+        scope.launch { localVoice.error.collect { if (usingLocal) _error.value = it } }
         transcriber.listener = object : WhisperTranscriber.Listener {
             override fun onRecordingStarted() {
                 _isListening.value = true
@@ -58,9 +64,11 @@ class VoiceInputManager(
 
         scope.launch {
             val apiKey = prefDao.get("groq_api_key") ?: ""
-            if (apiKey.isBlank()) {
-                _error.value = "Chave Groq não configurada. Abra as configurações do Friday."
-                _isListening.value = false
+            usingLocal = LocalAiPreferences(context).mode == LocalAiPreferences.Mode.LOCAL || apiKey.isBlank()
+            if (usingLocal) {
+                localVoice.startListening()
+                _isListening.value = localVoice.isListening.value
+                _error.value = localVoice.error.value
                 return@launch
             }
 
@@ -77,14 +85,16 @@ class VoiceInputManager(
 
     /** Ends the recording now; what was said so far is transcribed. */
     fun stopListening() {
-        transcriber.requestStop()
+        if (usingLocal) localVoice.stopListening() else transcriber.requestStop()
     }
 
     fun destroy() {
+        localVoice.destroy()
         scope.cancel()
     }
 
     fun clearResult() {
         _recognizedText.value = null
+        localVoice.clearResult()
     }
 }
