@@ -27,8 +27,8 @@ class QuickLinksViewModel(private val store: QuickLinkStore) : ViewModel() {
         val said = QuickLinks.phrasesOf(phrases)
         val url = QuickLinks.webAddress(address)
         return when {
-            said.isEmpty() -> "Добавьте хотя бы одну фразу"
-            url == null -> "Это не похоже на адрес сайта"
+            said.isEmpty() -> "Adicione pelo menos uma frase"
+            url == null -> "Isso não parece um endereço de site"
             else -> {
                 val title = name.trim().ifEmpty { said.first() }
                 val link = QuickLink(id ?: UUID.randomUUID().toString(), title, said, url, silent)
