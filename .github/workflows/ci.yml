@@ -14,6 +14,11 @@ jobs:
     name: Unit tests & detekt
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      FRIDAY_SIGNING_KEYSTORE_BASE64: ${{ secrets.FRIDAY_SIGNING_KEYSTORE_BASE64 }}
+      FRIDAY_SIGNING_STORE_PASSWORD: ${{ secrets.FRIDAY_SIGNING_STORE_PASSWORD }}
+      FRIDAY_SIGNING_KEY_ALIAS: ${{ secrets.FRIDAY_SIGNING_KEY_ALIAS }}
+      FRIDAY_SIGNING_KEY_PASSWORD: ${{ secrets.FRIDAY_SIGNING_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
@@ -23,6 +28,12 @@ jobs:
           java-version: 21
 
       - uses: gradle/actions/setup-gradle@v4
+
+      - name: Test signing preparation
+        run: python3 scripts/test_prepare_ci_signing.py
+
+      - name: Prepare signing and CI version
+        run: python3 scripts/prepare-ci-signing.py
 
       - name: Unit tests
         run: |
@@ -68,8 +79,8 @@ jobs:
 
       # R8 can break JNI-reached code without failing the build; the check
       # fails it instead (see verifyReleaseKeepRules in app/build.gradle.kts).
-      # CI has no signing secrets, so this release is unsigned on purpose: it
-      # proves the build, not a distributable APK (see keystore/README.md).
+      # Without repository signing secrets this release is unsigned on purpose:
+      # it proves the build, not a distributable APK (see keystore/README.md).
       - name: Release build + R8 keep-rule check
         run: ./gradlew assembleRelease verifyReleaseKeepRules
 
