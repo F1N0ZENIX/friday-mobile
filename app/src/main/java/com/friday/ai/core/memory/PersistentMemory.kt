@@ -89,8 +89,7 @@ class PersistentMemory(private val dao: MemoryDao) {
         }
 
     private suspend fun saveWordReply(prompt: String): String? {
-        val match = wordDeclaration.matchEntire(prompt) ?: return null
-        val word = match.groups["word"]?.value?.trim().orEmpty()
+        val word = ExplicitMemoryIntent.word(prompt) ?: return null
         return when {
             word.isEmpty() -> "Não salvei: informe uma palavra."
             word.length > MAX_WORD_CHARS ->
@@ -146,9 +145,7 @@ class PersistentMemory(private val dao: MemoryDao) {
     }
 
     private fun noteValue(prompt: String): String? {
-        val match = noteDeclaration.matchEntire(prompt) ?: return null
-        return match.groups["note"]?.value?.trim()
-            ?.takeIf { it.isNotEmpty() }
+        return ExplicitMemoryIntent.note(prompt)
     }
 
     private fun normalized(text: String): String =
@@ -170,16 +167,6 @@ class PersistentMemory(private val dao: MemoryDao) {
         const val MAX_WORD_CHARS = 100
         const val DELETE_PREFIX = "apagar memoria "
         val COMBINING_MARKS = Regex("\\p{M}+")
-        val noteDeclaration = Regex(
-            """^\s*(?:lembre|lembra|guarde)\s+que\s+(?<note>.*?)\s*$""",
-            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-        )
-        val wordDeclaration = Regex(
-            """^\s*(?:salve|salva|salvar|guarde|guarda)\s+a\s+palavra""" +
-                """(?:\s+(?<word>.*?))?\s+na\s+mem[oó]ria""" +
-                """(?:\s+(?:pra|para)\s+teste)?\s*[!.]*\s*$""",
-            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-        )
         val userNameQuestions = setOf(
             "qual meu nome", "qual o meu nome", "qual e meu nome",
             "qual e o meu nome", "como eu me chamo"
