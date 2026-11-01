@@ -26,7 +26,7 @@ class LocalChatRoutingTest {
     @Test
     fun `user turn is trimmed and bounded`() {
         assertEquals("oi", LocalPrompt.userTurn("  oi  "))
-        assertEquals(3_000, LocalPrompt.userTurn("x".repeat(4_000)).length)
+        assertEquals(1_200, LocalPrompt.userTurn("x".repeat(4_000)).length)
     }
 
     @Test
@@ -39,9 +39,9 @@ class LocalChatRoutingTest {
             add(Message(role = MessageRole.USER, content = "agora"))
         }
 
-        val prompt = LocalPrompt.conversationTurn("agora", history)
+        val prompt = LocalPrompt.systemFor("agora", history)
 
-        assertEquals(1, Regex("Usuário: agora").findAll(prompt).count())
+        assertFalse(prompt.contains("Mensagem recebida = agora"))
         assertFalse(prompt.contains("pergunta 0"))
         assertTrue(prompt.contains("pergunta 4"))
         assertTrue(prompt.contains("resposta 4"))
@@ -53,10 +53,10 @@ class LocalChatRoutingTest {
             Message(role = if (index % 2 == 0) MessageRole.USER else MessageRole.ASSISTANT, content = "x".repeat(2_400))
         }
 
-        val prompt = LocalPrompt.conversationTurn("oi", history)
+        val prompt = LocalPrompt.systemFor("oi", history)
 
         assertTrue(prompt.length <= 3_000)
-        assertTrue(prompt.endsWith("Usuário: oi\nFriday:"))
+        assertFalse(prompt.endsWith("Friday:"))
     }
 
     @Test
@@ -66,15 +66,16 @@ class LocalChatRoutingTest {
             Message(role = MessageRole.USER, content = "pergunta"),
             Message(role = MessageRole.ASSISTANT, content = "resposta")
         )
-        val prompt = LocalPrompt.conversationTurn("z".repeat(4_000), history)
+        val prompt = LocalPrompt.systemFor("z".repeat(4_000), history)
         assertTrue(prompt.length <= 1_800)
         assertFalse(prompt.contains("system secret"))
         assertTrue(prompt.contains("resposta"))
+        assertFalse(prompt.contains("z".repeat(100)))
     }
 
     @Test
     fun `local limits remain conservative`() {
-        assertEquals(1_024, LocalInferenceLimits.CONTEXT_TOKENS)
+        assertEquals(2_048, LocalInferenceLimits.CONTEXT_TOKENS)
         assertEquals(128, LocalInferenceLimits.MAX_REPLY_TOKENS)
         assertEquals(4, LocalInferenceLimits.MAX_CPU_THREADS)
     }
