@@ -151,6 +151,60 @@ class PersistentMemoryTest {
         assertFalse(listing.contains("key0"))
     }
 
+    @Test
+    fun `accepts short screenshot requests without a magic sentence`() = runTest {
+        listOf(
+            "salve a palavra ku" to "ku",
+            "salve a palavra jorge para testes" to "jorge",
+            "salva a palavra Jorge pra teste" to "Jorge",
+            "Friday, pode guardar a palavra Jorge na memória?" to "Jorge",
+            "por favor, memorize a palavra café na sua memória" to "café"
+        ).forEach { (request, expected) ->
+            val dao = FakeMemoryDao()
+            assertEquals(
+                "Certo, salvei a palavra $expected na memória.",
+                PersistentMemory(dao).reply(request)
+            )
+            assertEquals(expected, dao.findByKey("saved_word", "fact")?.value)
+            assertEquals(
+                "A palavra salva é $expected.",
+                PersistentMemory(dao).reply("qual a palavra salva?")
+            )
+        }
+    }
+
+    @Test
+    fun `saves arbitrary explicit content not just a named word`() = runTest {
+        listOf(
+            "salve gosto de café sem açúcar na memória",
+            "guarda na memória que gosto de café sem açúcar",
+            "vc pode salvar na sua memória que gosto de café sem açúcar?",
+            "Friday, por favor, anota gosto de café sem açúcar na memoria",
+            "lembra que gosto de café sem açúcar"
+        ).forEach { request ->
+            val dao = FakeMemoryDao()
+            assertEquals("Certo, guardei essa nota.", PersistentMemory(dao).reply(request))
+            assertEquals("gosto de café sem açúcar", dao.getByCategory("fact").single().value)
+            assertTrue(PersistentMemory(dao).reply("listar memórias")!!.contains("gosto de café sem açúcar"))
+        }
+    }
+
+    @Test
+    fun `does not save quoted negated or unrelated requests`() = runTest {
+        val dao = FakeMemoryDao()
+        val memory = PersistentMemory(dao)
+        listOf(
+            "não salve gosto de café na memória",
+            "não salve a palavra Jorge",
+            "ela disse salve a palavra Jorge na memória",
+            "\"salve gosto de café na memória\"",
+            "o que acontece se eu falar salve a palavra Jorge",
+            "salve o arquivo na pasta",
+            "salve na memória"
+        ).forEach { assertNull(memory.reply(it)) }
+        assertTrue(dao.getByCategory("fact").isEmpty())
+    }
+
     private class FakeMemoryDao : MemoryDao {
         private val memories = mutableListOf<MemoryEntity>()
         private var nextId = 1L
