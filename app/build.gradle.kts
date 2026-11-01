@@ -142,6 +142,10 @@ android {
 }
 
 dependencies {
+    // CPU-only llama.cpp runtime for user-installed GGUF chat models. Models
+    // remain outside the APK in LocalModelStore.
+    implementation("dev.ffmpegkit-maintained:llama-android:0.1.1")
+
     // Speaker verification. ONNX Runtime rather than TFLite: the wespeaker
     // model ships as ONNX, and converting it would add a step that could only
     // introduce error.

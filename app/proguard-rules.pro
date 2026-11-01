@@ -40,3 +40,6 @@
 
 -dontwarn okhttp3.**
 -dontwarn retrofit2.**
+
+# llama.cpp JNI looks up runtime classes and methods by their original names.
+-keep class dev.ffmpegkit.llama.** { *; }
