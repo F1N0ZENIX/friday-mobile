@@ -37,6 +37,13 @@ class FridayMemory(
     private val catalog: ModelCatalog
 ) {
 
+    private val explicitMemory = com.friday.ai.core.memory.PersistentMemory(memoryDao)
+
+    /** Explicit device-local memory commands never call extraction or sync. */
+    suspend fun replyToMemoryCommand(prompt: String): String? = withContext(Dispatchers.IO) {
+        explicitMemory.reply(prompt)
+    }
+
     companion object {
         private const val TAG = "FridayMemory"
 
