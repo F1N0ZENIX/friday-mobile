@@ -15,10 +15,15 @@ import com.friday.ai.domain.model.AssistantMode
 import com.friday.ai.domain.model.Message
 import com.friday.ai.domain.model.MessageRole
 import com.friday.ai.domain.repository.AssistantRepository
+import com.friday.ai.localai.LocalAiPreferences
+import com.friday.ai.localai.LocalChatRouting
+import com.friday.ai.localai.LocalInferenceEngine
+import com.friday.ai.localai.LocalPrompt
 import com.friday.ai.service.FridayMemory
 import com.friday.ai.service.ModelCatalog
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 
@@ -32,7 +37,9 @@ class AssistantRepositoryImpl(
     private val promptBuilder: SystemPromptBuilder,
     private val memory: FridayMemory,
     private val catalog: ModelCatalog,
-    private val agent: FridayAgent
+    private val agent: FridayAgent,
+    private val localPreferences: LocalAiPreferences? = null,
+    private val localEngine: LocalInferenceEngine? = null
 ) : AssistantRepository {
 
     companion object {
@@ -44,6 +51,14 @@ class AssistantRepositoryImpl(
         history: List<Message>,
         mode: AssistantMode
     ): Flow<String> {
+        // This must stay before every collaborator below: catalog, prompt,
+        // memory and agent can initiate cloud work or construct tool prompts.
+        if (LocalChatRouting.useLocal(localPreferences?.mode)) {
+            val engine = localEngine ?: return flow {
+                throw IllegalStateException("A IA local não está disponível neste aparelho.")
+            }
+            return flow { emit(engine.reply(LocalPrompt.userTurn(prompt))) }
+        }
         val apiKey = prefDao.get(PREF_API_KEY) ?: ""
         val model = catalog.model(com.friday.ai.core.GroqModels.Role.CHAT)
         val memoryContext = memory.buildMemoryContext()
