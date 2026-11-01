@@ -252,7 +252,7 @@ Rules:
     }
 
     suspend fun buildMemoryContext(): String = withContext(Dispatchers.IO) {
-        val memories = memoryDao.getRecent(30)
+        val memories = memoryDao.getRecent(30).filterNot { it.source == "explicit_local" }
         if (memories.isEmpty()) return@withContext ""
 
         buildString {
