@@ -81,7 +81,10 @@ class PersistentMemoryTest {
         val dao = FakeMemoryDao()
         val memory = PersistentMemory(dao)
 
-        assertEquals("Certo, salvei a palavra JORGE na memória.", memory.reply("SALVA a palavra JORGE na MEMÓRIA pra teste"))
+        assertEquals(
+            "Certo, salvei a palavra JORGE na memória.",
+            memory.reply("SALVA a palavra JORGE na MEMÓRIA pra teste")
+        )
         assertEquals("Certo, salvei a palavra Bia na memória.", memory.reply("guarde a palavra Bia na memória"))
         assertEquals("A palavra salva é Bia.", memory.reply("qual é a palavra que eu pedi pra você salvar?"))
 
