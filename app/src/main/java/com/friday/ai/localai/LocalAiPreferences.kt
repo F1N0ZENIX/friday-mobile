@@ -1,17 +1,24 @@
 package com.friday.ai.localai
 
 import android.content.Context
+import com.friday.ai.core.AiSetup
 
 /** Persistent choices for the local / hybrid / cloud intelligence modes. */
 class LocalAiPreferences(context: Context) {
-    private val prefs = context.applicationContext.getSharedPreferences("friday_local_ai", Context.MODE_PRIVATE)
+    private val app = context.applicationContext
+    private val prefs = app.getSharedPreferences("friday_local_ai", Context.MODE_PRIVATE)
+    private val setup = app.getSharedPreferences("friday_ai_setup", Context.MODE_PRIVATE)
 
     enum class Mode { AUTOMATIC, LOCAL, GROQ }
 
     var mode: Mode
-        get() = runCatching { Mode.valueOf(prefs.getString(KEY_MODE, Mode.AUTOMATIC.name)!!) }
-            .getOrDefault(Mode.AUTOMATIC)
-        set(value) { prefs.edit().putString(KEY_MODE, value.name).apply() }
+        get() = runCatching {
+            Mode.valueOf(setup.getString(AiSetup.PREF_MODE, Mode.AUTOMATIC.name)!!)
+        }.getOrDefault(Mode.AUTOMATIC)
+        set(value) {
+            prefs.edit().putString(KEY_MODE, value.name).apply()
+            setup.edit().putString(AiSetup.PREF_MODE, value.name).apply()
+        }
 
     var allowGroqFallback: Boolean
         get() = prefs.getBoolean(KEY_FALLBACK, true)
