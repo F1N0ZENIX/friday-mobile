@@ -33,7 +33,7 @@ import java.util.Date
 import java.util.Locale
 import org.koin.androidx.compose.koinViewModel
 
-/** "Перенос на другой телефон": export everything to one encrypted file, or import one. */
+/** "Transferência para outro celular": export everything to one encrypted file, or import one. */
 @Composable
 fun TransferSection(viewModel: TransferViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -49,8 +49,8 @@ fun TransferSection(viewModel: TransferViewModel = koinViewModel()) {
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            "Ключ Groq, голосовой профиль, память, выученные команды, история и настройки — в одном " +
-                "файле, зашифрованном вашим паролем. Сохраните его и откройте на новом телефоне.",
+            "Chave Groq, perfil de voz, memória, comandos aprendidos, histórico e configurações — em um " +
+                "arquivo criptografado com sua senha. Salve-o e abra no novo celular.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -59,12 +59,12 @@ fun TransferSection(viewModel: TransferViewModel = koinViewModel()) {
                 onClick = { createFile.launch("friday-${today()}.friday") },
                 enabled = state !is TransferViewModel.State.Working,
                 modifier = Modifier.weight(1f)
-            ) { Text("Экспорт") }
+            ) { Text("Exportar") }
             HudOutlinedButton(
                 onClick = { openFile.launch(arrayOf("*/*")) },
                 enabled = state !is TransferViewModel.State.Working,
                 modifier = Modifier.weight(1f)
-            ) { Text("Импорт") }
+            ) { Text("Importar") }
         }
         when (val s = state) {
             TransferViewModel.State.Working -> LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
@@ -99,26 +99,26 @@ private fun PassphraseDialog(export: Boolean, onDismiss: () -> Unit, onConfirm: 
     val ok = longEnough && (!export || pass == repeat)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (export) "Пароль для файла" else "Пароль от файла") },
+        title = { Text("Senha do arquivo") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (export) {
                     Text(
-                        "Без него файл не открыть — ни вам, ни кому-то ещё. Восстановить пароль нельзя.",
+                        "Sem ela, ninguém consegue abrir o arquivo. Não é possível recuperar a senha.",
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
                 OutlinedTextField(
                     value = pass, onValueChange = { pass = it }, singleLine = true,
-                    label = { Text("Пароль") }, visualTransformation = PasswordVisualTransformation(),
+                    label = { Text("Senha") }, visualTransformation = PasswordVisualTransformation(),
                     supportingText = if (export && pass.isNotEmpty() && !longEnough) {
-                        { Text("Не меньше ${SettingsArchive.MIN_PASSPHRASE} символов") }
+                        { Text("Pelo menos ${SettingsArchive.MIN_PASSPHRASE} caracteres") }
                     } else null
                 )
                 if (export) {
                     OutlinedTextField(
                         value = repeat, onValueChange = { repeat = it }, singleLine = true,
-                        label = { Text("Ещё раз") }, visualTransformation = PasswordVisualTransformation(),
+                        label = { Text("Repita a senha") }, visualTransformation = PasswordVisualTransformation(),
                         isError = repeat.isNotEmpty() && repeat != pass
                     )
                 }
@@ -126,10 +126,10 @@ private fun PassphraseDialog(export: Boolean, onDismiss: () -> Unit, onConfirm: 
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(pass.toCharArray()) }, enabled = ok) {
-                Text(if (export) "Сохранить" else "Открыть")
+                Text(if (export) "Salvar" else "Abrir")
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )
 }
 
@@ -137,30 +137,30 @@ private fun PassphraseDialog(export: Boolean, onDismiss: () -> Unit, onConfirm: 
 private fun ReviewDialog(summary: SettingsTransfer.Summary, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Заменить всё на этом телефоне?") },
+        title = { Text("Substituir tudo neste celular?") },
         text = {
             Column {
-                Text("Файл от ${date(summary.createdAt)}, Пятница ${summary.appVersion}:")
+                Text("Arquivo de ${date(summary.createdAt)}, Friday ${summary.appVersion}:")
                 Spacer(Modifier.height(8.dp))
-                Text("• ключ Groq: ${if (summary.hasApiKey) "есть" else "нет"}")
-                Text("• голосовой профиль: ${if (summary.hasVoiceProfile) "есть" else "нет"}")
-                Text("• фактов в памяти: ${summary.memories}")
-                Text("• выученных команд: ${summary.learnedCommands}")
-                Text("• сообщений в истории: ${summary.chatMessages}")
-                Text("• дел «по пути»: ${summary.errands}")
+                Text("• chave Groq: ${if (summary.hasApiKey) "sim" else "não"}")
+                Text("• perfil de voz: ${if (summary.hasVoiceProfile) "sim" else "não"}")
+                Text("• fatos na memória: ${summary.memories}")
+                Text("• comandos aprendidos: ${summary.learnedCommands}")
+                Text("• mensagens no histórico: ${summary.chatMessages}")
+                Text("• tarefas em andamento: ${summary.errands}")
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Текущие настройки, память и история будут заменены. Gmail, если был подключён, " +
-                        "может попросить вход заново.",
+                    "As configurações, a memória e o histórico atuais serão substituídos. O Gmail, se " +
+                        "estava conectado, pode pedir login novamente.",
                     style = MaterialTheme.typography.bodySmall
                 )
             }
         },
-        confirmButton = { TextButton(onClick = onConfirm) { Text("Заменить") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } }
+        confirmButton = { TextButton(onClick = onConfirm) { Text("Substituir") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )
 }
 
 private fun today(): String = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
 
-private fun date(millis: Long): String = SimpleDateFormat("d MMMM yyyy, HH:mm", Locale("ru")).format(Date(millis))
+private fun date(millis: Long): String = SimpleDateFormat("d MMMM yyyy, HH:mm", Locale("pt", "BR")).format(Date(millis))
