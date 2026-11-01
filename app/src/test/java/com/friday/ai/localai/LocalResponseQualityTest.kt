@@ -1,18 +1,1 @@
-package com.friday.ai.localai
-
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
-
-class LocalResponseQualityTest {
-    @Test fun `rejects echoes markers and repeated lines`() {
-        assertTrue(LocalResponseQuality.checked("quem é você?", "Quem é você?\nIncluído de vocês").contains("resposta repetida"))
-        assertTrue(LocalResponseQuality.checked("Olá", "Olá.").contains("resposta repetida"))
-        assertTrue(LocalResponseQuality.checked("oi", "Resposta <|im_start|>user").contains("resposta repetida"))
-        assertTrue(LocalResponseQuality.checked("oi", "frase repetida\nfrase repetida\nfrase repetida").contains("resposta repetida"))
-    }
-    @Test fun `preserves normal answers`() {
-        assertEquals("Sou Friday.", LocalResponseQuality.checked("quem é você?", " Sou Friday. "))
-        assertEquals("Olá! Como posso ajudar?", LocalResponseQuality.checked("Olá", "Olá! Como posso ajudar?"))
-    }
-}
+cGFja2FnZSBjb20uZnJpZGF5LmFpLmxvY2FsYWkKCmltcG9ydCBvcmcuanVuaXQuQXNzZXJ0LmFzc2VydEVxdWFscwppbXBvcnQgb3JnLmp1bml0LkFzc2VydC5hc3NlcnRUcnVlCmltcG9ydCBvcmcuanVuaXQuVGVzdAoKY2xhc3MgTG9jYWxSZXNwb25zZVF1YWxpdHlUZXN0IHsKICAgIEBUZXN0CiAgICBmdW4gYHJlamVjdHMgc2NyZWVuc2hvdCBlY2hvIHdpdGggb3Igd2l0aG91dCBwdW5jdHVhdGlvbmAoKSB7CiAgICAgICAgYXNzZXJ0VHJ1ZShMb2NhbFJlc3BvbnNlUXVhbGl0eS5jaGVja2VkKCJxdWVtIMOpIHZvY8OqPyIsICJRdWVtIMOpIHZvY8OqP1xuSW5jbHXDrWRvIGRlIHZvY8OqcyIpCiAgICAgICAgICAgIC5jb250YWlucygicmVzcG9zdGEgcmVwZXRpZGEiKSkKICAgICAgICBhc3NlcnRUcnVlKExvY2FsUmVzcG9uc2VRdWFsaXR5LmNoZWNrZWQoIk9sw6EiLCAiT2zDoS4iKS5jb250YWlucygicmVzcG9zdGEgcmVwZXRpZGEiKSkKICAgIH0KCiAgICBAVGVzdAogICAgZnVuIGByZWplY3RzIGxlYWtlZCBjaGF0IG1hcmtlcnMgYW5kIHJlcGVhdGVkIGxpbmVzYCgpIHsKICAgICAgICBhc3NlcnRUcnVlKExvY2FsUmVzcG9uc2VRdWFsaXR5LmNoZWNrZWQoIm9pIiwgIlJlc3Bvc3RhIDx8aW1fc3RhcnR8PnVzZXIiKQogICAgICAgICAgICAuY29udGFpbnMoInJlc3Bvc3RhIHJlcGV0aWRhIikpCiAgICAgICAgYXNzZXJ0VHJ1ZShMb2NhbFJlc3BvbnNlUXVhbGl0eS5jaGVja2VkKCJvaSIsICJmcmFzZSByZXBldGlkYVxuZnJhc2UgcmVwZXRpZGFcbmZyYXNlIHJlcGV0aWRhIikKICAgICAgICAgICAgLmNvbnRhaW5zKCJyZXNwb3N0YSByZXBldGlkYSIpKQogICAgfQoKICAgIEBUZXN0CiAgICBmdW4gYHByZXNlcnZlcyBub3JtYWwgYW5zd2Vyc2AoKSB7CiAgICAgICAgYXNzZXJ0RXF1YWxzKCJTb3UgRnJpZGF5LiIsIExvY2FsUmVzcG9uc2VRdWFsaXR5LmNoZWNrZWQoInF1ZW0gw6kgdm9jw6o/IiwgIiBTb3UgRnJpZGF5LiAiKSkKICAgICAgICBhc3NlcnRFcXVhbHMoIk9sw6EhIENvbW8gcG9zc28gYWp1ZGFyPyIsIExvY2FsUmVzcG9uc2VRdWFsaXR5LmNoZWNrZWQoIk9sw6EiLCAiT2zDoSEgQ29tbyBwb3NzbyBhanVkYXI/IikpCiAgICB9Cn0K
