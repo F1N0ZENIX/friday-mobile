@@ -168,7 +168,7 @@ class VoiceConversation(
         }
         val apiKey = session.apiKey()
         if (apiKey.isBlank()) {
-            io.overlay.error("Chave Groq não configurada. Abra as configurações do Friday.", ERROR_MS)
+            offlineTurn(mine)
             return
         }
 
