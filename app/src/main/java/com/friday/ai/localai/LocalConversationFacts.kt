@@ -78,7 +78,9 @@ object LocalConversationFacts {
         "qual e o meu nome",
         "como eu me chamo"
     )
-    private val assistantNameQuestions = setOf("qual seu nome", "qual e seu nome", "qual o seu nome", "qual e o seu nome")
+    private val assistantNameQuestions = setOf(
+        "qual seu nome", "qual e seu nome", "qual o seu nome", "qual e o seu nome"
+    )
     private val COMBINING_MARKS = Regex("\\p{M}+")
     private const val MAX_NAME_CODE_POINTS = 64
 }
