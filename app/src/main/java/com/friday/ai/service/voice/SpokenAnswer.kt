@@ -53,7 +53,7 @@ class SpokenAnswer(
         const val VOICE_RULE =
             "\n\nYou are Friday, a voice assistant. Answer in ONE short, natural sentence — this is a spoken " +
                 "conversation, not a chat window. Only go longer than one sentence if the user explicitly asks for " +
-                "detail or the request genuinely requires a list/steps. Respond in the same language the user speaks."
+                "detail or the request genuinely requires a list/steps. Always respond in Brazilian Portuguese (pt-BR)."
     }
 
     suspend fun answer(userText: String): Result {
