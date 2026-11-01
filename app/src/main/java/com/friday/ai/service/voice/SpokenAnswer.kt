@@ -17,6 +17,12 @@ import com.friday.ai.service.FridayMemory
 import com.friday.ai.service.FridayOverlayManager
 import kotlinx.coroutines.CancellationException
 
+/**
+ * A conversational answer from the model, spoken as it is written.
+ *
+ * Each sentence goes to the speaker the moment it is complete, so Friday
+ * starts talking while the rest of the answer is still being generated.
+ */
 class SpokenAnswer(
     private val agent: FridayAgent,
     private val prompts: SystemPromptBuilder,
@@ -25,33 +31,47 @@ class SpokenAnswer(
     private val speaker: EdgeTtsSpeaker,
     private val overlay: FridayOverlayManager
 ) {
+
     sealed interface Result {
+        /** Spoken in full. [followUp] is false when Friday herself said goodbye. */
         data class Finished(val response: String, val followUp: Boolean) : Result
+
+        /** Nothing usable came back; [message] should be said instead. */
         data class Failed(val message: String) : Result
     }
 
     private companion object {
         const val TAG = "SpokenAnswer"
+
+        /** Cap on overlay redraws while tokens stream in. */
         const val OVERLAY_REFRESH_MS = 120L
+
+        /** Earlier exchanges sent with the question, for context. */
+        /** Earlier exchanges sent along; each costs tokens on every round of every answer. */
         const val HISTORY_TURNS = 5
-        const val VOICE_RULE = "\n\nYou are Friday, a voice assistant. Answer in ONE short, natural sentence — this is a spoken " +
-            "conversation, not a chat window. Only go longer than one sentence if the user explicitly asks for " +
-            "detail or the request genuinely requires a list/steps. Always respond in Brazilian Portuguese (pt-BR)."
+
+        const val VOICE_RULE =
+            "\n\nYou are Friday, a voice assistant. Answer in ONE short, natural sentence — this is a spoken " +
+                "conversation, not a chat window. Only go longer than one sentence if the user explicitly asks for " +
+                "detail or the request genuinely requires a list/steps. Always respond in Brazilian Portuguese (pt-BR)."
     }
 
     suspend fun answer(userText: String): Result {
         val sessionId = session.id()
         val history = memory.getSessionHistory(sessionId, limit = HISTORY_TURNS)
         val messages = buildList {
-            val system = prompts.build(AssistantMode.DEFAULT, memory.buildMemoryContext(), withTools = true) + VOICE_RULE
+            val system = prompts.build(AssistantMode.DEFAULT, memory.buildMemoryContext(), withTools = true) +
+                VOICE_RULE
             add(ApiMessage(role = "system", content = system))
             history.forEachIndexed { i, turn ->
+                // Two messages per turn; the latest turn is kept whole.
                 val fromEnd = (history.size - i) * 2
                 add(ApiMessage(role = "user", content = PromptBudget.older(turn.userInput, fromEnd)))
                 add(ApiMessage(role = "assistant", content = PromptBudget.older(turn.assistantResponse, fromEnd - 1)))
             }
             add(ApiMessage(role = "user", content = userText))
         }
+
         val russian = session.russian()
         val speech = speaker.beginSpeech()
         return try {
@@ -64,6 +84,8 @@ class SpokenAnswer(
             remember(userText, response, assistantSpokeBefore = history.isNotEmpty())
             speech.endInput()
             speech.awaitCompletion()
+            // If Friday herself just said goodbye the exchange is over: don’t
+            // reopen the microphone and sit there in the user’s way.
             Result.Finished(response, followUp = !ConversationControl.isFarewell(response))
         } catch (e: CancellationException) {
             speech.cancel()
@@ -71,6 +93,7 @@ class SpokenAnswer(
         } catch (e: GroqApiException) {
             speech.cancel()
             Log.e(TAG, "Groq refused: ${e.message}")
+            // A retired model: re-read what exists so the next turn works.
             if (e.modelMissing) session.repairModel()
             Result.Failed(VoiceErrors.spoken(e, russian))
         } catch (e: Exception) {
@@ -78,28 +101,39 @@ class SpokenAnswer(
             Log.e(TAG, "Answer failed: ${e.message}")
             Result.Failed(VoiceErrors.spoken(e, russian))
         } finally {
+            // Never leave a session waiting on input that will never arrive.
             speech.endInput()
         }
     }
 
-    private suspend fun stream(messages: List<ApiMessage>, speech: EdgeTtsSpeaker.SpeechSession, russian: Boolean): String {
+    private suspend fun stream(
+        messages: List<ApiMessage>,
+        speech: EdgeTtsSpeaker.SpeechSession,
+        russian: Boolean
+    ): String {
         val response = StringBuilder()
         val chunker = SentenceChunker()
         var speaking = false
         var lastRedraw = 0L
-        val settings = FridayAgent.Settings(session.apiKey(), session.model(), GroqApiService.VOICE_MAX_TOKENS, session.backupModel())
-        agent.reply(settings, messages, russian).collect { token ->
-            response.append(token)
-            chunker.append(token).forEach { sentence ->
-                speech.offer(sentence)
-                speaking = true
+
+        val settings = FridayAgent.Settings(
+            session.apiKey(), session.model(), GroqApiService.VOICE_MAX_TOKENS, session.backupModel()
+        )
+        agent.reply(settings, messages, russian)
+            .collect { token ->
+                response.append(token)
+                chunker.append(token).forEach { sentence ->
+                    speech.offer(sentence)
+                    speaking = true
+                }
+                // Throttled: redrawing on every token queued hundreds of
+                // main-thread posts per reply.
+                val now = SystemClock.uptimeMillis()
+                if (now - lastRedraw >= OVERLAY_REFRESH_MS) {
+                    lastRedraw = now
+                    overlay.streaming(response.toString(), speaking)
+                }
             }
-            val now = SystemClock.uptimeMillis()
-            if (now - lastRedraw >= OVERLAY_REFRESH_MS) {
-                lastRedraw = now
-                overlay.streaming(response.toString(), speaking)
-            }
-        }
         chunker.flush()?.let { speech.offer(it) }
         return response.toString()
     }
@@ -107,7 +141,10 @@ class SpokenAnswer(
     private suspend fun remember(userText: String, response: String, assistantSpokeBefore: Boolean) {
         session.log(userText, response, "voice_chat")
         memory.extractMemoriesInBackground(userText, response)
-        CorrectionDetector.detect(userText, assistantSaidSomething = assistantSpokeBefore)?.let { memory.recordCorrection(it) }
+        // A correction is the strongest signal there is, so it is stored on
+        // its own rather than left to the general extractor.
+        CorrectionDetector.detect(userText, assistantSaidSomething = assistantSpokeBefore)
+            ?.let { memory.recordCorrection(it) }
         session.mirror(userText, response)
     }
 }
