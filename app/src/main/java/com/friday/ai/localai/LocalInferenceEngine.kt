@@ -1,5 +1,6 @@
 package com.friday.ai.localai
 
+import com.friday.ai.domain.model.Message
 import dev.ffmpegkit.llama.Llama
 import dev.ffmpegkit.llama.LlamaConfig
 import dev.ffmpegkit.llama.LlamaException
@@ -17,11 +18,12 @@ import kotlinx.coroutines.withContext
  */
 interface LocalInferenceEngine {
     suspend fun reply(prompt: String): String
+    suspend fun replyWithHistory(prompt: String, history: List<Message>): String = reply(prompt)
 }
 
 /** Fixed limits for an on-device chat turn. Do not use cloud-sized defaults here. */
 object LocalInferenceLimits {
-    const val CONTEXT_TOKENS = 1024
+    const val CONTEXT_TOKENS = 2048
     const val MAX_REPLY_TOKENS = 128
     const val MAX_CPU_THREADS = 4
 }
@@ -38,13 +40,17 @@ class LlamaLocalInferenceEngine(
     constructor(models: LocalModelStore, native: NativeLlama = NativeLlamaApi) :
         this(models::activeFile, native)
 
-    override suspend fun reply(prompt: String): String = inferenceMutex.withLock {
+    override suspend fun reply(prompt: String): String = replyWithHistory(prompt, emptyList())
+
+    override suspend fun replyWithHistory(prompt: String, history: List<Message>): String = inferenceMutex.withLock {
         currentCoroutineContext().ensureActive()
         val modelFile = activeFile() ?: throw LocalInferenceException.ModelMissing()
         val config = LlamaConfig(
             contextSize = LocalInferenceLimits.CONTEXT_TOKENS,
             threads = Runtime.getRuntime().availableProcessors().coerceIn(1, LocalInferenceLimits.MAX_CPU_THREADS),
-            gpuLayers = 0
+            gpuLayers = 0,
+            temperature = 0.0f,
+            seed = 42
         )
         var model: Any? = null
         try {
@@ -53,8 +59,8 @@ class LlamaLocalInferenceEngine(
             currentCoroutineContext().ensureActive()
             val answer = native.complete(
                 model = model,
-                prompt = prompt,
-                systemPrompt = LocalPrompt.SYSTEM_PROMPT,
+                prompt = LocalPrompt.userTurn(prompt),
+                systemPrompt = LocalPrompt.systemFor(prompt, history),
                 maxTokens = LocalInferenceLimits.MAX_REPLY_TOKENS
             ).trim()
             currentCoroutineContext().ensureActive()
