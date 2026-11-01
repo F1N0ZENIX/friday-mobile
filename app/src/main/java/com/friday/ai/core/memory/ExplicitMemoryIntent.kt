@@ -1,1 +1,43 @@
-cGFja2FnZSBjb20uZnJpZGF5LmFpLmNvcmUubWVtb3J5CgovKiogRXhwbGljaXQgcmVxdWVzdHMgb25seTogcXVvdGVkIGV4YW1wbGVzIGFuZCBuZWdhdGVkIHJlcXVlc3RzIGFyZSBuZXZlciB3cml0ZXMuICovCmludGVybmFsIG9iamVjdCBFeHBsaWNpdE1lbW9yeUludGVudCB7CiAgICBwcml2YXRlIGNvbnN0IHZhbCBWRVJCID0gIig/OnNhbHZbYWVdfHNhbHZhcnxndWFyZFthZV18Z3VhcmRhcnxtZW1vcml6ZXxtZW1vcml6YXxtZW1vcml6YXJ8YW5vdGV8YW5vdGEpIgogICAgcHJpdmF0ZSBjb25zdCB2YWwgTUVNT1JZID0gIig/Om5hfGVtIHN1YXxuYSBzdWF8ZW0gbWluaGF8bmEgbWluaGEpXFxzK21lbVtvw7NdcmlhIgogICAgcHJpdmF0ZSBjb25zdCB2YWwgUFJFRklYID0gIl5cXHMqKD86RnJpZGF5WywhXT9bIF0rKT8oPzpwb3JcXHMrZmF2b3JbLCBdKyk/IiArCiAgICAgICAgIig/Oig/OnZvY1tlw6pdfHZjKVxccyspPyg/Oig/OnBvZGV8cG9kZXJpYXxjb25zZWd1ZSlcXHMrKT8iCiAgICBwcml2YXRlIGNvbnN0IHZhbCBTVUZGSVggPSAiKD86XFxzKlssO10/XFxzKig/OnByYXxwYXJhKVxccyt0ZXN0ZXM/KT8iICsKICAgICAgICAiKD86XFxzKlssO10/XFxzKnBvclxccytmYXZvcik/XFxzKlshLl0qXFxzKiQiCiAgICBwcml2YXRlIHZhbCBvcHRpb25zID0gc2V0T2YoUmVnZXhPcHRpb24uSUdOT1JFX0NBU0UsIFJlZ2V4T3B0aW9uLkRPVF9NQVRDSEVTX0FMTCkKICAgIHByaXZhdGUgdmFsIHdvcmQgPSBSZWdleCgKICAgICAgICBQUkVGSVggKyBWRVJCICsgIlxccythXFxzK3BhbGF2cmEoPzpcXHMrKD88dmFsdWU+Lio/KSk/IiArCiAgICAgICAgICAgICIoPzpcXHMrIiArIE1FTU9SWSArICIpPyIgKyBTVUZGSVgsCiAgICAgICAgb3B0aW9ucwogICAgKQogICAgcHJpdmF0ZSB2YWwgZW1wdHlXb3JkID0gUmVnZXgoUFJFRklYICsgVkVSQiArICJcXHMrYVxccytwYWxhdnJhXFxzKyIgKyBNRU1PUlkgKyBTVUZGSVgsIG9wdGlvbnMpCiAgICBwcml2YXRlIHZhbCBub3RlcyA9IGxpc3RPZigKICAgICAgICBSZWdleChQUkVGSVggKyBWRVJCICsgIlxccysiICsgTUVNT1JZICsgIlxccypbOiwtXT9cXHMqKD86cXVlXFxzKyk/KD88dmFsdWU+Lis/KSIgKyBTVUZGSVgsIG9wdGlvbnMpLAogICAgICAgIFJlZ2V4KFBSRUZJWCArIFZFUkIgKyAiXFxzKyg/PHZhbHVlPi4rPylcXHMrIiArIE1FTU9SWSArIFNVRkZJWCwgb3B0aW9ucyksCiAgICAgICAgUmVnZXgoUFJFRklYICsgIig/OmxlbWJyZXxsZW1icmF8Z3VhcmRlfGd1YXJkYXxhbm90ZXxhbm90YSlcXHMrcXVlXFxzKyg/PHZhbHVlPi4rPykiICsgU1VGRklYLCBvcHRpb25zKQogICAgKQogICAgcHJpdmF0ZSB2YWwgcG9saXRlUXVlc3Rpb24gPSBSZWdleCgiXFxiKD86cG9kZXxwb2RlcmlhfGNvbnNlZ3VlKVxcYiIsIFJlZ2V4T3B0aW9uLklHTk9SRV9DQVNFKQoKICAgIGZ1biB3b3JkKHByb21wdDogU3RyaW5nKTogU3RyaW5nPyB7CiAgICAgICAgdmFsIHJlcXVlc3QgPSByZXF1ZXN0KHByb21wdCkgPzogcmV0dXJuIG51bGwKICAgICAgICByZXR1cm4gaWYgKGVtcHR5V29yZC5tYXRjaGVzKHJlcXVlc3QpKSAiIiBlbHNlIGNhcHR1cmUod29yZCwgcmVxdWVzdCkKICAgIH0KCiAgICBmdW4gbm90ZShwcm9tcHQ6IFN0cmluZyk6IFN0cmluZz8gewogICAgICAgIHZhbCByZXF1ZXN0ID0gcmVxdWVzdChwcm9tcHQpID86IHJldHVybiBudWxsCiAgICAgICAgcmV0dXJuIG5vdGVzLmZpcnN0Tm90TnVsbE9mT3JOdWxsIHsgY2FwdHVyZShpdCwgcmVxdWVzdCkgfT8udGFrZUlmIHsgaXQuaXNOb3RCbGFuaygpIH0KICAgIH0KCiAgICBwcml2YXRlIGZ1biByZXF1ZXN0KHByb21wdDogU3RyaW5nKTogU3RyaW5nPyB7CiAgICAgICAgdmFsIHRleHQgPSBwcm9tcHQudHJpbSgpCiAgICAgICAgaWYgKCF0ZXh0LmVuZHNXaXRoKCc/JykpIHJldHVybiB0ZXh0CiAgICAgICAgcmV0dXJuIGlmIChwb2xpdGVRdWVzdGlvbi5jb250YWluc01hdGNoSW4odGV4dCkpIHRleHQuZHJvcExhc3QoMSkudHJpbUVuZCgpIGVsc2UgbnVsbAogICAgfQoKICAgIHByaXZhdGUgZnVuIGNhcHR1cmUocGF0dGVybjogUmVnZXgsIHRleHQ6IFN0cmluZyk6IFN0cmluZz8gPQogICAgICAgIHBhdHRlcm4ubWF0Y2hFbnRpcmUodGV4dCk/LmxldCB7IGl0Lmdyb3Vwc1sidmFsdWUiXT8udmFsdWUub3JFbXB0eSgpLnRyaW0oKSB9Cn0K
+package com.friday.ai.core.memory
+
+/** Explicit requests only: quoted examples and negated requests are never writes. */
+internal object ExplicitMemoryIntent {
+    private const val VERB = "(?:salv[ae]|salvar|guard[ae]|guardar|memorize|memoriza|memorizar|anote|anota)"
+    private const val MEMORY = "(?:na|em sua|na sua|em minha|na minha)\\s+mem[oó]ria"
+    private const val PREFIX = "^\\s*(?:Friday[,!]?[ ]+)?(?:por\\s+favor[, ]+)?" +
+        "(?:(?:voc[eê]|vc)\\s+)?(?:(?:pode|poderia|consegue)\\s+)?"
+    private const val SUFFIX = "(?:\\s*[,;]?\\s*(?:pra|para)\\s+testes?)?" +
+        "(?:\\s*[,;]?\\s*por\\s+favor)?\\s*[!.]*\\s*$"
+    private val options = setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+    private val word = Regex(
+        PREFIX + VERB + "\\s+a\\s+palavra(?:\\s+(?<value>.*?))?" +
+            "(?:\\s+" + MEMORY + ")?" + SUFFIX,
+        options
+    )
+    private val emptyWord = Regex(PREFIX + VERB + "\\s+a\\s+palavra\\s+" + MEMORY + SUFFIX, options)
+    private val notes = listOf(
+        Regex(PREFIX + VERB + "\\s+" + MEMORY + "\\s*[:,-]?\\s*(?:que\\s+)?(?<value>.+?)" + SUFFIX, options),
+        Regex(PREFIX + VERB + "\\s+(?<value>.+?)\\s+" + MEMORY + SUFFIX, options),
+        Regex(PREFIX + "(?:lembre|lembra|guarde|guarda|anote|anota)\\s+que\\s+(?<value>.+?)" + SUFFIX, options)
+    )
+    private val politeQuestion = Regex("\\b(?:pode|poderia|consegue)\\b", RegexOption.IGNORE_CASE)
+
+    fun word(prompt: String): String? {
+        val request = request(prompt) ?: return null
+        return if (emptyWord.matches(request)) "" else capture(word, request)
+    }
+
+    fun note(prompt: String): String? {
+        val request = request(prompt) ?: return null
+        return notes.firstNotNullOfOrNull { capture(it, request) }?.takeIf { it.isNotBlank() }
+    }
+
+    private fun request(prompt: String): String? {
+        val text = prompt.trim()
+        if (!text.endsWith('?')) return text
+        return if (politeQuestion.containsMatchIn(text)) text.dropLast(1).trimEnd() else null
+    }
+
+    private fun capture(pattern: Regex, text: String): String? =
+        pattern.matchEntire(text)?.let { it.groups["value"]?.value.orEmpty().trim() }
+}
