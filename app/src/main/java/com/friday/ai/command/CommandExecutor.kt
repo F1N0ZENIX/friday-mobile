@@ -46,7 +46,8 @@ class CommandExecutor(
     /** What the owner allows on a locked phone (settings). */
     private val lockLevel: suspend () -> LockPolicy.Level = { LockPolicy.Level.VOICE },
     /** Android's own unlock screen, when a command needs the phone unlocked. */
-    private val unlocker: Unlocker = Unlocker { Unlocker.Result.CANNOT_ASK }
+    private val unlocker: Unlocker = Unlocker { Unlocker.Result.CANNOT_ASK },
+    private val memory: com.friday.ai.service.FridayMemory? = null
 ) {
 
     /** What came of a command. Most are a reply; three need the caller. */
@@ -73,6 +74,11 @@ class CommandExecutor(
 
         /** Whether [reply] is this executor's report of a command that threw. */
         fun isFailure(reply: String): Boolean = reply.startsWith(FAILED_RU) || reply.startsWith(FAILED_EN)
+    }
+
+    /** Device-local memory is private: do not read or change it while locked. */
+    suspend fun memoryReply(text: String): String? = withContext(io) {
+        if (lock().first) null else memory?.replyToMemoryCommand(text)
     }
 
     /** True when the last [route] was answered from what the model taught, not the patterns. */
