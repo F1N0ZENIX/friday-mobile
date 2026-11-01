@@ -206,7 +206,8 @@ val appModule = module {
             lockLevel = {
                 com.friday.ai.command.LockPolicy.Level.of(prefs.get(com.friday.ai.command.LockPolicy.Level.PREF))
             },
-            unlocker = com.friday.ai.service.lock.LockScreen.unlocker(androidContext())
+            unlocker = com.friday.ai.service.lock.LockScreen.unlocker(androidContext()),
+            memory = get()
         )
     }
     single {
