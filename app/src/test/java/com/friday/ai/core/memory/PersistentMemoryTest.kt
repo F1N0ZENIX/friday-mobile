@@ -51,7 +51,10 @@ class PersistentMemoryTest {
         assertTrue(note.key.startsWith("note_"))
         assertEquals("explicit_local", note.source)
         assertEquals("<script>não executar</script>", note.value)
-        assertEquals("Não salvei: a nota deve ter no máximo 500 caracteres.", memory.reply("guarde que " + "x".repeat(501)))
+        assertEquals(
+            "Não salvei: a nota deve ter no máximo 500 caracteres.",
+            memory.reply("guarde que " + "x".repeat(501))
+        )
     }
 
     @Test

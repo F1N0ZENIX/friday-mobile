@@ -162,11 +162,6 @@ class CommandExecutor(
         }
     }
 
-    /** A step inside a mode always yields words. */
-    private fun replyOf(outcome: Outcome, russian: Boolean): String =
-        (outcome as? Outcome.Reply)?.text
-            ?: if (russian) "Это нужно сделать отдельно." else "That needs doing on its own."
-
     private suspend fun single(command: CommandResult, russian: Boolean): Outcome {
         val (locked, verified) = lock()
         val decision = LockPolicy.decide(command, locked, verified, lockLevel())
@@ -189,7 +184,9 @@ class CommandExecutor(
                 is CommandResult.Sequence -> inOrder(command.steps, russian)
                 is CommandResult.Mode -> Outcome.Reply(
                     modes?.handle(command, russian, router = { router.route(it) }) { step ->
-                        replyOf(single(step, russian), russian)
+                        // A step inside a mode always yields words.
+                        (single(step, russian) as? Outcome.Reply)?.text
+                            ?: if (russian) "Это нужно сделать отдельно." else "That needs doing on its own."
                     }
                         ?: if (russian) "Режимы недоступны." else "Modes aren't available."
                 )
