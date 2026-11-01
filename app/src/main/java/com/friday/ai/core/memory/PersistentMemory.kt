@@ -77,14 +77,14 @@ class PersistentMemory(private val dao: MemoryDao) {
     }
 
     private suspend fun answerQuestion(normalized: String): String? =
-        when (normalized) {
-            in savedWordQuestions -> dao.findByKey(WORD_KEY, FACT_CATEGORY)
+        when {
+            SavedWordQuestion.matches(normalized) -> dao.findByKey(WORD_KEY, FACT_CATEGORY)
                 ?.let { "A palavra salva é ${it.value}." }
                 ?: "Você ainda não me pediu para salvar uma palavra."
-            in userNameQuestions -> dao.findByKey(NAME_KEY, FACT_CATEGORY)
+            normalized in userNameQuestions -> dao.findByKey(NAME_KEY, FACT_CATEGORY)
                 ?.let { "Seu nome salvo é ${it.value}." }
                 ?: "Você ainda não me disse seu nome."
-            in assistantNameQuestions -> null
+            normalized in assistantNameQuestions -> null
             else -> null
         }
 
@@ -152,6 +152,7 @@ class PersistentMemory(private val dao: MemoryDao) {
         Normalizer.normalize(text, Normalizer.Form.NFD)
             .replace(COMBINING_MARKS, "")
             .lowercase(Locale.ROOT)
+            .replace(WHITESPACE, " ")
             .trim()
             .trimEnd { !it.isLetterOrDigit() }
             .trim()
@@ -167,24 +168,13 @@ class PersistentMemory(private val dao: MemoryDao) {
         const val MAX_WORD_CHARS = 100
         const val DELETE_PREFIX = "apagar memoria "
         val COMBINING_MARKS = Regex("\\p{M}+")
+        val WHITESPACE = Regex("\\s+")
         val userNameQuestions = setOf(
             "qual meu nome", "qual o meu nome", "qual e meu nome",
             "qual e o meu nome", "como eu me chamo"
         )
         val assistantNameQuestions = setOf(
             "qual seu nome", "qual e seu nome", "qual o seu nome", "qual e o seu nome"
-        )
-        val savedWordQuestions = setOf(
-            "qual a palavra que pedi para vc salvar", "qual e a palavra que pedi para vc salvar",
-            "qual a palavra que eu pedi para vc salvar", "qual e a palavra que eu pedi para vc salvar",
-            "qual a palavra que pedi para voce salvar", "qual e a palavra que pedi para voce salvar",
-            "qual a palavra que eu pedi para voce salvar", "qual e a palavra que eu pedi para voce salvar",
-            "qual a palavra que pedi pra vc salvar", "qual e a palavra que pedi pra vc salvar",
-            "qual a palavra que eu pedi pra vc salvar", "qual e a palavra que eu pedi pra vc salvar",
-            "qual a palavra que pedi pra voce salvar", "qual e a palavra que pedi pra voce salvar",
-            "qual a palavra que eu pedi pra voce salvar", "qual e a palavra que eu pedi pra voce salvar",
-            "qual a palavra que pedi para salvar", "qual palavra eu pedi pra voce salvar",
-            "qual a palavra salva"
         )
         val listCommands = setOf("listar memorias", "o que voce lembra de mim")
         val forgetNameCommands = setOf("esqueca meu nome", "apagar meu nome")

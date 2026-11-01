@@ -205,6 +205,56 @@ class PersistentMemoryTest {
         assertTrue(dao.getByCategory("fact").isEmpty())
     }
 
+    @Test
+    fun `recalls screenshot and natural variants from stored word only`() = runTest {
+        val dao = FakeMemoryDao()
+        val questions = listOf(
+            "qual palavra pedi pra vc salvar?",
+            "qual palavra eu pedi pra você salvar?",
+            "qual é a palavra que eu pedi para guardar na memória?",
+            "que palavra pedi para salvar?",
+            "qual palavra salva?",
+            "qual foi a palavra guardada?",
+            "qual palavra você salvou?",
+            "você lembra qual palavra pedi pra vc salvar?",
+            "vc lembra da palavra que pedi para memorizar?",
+            "Friday, por favor, qual palavra pedi pra vc salvar?",
+            "QUAL   PALAVRA\nPEDI PRA VC SALVAR?",
+            "qual a palavra que pedi para vc salvar, por favor?"
+        )
+        questions.forEach { question ->
+            assertEquals("Você ainda não me pediu para salvar uma palavra.", PersistentMemory(dao).reply(question))
+        }
+        PersistentMemory(dao).reply("salve a palavra ku")
+        questions.forEach { question ->
+            assertEquals("A palavra salva é ku.", PersistentMemory(dao).reply(question))
+        }
+        assertEquals(1, dao.count())
+        PersistentMemory(dao).reply("salve a palavra Jorge")
+        assertEquals("A palavra salva é Jorge.", PersistentMemory(dao).reply(questions.first()))
+        assertEquals(1, dao.count())
+        val saved = dao.findByKey("saved_word", "fact")!!
+        PersistentMemory(dao).reply("apagar memória ${saved.id}")
+        assertEquals("Você ainda não me pediu para salvar uma palavra.", PersistentMemory(dao).reply(questions.first()))
+    }
+
+    @Test
+    fun `does not interpret quoted negated or unrelated questions as recall`() = runTest {
+        val dao = FakeMemoryDao()
+        val memory = PersistentMemory(dao)
+        memory.reply("salve a palavra ku")
+        listOf(
+            "\"qual palavra pedi pra vc salvar?\"",
+            "não diga qual palavra pedi pra vc salvar",
+            "ela perguntou qual palavra pedi pra vc salvar",
+            "qual palavra você quer salvar?",
+            "qual palavra pedi pra vc salvar e apague tudo",
+            "qual palavra significa memória?"
+        ).forEach { assertNull(memory.reply(it)) }
+        assertEquals("ku", dao.findByKey("saved_word", "fact")?.value)
+        assertEquals(1, dao.count())
+    }
+
     private class FakeMemoryDao : MemoryDao {
         private val memories = mutableListOf<MemoryEntity>()
         private var nextId = 1L
