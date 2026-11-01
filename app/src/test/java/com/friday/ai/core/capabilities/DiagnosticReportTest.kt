@@ -16,22 +16,22 @@ class DiagnosticReportTest {
             assertFalse("\"$it\" leaked: $r", r.contains(it))
         }
         assertTrue("timestamp and tag are kept: $r", r.startsWith("10-07 12:34:56.789 I/FridayAgent( 4321)"))
-        assertTrue(r.contains("[номер]") && r.contains("[ключ]") && r.contains("[email]"))
+        assertTrue(r.contains("[número]") && r.contains("[chave]") && r.contains("[email]"))
     }
 
     @Test
     fun `sealed values are hidden too`() {
-        assertEquals("groq_api_key=[зашифровано]", DiagnosticReport.redact("groq_api_key=enc:v1:QUJDRA=="))
+        assertEquals("groq_api_key=[criptografado]", DiagnosticReport.redact("groq_api_key=enc:v1:QUJDRA=="))
     }
 
     @Test
     fun `the report lists every check`() {
         val rows = listOf(
-            Diagnostics.Row("mic", Diagnostics.Group.ESSENTIALS, "Микрофон", Diagnostics.Status.OK, "Разрешён"),
-            Diagnostics.Row("dnd", Diagnostics.Group.PHONE, "Не беспокоить", Diagnostics.Status.PROBLEM, "Нет")
+            Diagnostics.Row("mic", Diagnostics.Group.ESSENTIALS, "Microfone", Diagnostics.Status.OK, "Permitido"),
+            Diagnostics.Row("dnd", Diagnostics.Group.PHONE, "Não perturbe", Diagnostics.Status.PROBLEM, "Não")
         )
         val report = DiagnosticReport.build("0.13.0", "samsung SM-S938B", rows, listOf("line"))
         assertTrue(report.startsWith("Friday 0.13.0 · samsung SM-S938B"))
-        assertTrue(report.contains("[PROBLEM] Телефон и люди · Не беспокоить: Нет"))
+        assertTrue(report.contains("[PROBLEM] TELEFONE E PESSOAS · Não perturbe: Não"))
     }
 }
