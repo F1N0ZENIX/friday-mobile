@@ -198,6 +198,11 @@ class ChatViewModel(
      * where the reply can be drawn as it arrives.
      */
     private suspend fun Request.dispatch(text: String) {
+        commands.memoryReply(text)?.let { answer ->
+            persist(text, MessageRole.USER)
+            persist(answer, MessageRole.ASSISTANT)
+            return
+        }
         val command = commands.route(text)
         // A silent quick link leaves nothing in the chat, not even what was typed.
         if (command is CommandResult.OpenLink && command.silent) {
