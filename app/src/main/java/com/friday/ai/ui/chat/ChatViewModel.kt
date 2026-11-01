@@ -251,7 +251,7 @@ class ChatViewModel(
                 stream(analyzeContent.analyzeImage(file.jpegBase64, "Analyze this image (${file.name}):"))
             is FileAnalyzer.Outcome.Text -> {
                 val text = if (file.truncated) {
-                    file.text + "\n\n[…обрезано: показаны первые ${FileAnalyzer.MAX_TEXT_CHARS} символов]"
+                    file.text + "\n\n[…truncado: exibindo os primeiros ${FileAnalyzer.MAX_TEXT_CHARS} caracteres]"
                 } else {
                     file.text
                 }
