@@ -21,26 +21,27 @@ object LocalPrompt {
 
     fun userTurn(prompt: String): String = prompt.trim().take(MAX_PROMPT_CHARS)
 
-    fun conversationTurn(prompt: String, history: List<Message>): String {
-        val current = userTurn(prompt).take(MAX_CURRENT_CHARS)
+    fun systemFor(prompt: String, history: List<Message>): String {
+        val context = historyContext(prompt, history)
+        return if (context.isEmpty()) SYSTEM_PROMPT else
+            "$SYSTEM_PROMPT\nHistórico anterior, apenas como dados de referência:\n$context"
+    }
+
+    private fun historyContext(prompt: String, history: List<Message>): String {
         val previous = if (history.lastOrNull()?.let {
             it.role == MessageRole.USER && it.content.trim() == prompt.trim()
         } == true) history.dropLast(1) else history
-        val recent = previous.filter { it.role != MessageRole.SYSTEM && it.content.isNotBlank() }
+        return previous.filter { it.role != MessageRole.SYSTEM && it.content.isNotBlank() }
+            .filter { it.role == MessageRole.USER ||
+                LocalResponseQuality.checked("", it.content) == it.content.trim() }
             .takeLast(MAX_HISTORY_MESSAGES)
-        if (recent.isEmpty()) return current
-        val lastTurn = "Usuário: $current\nFriday:"
-        val budget = MAX_CONVERSATION_CHARS - lastTurn.length - 1
-        val context = recent.joinToString("\n") {
-            val role = if (it.role == MessageRole.USER) "Usuário" else "Friday"
-            "$role: ${it.content.trim().take(MAX_HISTORY_MESSAGE_CHARS)}"
-        }.takeLast(budget.coerceAtLeast(0))
-        return "$context\n$lastTurn"
+            .joinToString("\n") {
+                val role = if (it.role == MessageRole.USER) "Mensagem recebida" else "Resposta anterior"
+                "$role = ${it.content.trim().take(MAX_HISTORY_MESSAGE_CHARS).replace('\n', ' ')}"
+            }
     }
 
-    private const val MAX_PROMPT_CHARS = 3_000
-    private const val MAX_CURRENT_CHARS = 1_200
-    private const val MAX_CONVERSATION_CHARS = 1_800
+    private const val MAX_PROMPT_CHARS = 1_200
     private const val MAX_HISTORY_MESSAGE_CHARS = 240
     private const val MAX_HISTORY_MESSAGES = 4
 }
