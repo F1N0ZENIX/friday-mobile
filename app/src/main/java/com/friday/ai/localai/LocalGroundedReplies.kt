@@ -1,1 +1,80 @@
-cGFja2FnZSBjb20uZnJpZGF5LmFpLmxvY2FsYWkKCmltcG9ydCBqYXZhLnRleHQuTm9ybWFsaXplcgppbXBvcnQgamF2YS50aW1lLkNsb2NrCmltcG9ydCBqYXZhLnRpbWUuTG9jYWxUaW1lCmltcG9ydCBqYXZhLnRpbWUuZm9ybWF0LkRhdGVUaW1lRm9ybWF0dGVyCmltcG9ydCBqYXZhLnV0aWwuTG9jYWxlCgovKioKICogU21hbGwsIGRldGVybWluaXN0aWMgYW5zd2VycyBmb3IgZmFjdHMgdGhhdCBhIGxvY2FsIG1vZGVsIG11c3Qgbm90IGd1ZXNzLgogKiBSZXR1cm5pbmcgbnVsbCBkZWxpYmVyYXRlbHkgbGVhdmVzIG9yZGluYXJ5IGNvbnZlcnNhdGlvbiB0byB0aGUgc2VsZWN0ZWQgbW9kZWwuCiAqLwpvYmplY3QgTG9jYWxHcm91bmRlZFJlcGxpZXMgewogICAgcHJpdmF0ZSB2YWwgdGltZUZvcm1hdHRlciA9IERhdGVUaW1lRm9ybWF0dGVyLm9mUGF0dGVybigiSEg6bW0iLCBMb2NhbGUuUk9PVCkKCiAgICBmdW4gcmVwbHkocHJvbXB0OiBTdHJpbmcsIGNsb2NrOiBDbG9jayA9IENsb2NrLnN5c3RlbURlZmF1bHRab25lKCkpOiBTdHJpbmc/IHsKICAgICAgICB2YWwgcXVlc3Rpb24gPSBub3JtYWxpemUocHJvbXB0KQogICAgICAgIHJldHVybiB3aGVuIHsKICAgICAgICAgICAgcXVlc3Rpb24gaW4gaWRlbnRpdHlRdWVzdGlvbnMgLT4gIlNvdSBhIEZyaWRheSwgdW1hIGFzc2lzdGVudGUgZGUgSUEgbG9jYWwgbmVzdGUgY2VsdWxhci4iCiAgICAgICAgICAgIHF1ZXN0aW9uIGluIG1vZGVsUXVlc3Rpb25zIC0+CiAgICAgICAgICAgICAgICAiVXNvIG8gbW9kZWxvIGxvY2FsIHNlbGVjaW9uYWRvIG5hcyBjb25maWd1cmHDp8O1ZXMgZGUgSUEgbG9jYWwuIFZvY8OqIHBvZGUgY29uZmVyaXIgbyBub21lIGzDoS4iCiAgICAgICAgICAgIHF1ZXN0aW9uIGluIGdyZWV0aW5ncyAtPiAiT2zDoSEgQ29tbyBwb3NzbyBhanVkYXI/IgogICAgICAgICAgICBpc1dlYXRoZXJRdWVzdGlvbihxdWVzdGlvbikgLT4gIk7Do28gdGVuaG8gYWNlc3NvIGFvIGNsaW1hIGVtIHRlbXBvIHJlYWwuIgogICAgICAgICAgICBpc0Nsb2NrUXVlc3Rpb24ocXVlc3Rpb24pIC0+ICJBZ29yYSBzw6NvICR7TG9jYWxUaW1lLm5vdyhjbG9jaykuZm9ybWF0KHRpbWVGb3JtYXR0ZXIpfS4iCiAgICAgICAgICAgIGlzQWxhcm1Db21tYW5kKHF1ZXN0aW9uKSAtPiAiTsOjbyBjb25zaWdvIGNyaWFyIGFsYXJtZXMgb3UgdGVtcG9yaXphZG9yZXMgbm8gbW9kbyBsb2NhbC4iCiAgICAgICAgICAgIGVsc2UgLT4gbnVsbAogICAgICAgIH0KICAgIH0KCiAgICBwcml2YXRlIGZ1biBpc1dlYXRoZXJRdWVzdGlvbihxdWVzdGlvbjogU3RyaW5nKTogQm9vbGVhbiA9IHF1ZXN0aW9uIGluIHdlYXRoZXJRdWVzdGlvbnMKCiAgICBwcml2YXRlIGZ1biBpc0Nsb2NrUXVlc3Rpb24ocXVlc3Rpb246IFN0cmluZyk6IEJvb2xlYW4gPSBxdWVzdGlvbiBpbiBjbG9ja1F1ZXN0aW9ucwoKICAgIHByaXZhdGUgZnVuIGlzQWxhcm1Db21tYW5kKHF1ZXN0aW9uOiBTdHJpbmcpOiBCb29sZWFuID0KICAgICAgICBhbGFybUNvbW1hbmRzLmFueShxdWVzdGlvbjo6c3RhcnRzV2l0aCkKCiAgICBwcml2YXRlIGZ1biBub3JtYWxpemUodGV4dDogU3RyaW5nKTogU3RyaW5nID0KICAgICAgICBOb3JtYWxpemVyLm5vcm1hbGl6ZSh0ZXh0LCBOb3JtYWxpemVyLkZvcm0uTkZEKQogICAgICAgICAgICAucmVwbGFjZShDT01CSU5JTkdfTUFSS1MsICIiKQogICAgICAgICAgICAubG93ZXJjYXNlKExvY2FsZS5ST09UKQogICAgICAgICAgICAudHJpbSgpCiAgICAgICAgICAgIC50cmltRW5kIHsgIWl0LmlzTGV0dGVyT3JEaWdpdCgpIH0KICAgICAgICAgICAgLnRyaW0oKQoKICAgIHByaXZhdGUgdmFsIGlkZW50aXR5UXVlc3Rpb25zID0gc2V0T2YoCiAgICAgICAgInF1ZW0gZSB2b2NlIiwKICAgICAgICAibyBxdWUgZSB2b2NlIiwKICAgICAgICAicXVhbCBlIGEgc3VhIGlkZW50aWRhZGUiCiAgICApCiAgICBwcml2YXRlIHZhbCBtb2RlbFF1ZXN0aW9ucyA9IHNldE9mKAogICAgICAgICJxdWFsIG1vZGVsbyB2b2NlIHVzYSIsCiAgICAgICAgInF1YWwgc2V1IG1vZGVsbyBkZSBpYSIsCiAgICAgICAgInF1YWwgZSBzZXUgbW9kZWxvIGRlIGlhIiwKICAgICAgICAicXVlIG1vZGVsbyB2b2NlIHVzYSIsCiAgICAgICAgInF1YWwgbW9kZWxvIGVzdGEgdXNhbmRvIiwKICAgICAgICAicXVlIG1vZGVsbyBlc3RhIHVzYW5kbyIKICAgICkKICAgIHByaXZhdGUgdmFsIGdyZWV0aW5ncyA9IHNldE9mKCJvaSIsICJvbGEiLCAiYm9tIGRpYSIsICJib2EgdGFyZGUiLCAiYm9hIG5vaXRlIikKICAgIHByaXZhdGUgdmFsIHdlYXRoZXJRdWVzdGlvbnMgPSBzZXRPZigKICAgICAgICAiY29tbyBlc3RhIG8gdGVtcG8gaG9qZSIsCiAgICAgICAgInF1YWwgYSBwcmV2aXNhbyBkbyB0ZW1wbyBob2plIiwKICAgICAgICAidmFpIGNob3ZlciBob2plIiwKICAgICAgICAiY29tbyBlc3RhIG8gY2xpbWEgaG9qZSIKICAgICkKICAgIHByaXZhdGUgdmFsIGNsb2NrUXVlc3Rpb25zID0gc2V0T2YoInF1ZSBob3JhcyBzYW8iLCAicXVlIGhvcmFzIHNhbyBhZ29yYSIsICJxdWFsIGEgaG9yYSBhZ29yYSIpCiAgICBwcml2YXRlIHZhbCBhbGFybUNvbW1hbmRzID0gc2V0T2YoCiAgICAgICAgImNyaWUgdW0gYWxhcm1lIiwKICAgICAgICAiY3JpYXIgdW0gYWxhcm1lIiwKICAgICAgICAiZGVmaW5hIHVtIGFsYXJtZSIsCiAgICAgICAgImNvbG9xdWUgdW0gYWxhcm1lIiwKICAgICAgICAiYXRpdmUgdW0gYWxhcm1lIiwKICAgICAgICAiaW5pY2llIHVtIHRlbXBvcml6YWRvciIsCiAgICAgICAgImluaWNpYXIgdW0gdGVtcG9yaXphZG9yIiwKICAgICAgICAiY3JpZSB1bSB0ZW1wb3JpemFkb3IiLAogICAgICAgICJjcmlhciB1bSB0ZW1wb3JpemFkb3IiLAogICAgICAgICJkZWZpbmEgdW0gdGVtcG9yaXphZG9yIiwKICAgICAgICAiY29sb3F1ZSB1bSB0ZW1wb3JpemFkb3IiCiAgICApCiAgICBwcml2YXRlIHZhbCBDT01CSU5JTkdfTUFSS1MgPSAiXFxwe019KyIudG9SZWdleCgpCn0K
+package com.friday.ai.localai
+
+import java.text.Normalizer
+import java.time.Clock
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+/**
+ * Small, deterministic answers for facts that a local model must not guess.
+ * Returning null deliberately leaves ordinary conversation to the selected model.
+ */
+object LocalGroundedReplies {
+    private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)
+
+    fun reply(prompt: String, clock: Clock = Clock.systemDefaultZone()): String? {
+        val question = normalize(prompt)
+        return when {
+            question in identityQuestions -> "Sou a Friday, uma assistente de IA local neste celular."
+            question in modelQuestions ->
+                "Uso o modelo local selecionado nas configurações de IA local. Você pode conferir o nome lá."
+            question in greetings -> "Olá! Como posso ajudar?"
+            isWeatherQuestion(question) -> "Não tenho acesso ao clima em tempo real."
+            isClockQuestion(question) -> "Agora são ${LocalTime.now(clock).format(timeFormatter)}."
+            isAlarmCommand(question) -> "Não consigo criar alarmes ou temporizadores no modo local."
+            else -> null
+        }
+    }
+
+    private fun isWeatherQuestion(question: String): Boolean = question in weatherQuestions
+
+    private fun isClockQuestion(question: String): Boolean = question in clockQuestions
+
+    private fun isAlarmCommand(question: String): Boolean =
+        alarmCommands.any(question::startsWith)
+
+    private fun normalize(text: String): String =
+        Normalizer.normalize(text, Normalizer.Form.NFD)
+            .replace(COMBINING_MARKS, "")
+            .lowercase(Locale.ROOT)
+            .trim()
+            .trimEnd { !it.isLetterOrDigit() }
+            .trim()
+
+    private val identityQuestions = setOf(
+        "quem e voce",
+        "o que e voce",
+        "qual e a sua identidade"
+    )
+    private val modelQuestions = setOf(
+        "qual modelo voce usa",
+        "qual seu modelo de ia",
+        "qual e seu modelo de ia",
+        "que modelo voce usa",
+        "qual modelo esta usando",
+        "que modelo esta usando"
+    )
+    private val greetings = setOf("oi", "ola", "bom dia", "boa tarde", "boa noite")
+    private val weatherQuestions = setOf(
+        "como esta o tempo hoje",
+        "qual a previsao do tempo hoje",
+        "vai chover hoje",
+        "como esta o clima hoje"
+    )
+    private val clockQuestions = setOf("que horas sao", "que horas sao agora", "qual a hora agora")
+    private val alarmCommands = setOf(
+        "crie um alarme",
+        "criar um alarme",
+        "defina um alarme",
+        "coloque um alarme",
+        "ative um alarme",
+        "inicie um temporizador",
+        "iniciar um temporizador",
+        "crie um temporizador",
+        "criar um temporizador",
+        "defina um temporizador",
+        "coloque um temporizador"
+    )
+    private val COMBINING_MARKS = "\\p{M}+".toRegex()
+}
