@@ -5,18 +5,18 @@ package com.friday.ai.core.capabilities
  * Friday feature works, what it means for the user, and how to fix it.
  *
  * Before this, a missing permission surfaced in the middle of a spoken
- * exchange as "нужен доступ к…", if at all. Here it is all in one place,
+ * exchange as "permission needed for…", if at all. Here it is all in one place,
  * read from the same snapshot that decides what the model is offered — so
  * the screen and Friday's behaviour can't disagree.
  */
 object Diagnostics {
 
     enum class Group(val title: String) {
-        ESSENTIALS("Основное"),
-        VOICE("Голос"),
-        PHONE("Телефон и люди"),
-        INTEGRATIONS("Сервисы"),
-        DEVICE("Это устройство")
+        ESSENTIALS("PRINCIPAL"),
+        VOICE("VOZ"),
+        PHONE("TELEFONE E PESSOAS"),
+        INTEGRATIONS("SERVIÇOS"),
+        DEVICE("ESTE DISPOSITIVO")
     }
 
     enum class Status {
@@ -82,29 +82,35 @@ object Diagnostics {
     }
 
     private fun essentials(c: FridayCapabilities) = listOf(
-        Check("groq", "Ключ Groq API", "Задан", "Не задан: Пятница не понимает речь и не отвечает", Fix.FRIDAY_SETTINGS)
+        Check(
+            "groq", "Chave da API Groq", "Configurada",
+            "Não configurada: Friday não entende a fala nem responde", Fix.FRIDAY_SETTINGS
+        )
             .row(Group.ESSENTIALS, c.integrations.groqKey),
-        Check("microphone", "Микрофон", "Разрешён", "Запрещён: Пятница вас не слышит", Fix.MICROPHONE)
+        Check(
+            "microphone", "Microfone", "Permissão concedida",
+            "Sem permissão: Friday não consegue ouvir você", Fix.MICROPHONE
+        )
             .row(Group.ESSENTIALS, c.permissions.microphone),
         Check(
-            "overlay", "Поверх других приложений", "Разрешено",
-            "Запрещено: панель ассистента не может появиться", Fix.OVERLAY
+            "overlay", "Sobre outros apps", "Permissão concedida",
+            "Sem permissão: o painel do assistente não pode aparecer", Fix.OVERLAY
         ).row(Group.ESSENTIALS, c.permissions.overlay),
         Check(
-            "post_notifications", "Уведомления", "Разрешены",
-            "Запрещены: Android может не дать слушать в фоне", Fix.POST_NOTIFICATIONS
+            "post_notifications", "Notificações", "Permissão concedida",
+            "Sem permissão: o Android pode impedir a escuta em segundo plano", Fix.POST_NOTIFICATIONS
         ).row(Group.ESSENTIALS, c.permissions.postNotifications)
     )
 
     private fun voice(c: FridayCapabilities): List<Row> {
         val v = c.voice
         val wakeWord = Check(
-            "wake_word", "Слово «Пятница»", "Включено",
-            "Выключено: Пятница слушает, только когда открыто приложение", Fix.FRIDAY_SETTINGS, optional = true
+            "wake_word", "Palavra de ativação “Friday”", "Ativada",
+            "Desativada: Friday só escuta quando o app está aberto", Fix.FRIDAY_SETTINGS, optional = true
         ).row(Group.VOICE, v.wakeWordEnabled)
         val sideButton = Check(
-            "assistant", "Боковая кнопка", "Зовёт Пятницу: она выбрана цифровым помощником",
-            "Зовёт другого помощника. Выберите Пятницу: Приложения по умолчанию → Цифровой помощник",
+            "assistant", "Botão lateral", "Chama Friday: ela está selecionada como assistente digital",
+            "Chama outro assistente. Selecione Friday: Apps padrão → Assistente digital",
             Fix.ASSISTANT, optional = true
         ).row(Group.VOICE, c.assistant.active)
         if (!v.wakeWordEnabled) return listOf(wakeWord, sideButton)
@@ -112,63 +118,64 @@ object Diagnostics {
             wakeWord,
             sideButton,
             Check(
-                "wake_model", "Модель слова", "Скачана",
-                "Не скачана: слово не может работать", Fix.FRIDAY_SETTINGS
+                "wake_model", "Modelo da palavra", "Baixado",
+                "Não baixado: a palavra de ativação não funciona", Fix.FRIDAY_SETTINGS
             ).row(Group.VOICE, v.wakeModelReady),
             Check(
-                "listening", "Слушает в фоне", "Работает",
-                "Остановлено: «Пятница» сейчас ничего не делает", Fix.FRIDAY_SETTINGS
+                "listening", "Escuta em segundo plano", "Funcionando",
+                "Parada: “Friday” não faz nada agora", Fix.FRIDAY_SETTINGS
             ).row(Group.VOICE, v.listening),
             Check(
-                "battery", "Ограничения батареи", "Нет",
-                "Есть: Android может усыпить прослушивание", Fix.BATTERY
+                "battery", "Restrições de bateria", "Sem restrições",
+                "Há restrições: o Android pode suspender a escuta", Fix.BATTERY
             ).row(Group.VOICE, c.permissions.batteryExempt),
             Check(
-                "voice_profile", "Голосовой профиль", "Записан: слушается только ваш голос",
-                "Не записан: командовать может любой голос", Fix.FRIDAY_SETTINGS
+                "voice_profile", "Perfil de voz", "Gravado: só sua voz é reconhecida",
+                "Não gravado: qualquer voz pode dar comandos", Fix.FRIDAY_SETTINGS
             ).row(Group.VOICE, v.voiceProfile)
         )
     }
 
     private fun phone(c: FridayCapabilities) = listOf(
         Check(
-            "notification_access", "Доступ к уведомлениям", "Включён",
-            "Выключен: нет чтения и ответов в чатах, управления музыкой, объявления звонков",
+            "notification_access", "Acesso às notificações", "Ativado",
+            "Desativado: sem ler ou responder chats, controlar música ou anunciar chamadas",
             Fix.NOTIFICATION_ACCESS
         ).row(Group.PHONE, c.permissions.notificationListener),
         Check(
-            "contacts", "Контакты", "Разрешены",
-            "Запрещены: «позвони маме» и «напиши папе» никого не найдут", Fix.CONTACTS
+            "contacts", "Contatos", "Permissão concedida",
+            "Sem permissão: “ligue para minha mãe” e “escreva para meu pai” não encontram ninguém",
+            Fix.CONTACTS
         ).row(Group.PHONE, c.permissions.contacts),
         Check(
-            "phone", "Звонки", "Разрешены: звонок начинается сразу",
-            "Запрещены: звонок только открывает набор номера", Fix.PHONE, optional = true
+            "phone", "Chamadas", "Permissão concedida: a chamada começa na hora",
+            "Sem permissão: a chamada só abre o discador", Fix.PHONE, optional = true
         ).row(Group.PHONE, c.permissions.phone),
         Check(
-            "calendar", "Календарь", "Разрешён",
-            "Запрещён: событие придётся сохранять вручную, перенос не работает", Fix.CALENDAR
+            "calendar", "Calendário", "Permissão concedida",
+            "Sem permissão: eventos precisam ser salvos manualmente e remarcar não funciona", Fix.CALENDAR
         ).row(Group.PHONE, c.permissions.calendar),
         Check(
-            "location", "Геопозиция", "Разрешена",
-            "Запрещена: нет погоды «здесь» и напоминаний у магазинов", Fix.LOCATION
+            "location", "Localização", "Permissão concedida",
+            "Sem permissão: não há clima “aqui” nem lembretes em lojas", Fix.LOCATION
         ).row(Group.PHONE, c.permissions.location),
         Check(
-            "dnd_access", "Доступ к «Не беспокоить»", "Есть",
-            "Нет: «не беспокоить» и беззвучный режим только открывают настройку", Fix.DND_ACCESS
+            "dnd_access", "Acesso a “Não perturbe”", "Disponível",
+            "Indisponível: “Não perturbe” e modo silencioso só abrem as configurações", Fix.DND_ACCESS
         ).row(Group.PHONE, c.permissions.dndAccess),
         Check(
-            "write_settings", "Изменение системных настроек", "Разрешено",
-            "Запрещено: яркость не меняется голосом", Fix.WRITE_SETTINGS, optional = true
+            "write_settings", "Alterar configurações do sistema", "Permissão concedida",
+            "Sem permissão: o brilho não muda por voz", Fix.WRITE_SETTINGS, optional = true
         ).row(Group.PHONE, c.permissions.writeSettings),
         Check(
-            "nearby_devices", "Устройства поблизости", "Разрешено",
-            "Запрещено: режимы не включаются от Bluetooth машины или наушников", Fix.NEARBY_DEVICES, optional = true
+            "nearby_devices", "Dispositivos próximos", "Permissão concedida",
+            "Sem permissão: modos não ativam pelo Bluetooth do carro ou fones", Fix.NEARBY_DEVICES, optional = true
         ).row(Group.PHONE, c.permissions.nearbyDevices)
     )
 
     private fun integrations(c: FridayCapabilities) = listOf(
         Check(
-            "gmail", "Gmail", "Подключён", "Не подключён: почтовые команды выключены",
+            "gmail", "Gmail", "Conectado", "Não conectado: comandos de e-mail estão desativados",
             Fix.FRIDAY_SETTINGS, optional = true
         ).row(Group.INTEGRATIONS, c.integrations.gmail)
         // Lazuri is deferred: Friday lives on one phone, and moves with settings export.
@@ -177,17 +184,17 @@ object Diagnostics {
     private fun device(c: FridayCapabilities): List<Row> {
         val d = c.device
         fun info(id: String, title: String, detail: String) = Row(id, Group.DEVICE, title, Status.INFO, detail)
-        fun yesNo(on: Boolean) = if (on) "Есть" else "Нет"
+        fun yesNo(on: Boolean) = if (on) "Sim" else "Não"
         return listOf(
-            info("model", "Устройство", "${d.manufacturer} ${d.model} · Android API ${d.sdk}".trim()),
+            info("model", "Dispositivo", "${d.manufacturer} ${d.model} · Android API ${d.sdk}".trim()),
             info("nfc", "NFC", yesNo(d.nfc)),
             info("uwb", "UWB", yesNo(d.uwb)),
-            info("stylus", "Стилус", yesNo(d.stylus)),
-            info("external_display", "Внешний экран", if (d.externalDisplay) "Подключён" else "Нет"),
+            info("stylus", "Caneta", yesNo(d.stylus)),
+            info("external_display", "Tela externa", if (d.externalDisplay) "Conectada" else "Não"),
             info(
                 "shizuku", "Shizuku",
-                if (c.privileged.shizukuInstalled) "Установлен (пока не используется)"
-                else "Не установлен (необязательно)"
+                if (c.privileged.shizukuInstalled) "Instalado (ainda não é usado)"
+                else "Não instalado (opcional)"
             )
         )
     }
