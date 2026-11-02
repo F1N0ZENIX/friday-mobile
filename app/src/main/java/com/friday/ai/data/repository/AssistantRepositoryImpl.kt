@@ -20,6 +20,7 @@ import com.friday.ai.localai.LocalArithmetic
 import com.friday.ai.localai.LocalChatRouting
 import com.friday.ai.localai.LocalConversationFacts
 import com.friday.ai.localai.LocalGroundedReplies
+import com.friday.ai.localai.LocalInternet
 import com.friday.ai.localai.LocalInferenceEngine
 import com.friday.ai.localai.LocalResponseQuality
 import com.friday.ai.service.FridayMemory
@@ -42,7 +43,8 @@ class AssistantRepositoryImpl(
     private val catalog: ModelCatalog,
     private val agent: FridayAgent,
     private val localPreferences: LocalAiPreferences? = null,
-    private val localEngine: LocalInferenceEngine? = null
+    private val localEngine: LocalInferenceEngine? = null,
+    private val localInternet: LocalInternet? = null
 ) : AssistantRepository {
 
     companion object {
@@ -59,11 +61,11 @@ class AssistantRepositoryImpl(
         // memory and agent can initiate cloud work or construct tool prompts.
         if (LocalChatRouting.useLocal(localPreferences?.mode)) {
             return flow {
-                val engine = localEngine
-                    ?: error("A IA local não está disponível neste aparelho.")
-                val answer = LocalConversationFacts.reply(prompt, history)
+                val answer = localInternet?.reply(prompt)
+                    ?: LocalConversationFacts.reply(prompt, history)
                     ?: LocalGroundedReplies.reply(prompt)
-                    ?: engine.replyWithHistory(prompt, history)
+                    ?: (localEngine ?: error("A IA local não está disponível neste aparelho."))
+                        .replyWithHistory(prompt, history)
                 emit(LocalResponseQuality.checked(prompt, answer))
             }
         }
