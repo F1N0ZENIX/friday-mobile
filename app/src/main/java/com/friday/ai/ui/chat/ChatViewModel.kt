@@ -66,10 +66,6 @@ class ChatViewModel(
     private val _inputText = MutableStateFlow("")
     val inputText: StateFlow<String> = _inputText.asStateFlow()
 
-    /** One-shot UI choice: it is never stored in the message text or database. */
-    private val _researchEnabled = MutableStateFlow(false)
-    val researchEnabled: StateFlow<Boolean> = _researchEnabled.asStateFlow()
-
     var onAnalyzeScreenRequested: (() -> Unit)? = null
     var onAnalyzeFileRequested: ((String?) -> Unit)? = null
 
@@ -180,25 +176,11 @@ class ChatViewModel(
         _inputText.value = text
     }
 
-    fun onResearchToggle() {
-        _researchEnabled.update { !it }
-    }
-
     fun onSend() {
         val text = _inputText.value.trim()
         if (text.isBlank() || active != null) return
-        val research = _researchEnabled.value
         _inputText.value = ""
-        _researchEnabled.value = false
         begin {
-            if (research) {
-                // Explicit research is intentionally not a command, memory turn,
-                // continuation, or durable chat turn: persisting it would let a
-                // later ordinary (cloud) reply upload this question or its sources.
-                showTransientMessage(text, MessageRole.USER)
-                reply(text, research = true)
-                return@begin
-            }
             // An answer to "Отправить?" is not a new request.
             val confirmed = commands.answerPending(text, isRussian(text))
             if (confirmed != null) {
@@ -316,19 +298,7 @@ class ChatViewModel(
             "Show the working for maths. Answer in the language of the writing or the question."
     }
 
-    private suspend fun Request.reply(text: String, research: Boolean = false) {
-        if (research) {
-            stream(
-                sendMessage(
-                    prompt = text,
-                    history = emptyList(),
-                    mode = _uiState.value.currentMode,
-                    research = true
-                ),
-                persistResponse = false
-            )
-            return
-        }
+    private suspend fun Request.reply(text: String) {
         // Catch a correction before the answer, so what the user just put
         // right is stored even if the reply goes wrong.
         CorrectionDetector.detect(
@@ -383,8 +353,8 @@ class ChatViewModel(
         sendMessage.saveMessage(Message(content = content, role = role, sessionId = session))
     }
 
-    /** Draws [flow] as it arrives and, unless private, saves it to this conversation. */
-    private suspend fun Request.stream(flow: Flow<String>, persistResponse: Boolean = true) {
+    /** Draws [flow] as it arrives (when this conversation is on screen) and saves it to this conversation. */
+    private suspend fun Request.stream(flow: Flow<String>) {
         val id = UUID.randomUUID().toString()
         streamId = id
         val text = StringBuilder()
@@ -392,12 +362,7 @@ class ChatViewModel(
             text.append(token)
             if (sessionId == _currentSessionId.value) updateStreamingMessage(id, text.toString())
         }
-        if (persistResponse && text.isNotEmpty()) {
-            persist(text.toString(), MessageRole.ASSISTANT)
-        } else if (text.isNotEmpty()) {
-            completeStreamingMessage(id)
-            streamId = null
-        }
+        if (text.isNotEmpty()) persist(text.toString(), MessageRole.ASSISTANT)
     }
 
     /** An error belongs to the conversation it happened in; another one on screen is left alone. */
@@ -411,13 +376,6 @@ class ChatViewModel(
 
     private fun busy() = showError("Friday ainda está respondendo — aguarde um momento")
 
-    /** Adds a private turn to the current screen without placing it in chat history. */
-    private fun showTransientMessage(content: String, role: MessageRole) {
-        _uiState.update { state ->
-            state.copy(messages = state.messages + Message(content = content, role = role))
-        }
-    }
-
     private fun updateStreamingMessage(id: String, content: String) {
         _uiState.update { state ->
             val msgs = state.messages.toMutableList()
@@ -429,14 +387,6 @@ class ChatViewModel(
                 msgs.add(streamMsg)
             }
             state.copy(messages = msgs)
-        }
-    }
-
-    private fun completeStreamingMessage(id: String) {
-        _uiState.update { state ->
-            state.copy(messages = state.messages.map { message ->
-                if (message.id == id && message.isStreaming) message.copy(isStreaming = false) else message
-            })
         }
     }
 
