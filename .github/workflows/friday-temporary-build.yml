@@ -1,0 +1,47 @@
+name: Friday build temporaria
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+jobs:
+  apk:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'feat/lightweight-local-ai'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      FRIDAY_SIGNING_KEYSTORE_BASE64: ${{ secrets.FRIDAY_SIGNING_KEYSTORE_BASE64 }}
+      FRIDAY_SIGNING_STORE_PASSWORD: ${{ secrets.FRIDAY_SIGNING_STORE_PASSWORD }}
+      FRIDAY_SIGNING_KEY_ALIAS: ${{ secrets.FRIDAY_SIGNING_KEY_ALIAS }}
+      FRIDAY_SIGNING_KEY_PASSWORD: ${{ secrets.FRIDAY_SIGNING_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Verificar e aplicar patch
+        run: |
+          cat .toqi-build/part-*.txt | base64 -d | gzip -dc > /tmp/friday.patch
+          echo 'd4d10211c919dd8073d1dbeb945b8bc41af3d3f697a52c9ae1abc2f02954061d  /tmp/friday.patch' | sha256sum -c -
+          git apply --check /tmp/friday.patch
+          git apply /tmp/friday.patch
+          git diff --check
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Preparar assinatura do Friday
+        run: python3 scripts/prepare-ci-signing.py --require-signing
+      - name: Compilar APK
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Validar assinatura
+        run: $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose --print-certs app/build/outputs/apk/debug/*.apk
+      - name: Disponibilizar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Friday-temporario-debug-APK
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
+      - name: Testes e analise estatica
+        run: ./gradlew :app:testDebugUnitTest :app:detekt --no-daemon --stacktrace
