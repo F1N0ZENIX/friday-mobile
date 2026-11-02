@@ -93,7 +93,6 @@ fun ChatScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val inputText by viewModel.inputText.collectAsStateWithLifecycle()
-    val researchEnabled by viewModel.researchEnabled.collectAsStateWithLifecycle()
     val sessions by viewModel.sessions.collectAsStateWithLifecycle()
     val currentSessionId by viewModel.currentSessionId.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
@@ -174,7 +173,6 @@ fun ChatScreen(
         ChatLayout(
             state = uiState,
             inputText = inputText,
-            researchEnabled = researchEnabled,
             listState = listState,
             onMenu = { scope.launch { drawerState.open() } },
             onSettings = onNavigateToSettings,
@@ -183,7 +181,6 @@ fun ChatScreen(
             onMode = viewModel::onModeChange,
             onInput = viewModel::onInputChange,
             onSend = viewModel::onSend,
-            onResearchToggle = viewModel::onResearchToggle,
             onMic = onMic,
             onSuggestion = ask,
             onDismissError = viewModel::onDismissError
@@ -196,7 +193,6 @@ fun ChatScreen(
 internal fun ChatLayout(
     state: ChatUiState,
     inputText: String,
-    researchEnabled: Boolean = false,
     listState: LazyListState,
     onMenu: () -> Unit,
     onSettings: () -> Unit,
@@ -205,7 +201,6 @@ internal fun ChatLayout(
     onMode: (AssistantMode) -> Unit,
     onInput: (String) -> Unit,
     onSend: () -> Unit,
-    onResearchToggle: () -> Unit = {},
     onMic: () -> Unit,
     onSuggestion: (String) -> Unit,
     onDismissError: () -> Unit
@@ -272,8 +267,6 @@ internal fun ChatLayout(
                 text = inputText,
                 onTextChange = onInput,
                 onSend = onSend,
-                researchEnabled = researchEnabled,
-                onResearchToggle = onResearchToggle,
                 onMicClick = onMic,
                 isLoading = state.isLoading,
                 isListening = state.isVoiceListening
