@@ -1,4 +1,4 @@
-"package com.friday.ai.localai
+package com.friday.ai.localai
 
 import java.io.IOException
 import java.net.URLEncoder
@@ -52,17 +52,14 @@ class LocalInternet private constructor(
     }
 
     /** A city is accepted only as the immediate answer to Friday's own city question. */
-    private fun weatherCityReply(prompt: String, history: List<Message>): InternetIntent.Weather? =
-        prompt.trim().replace(Regex("\\s+"), " ")
-            .takeIf { it.matches(Regex("[\\p{L}][\\p{L} .'’-]{1,60}")) }
-            ?.let { city ->
-                history.lastOrNull()
-                    ?.takeIf { last ->
-                        last.role == MessageRole.ASSISTANT &&
-                            last.content.trim().startsWith("Qual cidade você quer consultar?")
-                    }
-                    ?.let { InternetIntent.Weather(city, 0) }
-            }
+    private fun weatherCityReply(prompt: String, history: List<Message>): InternetIntent.Weather? {
+        val city = prompt.trim().replace(Regex("\\s+"), " ")
+        if (!city.matches(Regex("[\\p{L}][\\p{L} .'’-]{1,60}"))) return null
+        val last = history.lastOrNull() ?: return null
+        if (last.role != MessageRole.ASSISTANT ||
+            !last.content.trim().startsWith("Qual cidade você quer consultar?")) return null
+        return InternetIntent.Weather(city, 0)
+    }
 
     private suspend fun weatherReply(request: InternetIntent.Weather): String {
         try {
@@ -176,6 +173,9 @@ private sealed interface InternetIntent {
             weatherWordsPattern(),
             RegexOption.IGNORE_CASE
         )
+        // Avoid the inline (?U) flag: some Android regex runtimes reject it while this
+        // companion is initialized, turning any local-internet request into a crash.
+        // Explicit Unicode letter/mark boundaries still keep "amanhã" out of larger words.
         private val tomorrow = Regex(
             """(?<![\p{L}\p{M}])amanh[aã](?![\p{L}\p{M}])""",
             RegexOption.IGNORE_CASE
@@ -194,10 +194,7 @@ private sealed interface InternetIntent {
             if (url.containsMatchIn(text)) return UrlRejected
             val explicit = explicitSearch.find(text)?.groupValues?.getOrNull(1)?.trim()
             return when {
-                Regex(
-                    """^qual\s+(?:é\s+)?o\s+site\s+oficial\s+do\s+roblox\??$""",
-                    RegexOption.IGNORE_CASE
-                ).matches(text) -> OfficialSite
+                Regex("""^qual\s+(?:é\s+)?o\s+site\s+oficial\s+do\s+roblox\??$""", RegexOption.IGNORE_CASE).matches(text) -> OfficialSite
                 !explicit.isNullOrEmpty() -> Search(explicit)
                 weatherSignal.containsMatchIn(text) -> {
                     val city = weatherCity.find(text)?.groupValues?.get(1)
@@ -323,4 +320,4 @@ internal class DuckDuckGoSearch private constructor(private val client: OkHttpCl
     }
 }
 
-private const val MAX_QUERY_CHARS = 500"$(cat /tmp/LocalInternet.kt)
+private const val MAX_QUERY_CHARS = 500
