@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -17,7 +16,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -47,84 +45,65 @@ fun ChatInputBar(
     text: String,
     onTextChange: (String) -> Unit,
     onSend: () -> Unit,
-    researchEnabled: Boolean,
-    onResearchToggle: () -> Unit,
     onMicClick: () -> Unit,
     isLoading: Boolean,
     isListening: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    Column(
+    Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        if (researchEnabled) {
-            Text(
-                text = "Na pesquisa, só sua pergunta é enviada.",
-                style = MaterialTheme.typography.labelSmall,
-                color = OnSurfaceMuted,
-                modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
-            )
-        }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilterChip(
-                selected = researchEnabled,
-                onClick = onResearchToggle,
-                label = { Text("Pesquisar") },
-                enabled = !isLoading
-            )
-            OutlinedTextField(
-                value = text,
-                onValueChange = onTextChange,
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 52.dp)
-                    // A physical keyboard (DeX, a Bluetooth one): Enter sends, Shift+Enter starts a new line.
-                    .onPreviewKeyEvent { e ->
-                        val send = e.type == KeyEventType.KeyDown && e.key == Key.Enter && !e.isShiftPressed
-                        if (send && text.isNotBlank() && !isLoading) onSend()
-                        send
-                    },
-                placeholder = {
-                    Text(
-                        if (isListening) "Ouvindo…" else "Comando ou pergunta",
-                        color = OnSurfaceMuted
-                    )
+        OutlinedTextField(
+            value = text,
+            onValueChange = onTextChange,
+            modifier = Modifier
+                .weight(1f)
+                .heightIn(min = 52.dp)
+                // A physical keyboard (DeX, a Bluetooth one): Enter sends, Shift+Enter starts a new line.
+                .onPreviewKeyEvent { e ->
+                    val send = e.type == KeyEventType.KeyDown && e.key == Key.Enter && !e.isShiftPressed
+                    if (send && text.isNotBlank() && !isLoading) onSend()
+                    send
                 },
-                shape = RoundedCornerShape(26.dp),
-                textStyle = MaterialTheme.typography.bodyLarge,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = if (isListening) ErrorColor else ArcCyan.copy(alpha = 0.7f),
-                    unfocusedBorderColor = ArcCyan.copy(alpha = 0.18f),
-                    focusedContainerColor = SurfaceDark.copy(alpha = 0.85f),
-                    unfocusedContainerColor = SurfaceDark.copy(alpha = 0.7f),
-                    cursorColor = ArcCyan
-                ),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                keyboardActions = KeyboardActions(onSend = { onSend() }),
-                maxLines = 4,
-                enabled = !isLoading
-            )
+            placeholder = {
+                Text(
+                    if (isListening) "Ouvindo…" else "Comando ou pergunta",
+                    color = OnSurfaceMuted
+                )
+            },
+            shape = RoundedCornerShape(26.dp),
+            textStyle = MaterialTheme.typography.bodyLarge,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = if (isListening) ErrorColor else ArcCyan.copy(alpha = 0.7f),
+                unfocusedBorderColor = ArcCyan.copy(alpha = 0.18f),
+                focusedContainerColor = SurfaceDark.copy(alpha = 0.85f),
+                unfocusedContainerColor = SurfaceDark.copy(alpha = 0.7f),
+                cursorColor = ArcCyan
+            ),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+            keyboardActions = KeyboardActions(onSend = { onSend() }),
+            maxLines = 4,
+            enabled = !isLoading
+        )
 
-            AnimatedVisibility(
-                visible = text.isNotBlank() && !isListening,
-                enter = fadeIn() + scaleIn(),
-                exit = fadeOut() + scaleOut()
+        AnimatedVisibility(
+            visible = text.isNotBlank() && !isListening,
+            enter = fadeIn() + scaleIn(),
+            exit = fadeOut() + scaleOut()
+        ) {
+            FilledIconButton(
+                onClick = onSend,
+                enabled = !isLoading,
+                colors = IconButtonDefaults.filledIconButtonColors(containerColor = ArcCyan, contentColor = OnPrimary)
             ) {
-                FilledIconButton(
-                    onClick = onSend,
-                    enabled = !isLoading,
-                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = ArcCyan, contentColor = OnPrimary)
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar")
-                }
+                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar")
             }
-
-            ReactorMicButton(listening = isListening, onClick = onMicClick)
         }
+
+        ReactorMicButton(listening = isListening, onClick = onMicClick)
     }
 }
