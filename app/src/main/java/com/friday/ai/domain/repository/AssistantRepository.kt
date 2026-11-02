@@ -11,8 +11,13 @@ import kotlinx.coroutines.flow.Flow
  */
 interface AssistantRepository {
 
-    /** Stream tokens from Groq API for the given user prompt. */
-    suspend fun sendMessage(prompt: String, history: List<Message>, mode: AssistantMode): Flow<String>
+    /** Stream an answer for the given prompt. Explicit research never uses cloud context. */
+    suspend fun sendMessage(
+        prompt: String,
+        history: List<Message>,
+        mode: AssistantMode,
+        research: Boolean = false
+    ): Flow<String>
 
     /** Observe the messages of one conversation. */
     fun getSessionMessages(sessionId: String): Flow<List<Message>>
