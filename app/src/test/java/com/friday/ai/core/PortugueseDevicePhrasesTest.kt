@@ -64,7 +64,7 @@ class PortugueseDevicePhrasesTest {
         )
         unsafe.forEach {
             assertNull(it, DevicePhrases.brightness(it))
-            assertNull(it, CommandRouter().route(it))
+            assertEquals(it, CommandResult.ChatMessage(it), CommandRouter().route(it))
         }
     }
 
