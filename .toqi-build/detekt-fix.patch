@@ -1,0 +1,18 @@
+diff --git a/app/src/main/java/com/friday/ai/localai/LocalInternet.kt b/app/src/main/java/com/friday/ai/localai/LocalInternet.kt
+index dcee742..5fa895a 100644
+--- a/app/src/main/java/com/friday/ai/localai/LocalInternet.kt
++++ b/app/src/main/java/com/friday/ai/localai/LocalInternet.kt
+@@ -377,11 +377,8 @@ internal class DuckDuckGoSearch internal constructor(private val client: OkHttpC
+             return try {
+                 val uri = URI(value.trim())
+                 val isHttp = uri.scheme == "https" || uri.scheme == "http"
+-                if (!uri.isAbsolute) return null
+-                if (uri.host == null) return null
+-                if (uri.userInfo != null) return null
+-                if (!isHttp) return null
+-                uri.toASCIIString()
++                val hasSafeAuthority = uri.host != null && uri.userInfo == null
++                if (uri.isAbsolute && isHttp && hasSafeAuthority) uri.toASCIIString() else null
+             } catch (_: URISyntaxException) {
+                 null
+             } catch (_: IllegalArgumentException) {

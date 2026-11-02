@@ -24,6 +24,8 @@ jobs:
           echo 'dac5ff3101bdb91cf2f31a72769f9c6c31789f9144bd3f4d33247253190e6117  /tmp/friday.patch' | sha256sum -c -
           git apply --check /tmp/friday.patch
           git apply /tmp/friday.patch
+          git apply --check .toqi-build/detekt-fix.patch
+          git apply .toqi-build/detekt-fix.patch
           git diff --check
       - uses: actions/setup-java@v4
         with:
@@ -43,5 +45,8 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 7
-      - name: Testes e analise estatica
-        run: ./gradlew :app:testDebugUnitTest :app:detekt --no-daemon --stacktrace
+      - name: Testes unitarios
+        run: ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace
+      - name: Analise estatica
+        if: always()
+        run: ./gradlew :app:detekt --no-daemon --stacktrace
