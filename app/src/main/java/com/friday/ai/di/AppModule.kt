@@ -227,6 +227,16 @@ val appModule = module {
         com.friday.ai.localai.LlamaLocalInferenceEngine(get())
     }
 
+    single { com.friday.ai.localai.LocalWeather(get()) }
+    single {
+        val weather = get<com.friday.ai.localai.LocalWeather>()
+        val city = get<com.friday.ai.service.WeatherHere>()
+        com.friday.ai.localai.LocalInternet.create(
+            weatherForCity = { name, day -> weather.reply(name, day) },
+            homeCity = { city.homeCity() }
+        )
+    }
+
     // Repository
     single<AssistantRepository> {
         AssistantRepositoryImpl(
@@ -238,7 +248,8 @@ val appModule = module {
             catalog = get(),
             agent = get(),
             localPreferences = get(),
-            localEngine = get()
+            localEngine = get(),
+            localInternet = get()
         )
     }
 
