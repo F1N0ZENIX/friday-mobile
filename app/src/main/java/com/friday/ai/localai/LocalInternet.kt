@@ -38,9 +38,6 @@ class LocalInternet private constructor(
             "Não posso pesquisar um link enviado. Me diga o assunto da busca."
         )
         is InternetIntent.Weather -> LocalInternetReply.Direct(weatherReply(request))
-        is InternetIntent.OfficialSite -> LocalInternetReply.Direct(
-            "O site oficial do Roblox é https://www.roblox.com/"
-        )
         is InternetIntent.Search -> safeSearchReply(request.query)
     }
 
@@ -145,7 +142,6 @@ private sealed interface InternetIntent {
     data object None : InternetIntent
     data object UrlRejected : InternetIntent
     data class Weather(val city: String?, val dayOffset: Int) : InternetIntent
-    data object OfficialSite : InternetIntent
     data class Search(val query: String) : InternetIntent
 
     companion object {
@@ -170,6 +166,12 @@ private sealed interface InternetIntent {
         )
         private val temporalFact = Regex(
             """\b(?:not[ií]cias|hoje|agora|atual|atualmente|resultado|placar|cota[cç][aã]o)\b""",
+            RegexOption.IGNORE_CASE
+        )
+        private val officialSiteQuestion = Regex(
+            """^(?:(?:qual(?:\s+(?:é|e))?|onde\s+(?:fica|encontro|achar))\s+)?""" +
+                """(?:o\s+)?site\s+oficial\s+(?:d[oa]s?\s+)?""" +
+                """[\p{L}\p{N}][\p{L}\p{N} .,'’_-]{0,120}\??$""",
             RegexOption.IGNORE_CASE
         )
         private val weatherSignal = Regex(
@@ -197,10 +199,7 @@ private sealed interface InternetIntent {
             if (url.containsMatchIn(text)) return UrlRejected
             val explicit = explicitSearch.find(text)?.groupValues?.getOrNull(1)?.trim()
             return when {
-                Regex(
-                    """^qual\s+(?:é\s+)?o\s+site\s+oficial\s+do\s+roblox\??$""",
-                    RegexOption.IGNORE_CASE
-                ).matches(text) -> OfficialSite
+                officialSiteQuestion.matches(text) -> Search(text.trimEnd('?', '!', '.'))
                 !explicit.isNullOrEmpty() -> Search(explicit)
                 weatherSignal.containsMatchIn(text) -> {
                     val city = weatherCity.find(text)?.groupValues?.get(1)
