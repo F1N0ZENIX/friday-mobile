@@ -29,7 +29,7 @@ class SendMessageUseCaseTest {
     fun `invoke delegates to repository sendMessage`() = runTest {
         val tokens = flowOf("Hello", " world", "!")
         coEvery {
-            repository.sendMessage("Hi", emptyList(), AssistantMode.DEFAULT)
+            repository.sendMessage("Hi", emptyList(), AssistantMode.DEFAULT, false)
         } returns tokens
 
         useCase("Hi", emptyList(), AssistantMode.DEFAULT).test {
@@ -37,6 +37,23 @@ class SendMessageUseCaseTest {
             assertEquals(" world", awaitItem())
             assertEquals("!", awaitItem())
             awaitComplete()
+        }
+    }
+
+    @Test
+    fun `research delegates without changing the privacy flag`() = runTest {
+        val tokens = flowOf("Resultado local")
+        coEvery {
+            repository.sendMessage("onde fica o site oficial", emptyList(), AssistantMode.DEFAULT, true)
+        } returns tokens
+
+        useCase("onde fica o site oficial", emptyList(), AssistantMode.DEFAULT, research = true).test {
+            assertEquals("Resultado local", awaitItem())
+            awaitComplete()
+        }
+
+        coVerify {
+            repository.sendMessage("onde fica o site oficial", emptyList(), AssistantMode.DEFAULT, true)
         }
     }
 
