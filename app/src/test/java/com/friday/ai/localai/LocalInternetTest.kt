@@ -1,6 +1,8 @@
 package com.friday.ai.localai
 
 import java.io.IOException
+import com.friday.ai.domain.model.Message
+import com.friday.ai.domain.model.MessageRole
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -133,6 +135,47 @@ class LocalInternetTest {
     private class FakeWeather {
         val cities = mutableListOf<Pair<String, Int>>()
 
+        suspend fun answer(city: String, dayOffset: Int): String {
+            cities += city to dayOffset
+            return "Clima em $city $dayOffset"
+        }
+    }
+}
+
+class LocalInternetConversationTest {
+    @Test
+    fun `reported weather city turn is resolved from immediate local history`() = runTest {
+        val weather = FakeWeatherConversation()
+        val internet = LocalInternet.create(weatherForCity = weather::answer)
+        val asked = Message(content = "como o tempo está hoje?", role = MessageRole.USER)
+        val cityQuestion = Message(content = "Qual cidade você quer consultar?", role = MessageRole.ASSISTANT)
+
+        assertEquals("Qual cidade você quer consultar?", internet.reply(asked.content))
+        assertEquals("Clima em Paripiranga 0", (internet.request("Paripiranga", listOf(asked, cityQuestion)) as LocalInternetReply.Direct).text)
+        assertEquals(listOf("Paripiranga" to 0), weather.cities)
+    }
+
+    @Test
+    fun `city-like text without pending weather question stays local`() = runTest {
+        val weather = FakeWeatherConversation()
+        val internet = LocalInternet.create(weatherForCity = weather::answer)
+        val unrelated = listOf(Message(content = "Beleza", role = MessageRole.ASSISTANT))
+
+        assertNull(internet.request("Paripiranga", unrelated))
+        assertEquals(emptyList<Pair<String, Int>>(), weather.cities)
+    }
+
+    @Test
+    fun `official Roblox site is direct grounded answer without search or model`() = runTest {
+        val backend = FakeSearch()
+        val internet = LocalInternet.create(search = backend)
+
+        assertEquals("O site oficial do Roblox é https://www.roblox.com/", internet.reply("qual o site oficial do roblox?"))
+        assertEquals(emptyList<String>(), backend.queries)
+    }
+
+    private class FakeWeatherConversation {
+        val cities = mutableListOf<Pair<String, Int>>()
         suspend fun answer(city: String, dayOffset: Int): String {
             cities += city to dayOffset
             return "Clima em $city $dayOffset"
