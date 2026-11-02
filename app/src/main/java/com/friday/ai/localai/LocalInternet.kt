@@ -29,7 +29,9 @@ class LocalInternet private constructor(
      */
     suspend fun request(prompt: String): LocalInternetReply? = when (val request = InternetIntent.classify(prompt)) {
         InternetIntent.None -> null
-        InternetIntent.UrlRejected -> LocalInternetReply.Direct("Não posso pesquisar um link enviado. Me diga o assunto da busca.")
+        InternetIntent.UrlRejected -> LocalInternetReply.Direct(
+            "Não posso pesquisar um link enviado. Me diga o assunto da busca."
+        )
         is InternetIntent.Weather -> LocalInternetReply.Direct(weatherReply(request))
         is InternetIntent.Search -> safeSearchReply(request.query)
     }
@@ -67,7 +69,9 @@ class LocalInternet private constructor(
     private suspend fun searchReply(query: String): LocalInternetReply = when (val result = search.search(query)) {
         is SearchResult.Found -> LocalInternetReply.SearchSources(result.items)
         SearchResult.Empty -> LocalInternetReply.Direct("Não achei resultados públicos para isso.")
-        SearchResult.Unavailable -> LocalInternetReply.Direct("Não consegui pesquisar na internet agora. Tenta de novo daqui a pouco.")
+        SearchResult.Unavailable -> LocalInternetReply.Direct(
+            "Não consegui pesquisar na internet agora. Tenta de novo daqui a pouco."
+        )
     }
 
     companion object {
