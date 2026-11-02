@@ -38,4 +38,12 @@ class LocalGroundedRepliesTest {
         assertNull(LocalGroundedReplies.reply("por que os alarmes são importantes?"))
         assertNull(LocalGroundedReplies.reply("me fale sobre temporizadores"))
     }
+
+    @Test
+    fun `uses arithmetic replies when local mode is offline`() {
+        assertEquals("O resultado é 14.", LocalGroundedReplies.reply("2 + 3 * 4"))
+        assertEquals("Não é possível dividir por zero.", LocalGroundedReplies.reply("1 / 0"))
+        assertNull(LocalGroundedReplies.reply("1 / 0 +"))
+        assertNull(LocalGroundedReplies.reply("(1 / 0"))
+    }
 }
