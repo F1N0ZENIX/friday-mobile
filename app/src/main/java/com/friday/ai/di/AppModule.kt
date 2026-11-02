@@ -59,7 +59,6 @@ val appModule = module {
     single { get<FridayDatabase>().notificationDao() }
     single { get<FridayDatabase>().sessionSummaryDao() }
     single { get<FridayDatabase>().errandDao() }
-    single { com.friday.ai.data.local.LocalDataClearer(androidContext(), get()) }
     // Moving to another phone: everything in one passphrase-encrypted file.
     single {
         com.friday.ai.data.backup.SettingsTransfer(
@@ -295,8 +294,7 @@ val appModule = module {
             catalog = get(),
             lazuriApi = get(),
             memory = get(),
-            learned = get(),
-            localDataClearer = get()
+            learned = get()
         )
     }
 }
