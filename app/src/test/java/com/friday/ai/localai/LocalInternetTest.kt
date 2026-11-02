@@ -65,6 +65,7 @@ class LocalInternetTest {
         // This is the reported wording. It must initialize and route on Android too.
         assertEquals("Clima em Recife 0", internet.reply("como tava o tempo hj"))
         assertEquals("Clima em Recife 1", internet.reply("vai chover amanhã?"))
+        assertEquals("Clima em Recife 1", internet.reply("vai chover amanhã em Recife?"))
         home = "Salvador"
         assertEquals("Clima em Salvador 0", internet.reply("como está o tempo?"))
     }
@@ -151,7 +152,8 @@ class LocalInternetConversationTest {
         val cityQuestion = Message(content = "Qual cidade você quer consultar?", role = MessageRole.ASSISTANT)
 
         assertEquals("Qual cidade você quer consultar?", internet.reply(asked.content))
-        assertEquals("Clima em Paripiranga 0", (internet.request("Paripiranga", listOf(asked, cityQuestion)) as LocalInternetReply.Direct).text)
+        val reply = internet.request("Paripiranga", listOf(asked, cityQuestion))
+        assertEquals("Clima em Paripiranga 0", (reply as LocalInternetReply.Direct).text)
         assertEquals(listOf("Paripiranga" to 0), weather.cities)
     }
 
@@ -170,7 +172,10 @@ class LocalInternetConversationTest {
         val backend = LocalInternetTest.FakeSearch()
         val internet = LocalInternet.create(search = backend)
 
-        assertEquals("O site oficial do Roblox é https://www.roblox.com/", internet.reply("qual o site oficial do roblox?"))
+        assertEquals(
+            "O site oficial do Roblox é https://www.roblox.com/",
+            internet.reply("qual o site oficial do roblox?")
+        )
         assertEquals(emptyList<String>(), backend.queries)
     }
 
