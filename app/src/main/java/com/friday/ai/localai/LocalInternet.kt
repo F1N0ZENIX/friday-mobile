@@ -30,7 +30,8 @@ class LocalInternet private constructor(
      * never confused with a completed assistant answer before local inference sees them.
      */
     suspend fun request(prompt: String, history: List<Message> = emptyList()): LocalInternetReply? = when (
-        val request = InternetIntent.classify(prompt) ?: weatherCityReply(prompt, history)
+        val request = InternetIntent.classify(prompt).takeUnless { it == InternetIntent.None }
+            ?: weatherCityReply(prompt, history)
     ) {
         null, InternetIntent.None -> null
         InternetIntent.UrlRejected -> LocalInternetReply.Direct(
