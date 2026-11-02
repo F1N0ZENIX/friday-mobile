@@ -14,6 +14,7 @@ object LocalGroundedReplies {
     private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)
 
     fun reply(prompt: String, clock: Clock = Clock.systemDefaultZone()): String? {
+        LocalArithmetic.reply(prompt)?.let { return it }
         val question = normalize(prompt)
         return when {
             question in identityQuestions -> "Sou a Friday, uma assistente de IA local neste celular."
