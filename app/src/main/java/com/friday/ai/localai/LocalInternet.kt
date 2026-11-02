@@ -1,9 +1,12 @@
 package com.friday.ai.localai
 
 import java.io.IOException
+import java.net.URI
+import java.net.URISyntaxException
 import java.net.URLEncoder
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+import java.util.Base64
 import java.util.concurrent.TimeUnit
 import com.friday.ai.domain.model.Message
 import com.friday.ai.domain.model.MessageRole
@@ -215,12 +218,21 @@ private sealed interface InternetIntent {
 }
 
 /** Fixed HTTPS-only public endpoint; it never follows or fetches result URLs. */
-internal class DuckDuckGoSearch private constructor(private val client: OkHttpClient) : SearchBackend {
+internal class DuckDuckGoSearch internal constructor(private val client: OkHttpClient) : SearchBackend {
     override suspend fun search(query: String): SearchResult = withContext(Dispatchers.IO) {
         try {
             val encoded = URLEncoder.encode(query, StandardCharsets.UTF_8.name())
-            requestSearch("https://html.duckduckgo.com/html/?q=$encoded", ::parseSearchHtml)
-                ?: requestSearch("https://www.bing.com/search?q=$encoded", ::parseBingHtml)
+            val duckDuckGo = try {
+                requestSearch(
+                    "https://html.duckduckgo.com/html/?q=$encoded",
+                    ::parseSearchHtml
+                )
+            } catch (_: IOException) {
+                null
+            }
+            if (duckDuckGo is SearchResult.Found) duckDuckGo
+            else requestSearch("https://www.bing.com/search?q=$encoded", ::parseBingHtml)
+                ?: duckDuckGo
                 ?: SearchResult.Unavailable
         } catch (error: CancellationException) {
             throw error
@@ -284,18 +296,29 @@ internal class DuckDuckGoSearch private constructor(private val client: OkHttpCl
                 .build()
         )
 
-        internal fun parseSearchHtml(html: String): SearchResult = parseResults(html, RESULT_LINK, RESULT_SNIPPET)
+        internal fun parseSearchHtml(html: String): SearchResult = parseResults(
+            html,
+            RESULT_LINK,
+            RESULT_SNIPPET,
+            ::cleanDuckDuckGoUrl
+        )
 
-        private fun parseBingHtml(html: String): SearchResult = parseResults(html, BING_LINK, BING_SNIPPET)
+        internal fun parseBingHtml(html: String): SearchResult = parseResults(
+            html,
+            BING_LINK,
+            BING_SNIPPET,
+            ::cleanBingUrl
+        )
 
         private fun parseResults(
             html: String,
             linkPattern: Regex,
-            snippetPattern: Regex
+            snippetPattern: Regex,
+            cleanUrl: (String) -> String?
         ): SearchResult {
             val anchors = linkPattern.findAll(html).toList()
             val items = anchors.mapIndexedNotNull { index, match ->
-                val url = cleanUrl(decode(match.groupValues[1])) ?: return@mapIndexedNotNull null
+                val url = cleanUrl(match.groupValues[1]) ?: return@mapIndexedNotNull null
                 val title = cleanText(match.groupValues[2])
                 if (title.isBlank()) return@mapIndexedNotNull null
                 val end = anchors.getOrNull(index + 1)?.range?.first ?: html.length
@@ -306,10 +329,62 @@ internal class DuckDuckGoSearch private constructor(private val client: OkHttpCl
             return if (items.isEmpty()) SearchResult.Empty else SearchResult.Found(items)
         }
 
-        private fun cleanUrl(raw: String): String? {
-            val redirected = raw.substringAfter("uddg=", raw).substringBefore('&')
-            val value = decode(URLDecoder.decode(redirected, StandardCharsets.UTF_8.name()))
-            return value.takeIf { it.startsWith("https://") || it.startsWith("http://") }
+        /** DDG wraps destinations in a query parameter; this only unwraps that fixed format. */
+        private fun cleanDuckDuckGoUrl(raw: String): String? = try {
+            val htmlDecoded = decode(raw)
+            val wrapped = URI(htmlDecoded).rawQuery
+                ?.split('&')
+                ?.firstOrNull { it.substringBefore('=') == "uddg" }
+                ?.substringAfter('=', "")
+                ?.let { URLDecoder.decode(it, StandardCharsets.UTF_8.name()) }
+                ?: htmlDecoded
+            safeHttpUrl(wrapped)
+        } catch (_: URISyntaxException) {
+            null
+        } catch (_: IllegalArgumentException) {
+            null
+        }
+
+        /** Bing's /ck/a links carry the destination as URL-safe base64 in `u=a1...`. */
+        private fun cleanBingUrl(raw: String): String? {
+            return try {
+                val htmlDecoded = decode(raw)
+                val uri = URI(htmlDecoded)
+                val isBingTracking = uri.host?.equals("www.bing.com", ignoreCase = true) == true &&
+                    uri.path?.startsWith("/ck/") == true
+                if (!isBingTracking) {
+                    safeHttpUrl(htmlDecoded)
+                } else {
+                    val encoded = uri.rawQuery?.split('&')
+                        ?.firstOrNull { it.substringBefore('=') == "u" }
+                        ?.substringAfter('=', "")
+                        ?.let { URLDecoder.decode(it, StandardCharsets.UTF_8.name()) }
+                        ?.removePrefix("a1")
+                        ?.takeIf { it.isNotEmpty() }
+                        ?: return null
+                    val destination = String(Base64.getUrlDecoder().decode(encoded), StandardCharsets.UTF_8)
+                    safeHttpUrl(destination)
+                }
+            } catch (_: URISyntaxException) {
+                null
+            } catch (_: IllegalArgumentException) {
+                null
+            }
+        }
+
+        /** Parsed search HTML is untrusted: only absolute HTTP(S) result URLs may be exposed. */
+        private fun safeHttpUrl(value: String): String? = try {
+            val uri = URI(value.trim())
+            val isHttp = uri.scheme == "https" || uri.scheme == "http"
+            if (uri.isAbsolute && uri.host != null && uri.userInfo == null && isHttp) {
+                uri.toASCIIString()
+            } else {
+                null
+            }
+        } catch (_: URISyntaxException) {
+            null
+        } catch (_: IllegalArgumentException) {
+            null
         }
 
         private fun cleanText(text: String): String = decode(text.replace(HTML_TAG, " "))
