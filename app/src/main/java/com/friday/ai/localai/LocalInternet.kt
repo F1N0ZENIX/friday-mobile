@@ -154,7 +154,13 @@ private sealed interface InternetIntent {
             weatherWordsPattern(),
             RegexOption.IGNORE_CASE
         )
-        private val tomorrow = Regex("""(?U)\bamanh[aã]\b""", RegexOption.IGNORE_CASE)
+        // Avoid the inline (?U) flag: some Android regex runtimes reject it while this
+        // companion is initialized, turning any local-internet request into a crash.
+        // Explicit Unicode letter/mark boundaries still keep "amanhã" out of larger words.
+        private val tomorrow = Regex(
+            """(?<![\p{L}\p{M}])amanh[aã](?![\p{L}\p{M}])""",
+            RegexOption.IGNORE_CASE
+        )
 
         private fun weatherWordsPattern(): String = listOf(
             """\bprevis[aã]o(?:\s+do\s+tempo)?\b""",
