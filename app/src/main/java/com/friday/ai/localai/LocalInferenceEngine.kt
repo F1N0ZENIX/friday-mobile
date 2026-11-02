@@ -71,7 +71,7 @@ class LlamaLocalInferenceEngine(
             seed = 42
         )
         var model: Any? = null
-        try {
+        return try {
             // Once JNI returns a handle we own it, even if the caller cancelled meanwhile.
             model = withContext(NonCancellable) { native.load(modelFile, config) }
             currentCoroutineContext().ensureActive()
