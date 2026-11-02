@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
  *
  * One request at a time: a send, a screen or a file while Friday is still
  * answering is refused here, not only by a disabled button. Each request
- * belongs to the conversation it began in, fixed when it starts â its
+ * belongs to the conversation it began in, fixed when it starts — its
  * prompt and its answer are saved there and its stream is drawn only while
  * that conversation is the one on screen. Opening another conversation
  * lets the answer finish out of sight, in its own; deleting the
@@ -94,8 +94,8 @@ class ChatViewModel(
     }
 
     /**
-     * Opens whatever conversation is currently active â the same one the
-     * voice assistant is using â so talking to Friday and then opening the
+     * Opens whatever conversation is currently active — the same one the
+     * voice assistant is using — so talking to Friday and then opening the
      * app lands you in the same thread rather than a blank screen.
      */
     private fun resumeActiveSession() {
@@ -181,7 +181,7 @@ class ChatViewModel(
         if (text.isBlank() || active != null) return
         _inputText.value = ""
         begin {
-            // An answer to "ÐÑÐ¿ÑÐ°Ð²Ð¸ÑÑ?" is not a new request.
+            // An answer to "Отправить?" is not a new request.
             val confirmed = commands.answerPending(text, isRussian(text))
             if (confirmed != null) {
                 persist(text, MessageRole.USER)
@@ -224,13 +224,13 @@ class ChatViewModel(
     }
 
     private fun isRussian(text: String): Boolean =
-        text.any { it in 'Ð°'..'Ñ' || it in 'Ð'..'Ð¯' }
+        text.any { it in 'а'..'я' || it in 'А'..'Я' }
 
     /** The owner answered the screen-capture consent screen. */
     fun onScreenConsent(resultCode: Int, data: Intent?) {
         val capture = screen ?: return
         if (resultCode != Activity.RESULT_OK || data == null) {
-            showError("Acesso Ã  tela nÃ£o autorizado â anÃ¡lise cancelada")
+            showError("Acesso à tela não autorizado — análise cancelada")
             return
         }
         if (!begin {
@@ -256,7 +256,7 @@ class ChatViewModel(
                 stream(analyzeContent.analyzeImage(file.jpegBase64, "Analyze this image (${file.name}):"))
             is FileAnalyzer.Outcome.Text -> {
                 val text = if (file.truncated) {
-                    file.text + "\n\n[â¦truncado: exibindo os primeiros ${FileAnalyzer.MAX_TEXT_CHARS} caracteres]"
+                    file.text + "\n\n[…truncado: exibindo os primeiros ${FileAnalyzer.MAX_TEXT_CHARS} caracteres]"
                 } else {
                     file.text
                 }
@@ -264,14 +264,14 @@ class ChatViewModel(
             }
             is FileAnalyzer.Outcome.Unsupported -> fail(
                 if (file.mimeType == "application/pdf") {
-                    "PDF ainda nÃ£o Ã© compatÃ­vel â envie o texto ou uma imagem da pÃ¡gina"
+                    "PDF ainda não é compatível — envie o texto ou uma imagem da página"
                 } else {
-                    "Este tipo de arquivo nÃ£o Ã© compatÃ­vel: Â«${file.name}Â»"
+                    "Este tipo de arquivo não é compatível: «${file.name}»"
                 }
             )
             is FileAnalyzer.Outcome.TooLarge ->
-                fail("O arquivo Â«${file.name}Â» Ã© grande demais (mais de ${file.limitBytes / (1024 * 1024)} MB)")
-            is FileAnalyzer.Outcome.Unreadable -> fail("NÃ£o foi possÃ­vel ler o arquivo Â«${file.name}Â»")
+                fail("O arquivo «${file.name}» é grande demais (mais de ${file.limitBytes / (1024 * 1024)} MB)")
+            is FileAnalyzer.Outcome.Unreadable -> fail("Não foi possível ler o arquivo «${file.name}»")
         }
     }
 
@@ -281,7 +281,7 @@ class ChatViewModel(
      */
     fun onNotebook(page: com.friday.ai.ui.notebook.NotebookInbox.Page) {
         val started = begin {
-            persist("[Bloco de notas] " + page.question.ifBlank { "o que estÃ¡ escrito aqui?" }, MessageRole.USER)
+            persist("[Bloco de notas] " + page.question.ifBlank { "o que está escrito aqui?" }, MessageRole.USER)
             stream(analyzeContent.analyzeImage(page.imageBase64, notebookPrompt(page.question)))
         }
         if (!started) busy()
@@ -374,7 +374,7 @@ class ChatViewModel(
         _uiState.update { it.copy(error = reason) }
     }
 
-    private fun busy() = showError("Friday ainda estÃ¡ respondendo â aguarde um momento")
+    private fun busy() = showError("Friday ainda está respondendo — aguarde um momento")
 
     private fun updateStreamingMessage(id: String, content: String) {
         _uiState.update { state ->
