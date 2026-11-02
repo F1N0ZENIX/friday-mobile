@@ -60,6 +60,7 @@ class LlamaLocalInferenceEngine(
         complete(prompt, LocalPrompt.systemForGrounded(prompt, history, sources))
     }
 
+    @Suppress("ThrowsCount")
     private suspend fun complete(prompt: String, systemPrompt: String): String {
         currentCoroutineContext().ensureActive()
         val modelFile = activeFile() ?: throw LocalInferenceException.ModelMissing()
