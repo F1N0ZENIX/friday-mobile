@@ -10,10 +10,9 @@ class SendMessageUseCase(private val repository: AssistantRepository) {
     suspend operator fun invoke(
         prompt: String,
         history: List<Message>,
-        mode: AssistantMode,
-        research: Boolean = false
+        mode: AssistantMode
     ): Flow<String> {
-        return repository.sendMessage(prompt, history, mode, research)
+        return repository.sendMessage(prompt, history, mode)
     }
 
     suspend fun saveMessage(message: Message) {
