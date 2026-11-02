@@ -147,7 +147,7 @@ class ChatViewModelTest {
     @Test
     fun `onSend routes chat message to Groq API`() = runTest {
         every { router.route(any()) } returns CommandResult.ChatMessage("Hello")
-        coEvery { sendMessageUseCase(any(), any(), any()) } returns flowOf("Hi there!")
+        coEvery { sendMessageUseCase(any(), any(), any(), any()) } returns flowOf("Hi there!")
         viewModel = createViewModel()
         advanceUntilIdle()
 
@@ -158,6 +158,29 @@ class ChatViewModelTest {
         assertEquals("", viewModel.inputText.value)
         coVerify { sendMessageUseCase.saveMessage(match { it.role == MessageRole.USER }) }
         coVerify { sendMessageUseCase.saveMessage(match { it.role == MessageRole.ASSISTANT }) }
+    }
+
+    @Test
+    fun `research sends only the typed question without command routing or history`() = runTest {
+        coEvery {
+            sendMessageUseCase("onde fica o site oficial", emptyList(), AssistantMode.DEFAULT, true)
+        } returns flowOf("Resultado local")
+        viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.onResearchToggle()
+        viewModel.onInputChange("onde fica o site oficial")
+        viewModel.onSend()
+        advanceUntilIdle()
+
+        coVerify {
+            sendMessageUseCase("onde fica o site oficial", emptyList(), AssistantMode.DEFAULT, true)
+        }
+        coVerify(exactly = 0) { sendMessageUseCase.saveMessage(any()) }
+        verify(exactly = 0) { router.route(any()) }
+        assertTrue(viewModel.uiState.value.messages.any { it.content == "Resultado local" })
+        assertFalse(viewModel.researchEnabled.value)
+        assertEquals("", viewModel.inputText.value)
     }
 
     @Test
@@ -282,7 +305,7 @@ class ChatViewModelTest {
     @Test
     fun `saved messages are tagged with the active session`() = runTest {
         every { router.route(any()) } returns CommandResult.ChatMessage("Hello")
-        coEvery { sendMessageUseCase(any(), any(), any()) } returns flowOf("Hi!")
+        coEvery { sendMessageUseCase(any(), any(), any(), any()) } returns flowOf("Hi!")
         viewModel = createViewModel()
         advanceUntilIdle()
 
