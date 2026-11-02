@@ -8,20 +8,16 @@ object LocalResponseQuality {
     fun checked(prompt: String, answer: String): String {
         val text = answer.trim()
         val invalidContent = text.isEmpty() || hasInvalidContent(prompt, text)
-        return if (invalidContent || echoesPrompt(prompt, text)) rejection() else text
+        return if (invalidContent || (normalized(prompt).isNotEmpty() &&
+                normalized(text.lineSequence().firstOrNull().orEmpty()) == normalized(prompt))) rejection() else text
     }
 
     private fun hasInvalidContent(prompt: String, text: String): Boolean =
         leaksTurns(text) && !asksForDialogue(prompt) ||
             hasUnexpectedCyrillic(prompt, text) ||
             repeatsLine(text) ||
-            repeatsSentence(text)
-
-    private fun echoesPrompt(prompt: String, text: String): Boolean {
-        val question = normalized(prompt)
-        val firstLine = normalized(text.lineSequence().firstOrNull().orEmpty())
-        return question.isNotEmpty() && firstLine == question
-    }
+            repeatsSentence(text) ||
+            repeatsTokenSequence(prompt, text)
 
     private fun leaksTurns(text: String): Boolean =
         CHAT_MARKERS.any(text::contains) || TURN_LABEL.find(text) != null
@@ -44,6 +40,31 @@ object LocalResponseQuality {
         return sentences.groupingBy { it }.eachCount().values.any { it > MAX_SAME_SENTENCES }
     }
 
+    /**
+     * Stops short looping completions such as "controle de controle de controle de".
+     * Inspect only small adjacent token cycles so normal prose and arithmetic stay intact.
+     */
+    private fun repeatsTokenSequence(prompt: String, text: String): Boolean {
+        if (asksForDialogue(prompt)) return false
+        val tokens = normalized(text).split(' ').filter(String::isNotEmpty)
+        for (sequenceSize in 1..MAX_REPEATED_SEQUENCE_TOKENS) {
+            val repetitions = if (sequenceSize == 1) MIN_SINGLE_TOKEN_REPETITIONS else MIN_SEQUENCE_REPETITIONS
+            val requiredTokens = sequenceSize * repetitions
+            if (tokens.size < requiredTokens) continue
+            for (start in 0..tokens.size - requiredTokens) {
+                val sequence = tokens.subList(start, start + sequenceSize)
+                if ((1 until repetitions).all { occurrence ->
+                        tokens.subList(
+                            start + occurrence * sequenceSize,
+                            start + (occurrence + 1) * sequenceSize
+                        ) == sequence
+                    }
+                ) return true
+            }
+        }
+        return false
+    }
+
     private fun normalized(text: String): String =
         Normalizer.normalize(text, Normalizer.Form.NFD)
             .replace(COMBINING_MARKS, "")
@@ -52,8 +73,8 @@ object LocalResponseQuality {
             .trim()
 
     private fun rejection(): String =
-        "O modelo local gerou uma resposta repetida ou inválida. " +
-            "Tente reformular o pedido. Nenhuma ação foi executada."
+        "A resposta local travou em repetição e foi descartada. " +
+            "Tente novamente ou reformule o pedido."
 
     private val COMBINING_MARKS = Regex("\\p{M}+")
     private val NON_WORD = Regex("[^\\p{L}\\p{N}]+")
@@ -67,4 +88,7 @@ object LocalResponseQuality {
     private const val MIN_REPEATED_LENGTH = 8
     private const val MIN_REPEATED_LINES = 3
     private const val MAX_SAME_SENTENCES = 3
+    private const val MAX_REPEATED_SEQUENCE_TOKENS = 4
+    private const val MIN_SINGLE_TOKEN_REPETITIONS = 4
+    private const val MIN_SEQUENCE_REPETITIONS = 3
 }
