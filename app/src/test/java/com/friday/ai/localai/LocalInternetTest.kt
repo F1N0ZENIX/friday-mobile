@@ -123,7 +123,7 @@ class LocalInternetTest {
         assertEquals("https://a.test", result.items.first().url)
     }
 
-    private class FakeSearch(private val response: SearchResult = SearchResult.Empty) : SearchBackend {
+    class FakeSearch(private val response: SearchResult = SearchResult.Empty) : SearchBackend {
         val queries = mutableListOf<String>()
 
         override suspend fun search(query: String): SearchResult {
@@ -167,7 +167,7 @@ class LocalInternetConversationTest {
 
     @Test
     fun `official Roblox site is direct grounded answer without search or model`() = runTest {
-        val backend = FakeSearch()
+        val backend = LocalInternetTest.FakeSearch()
         val internet = LocalInternet.create(search = backend)
 
         assertEquals("O site oficial do Roblox é https://www.roblox.com/", internet.reply("qual o site oficial do roblox?"))
