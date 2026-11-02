@@ -52,14 +52,17 @@ class LocalInternet private constructor(
     }
 
     /** A city is accepted only as the immediate answer to Friday's own city question. */
-    private fun weatherCityReply(prompt: String, history: List<Message>): InternetIntent.Weather? {
-        val city = prompt.trim().replace(Regex("\\s+"), " ")
-        if (!city.matches(Regex("[\\p{L}][\\p{L} .'’-]{1,60}"))) return null
-        val last = history.lastOrNull() ?: return null
-        if (last.role != MessageRole.ASSISTANT ||
-            !last.content.trim().startsWith("Qual cidade você quer consultar?")) return null
-        return InternetIntent.Weather(city, 0)
-    }
+    private fun weatherCityReply(prompt: String, history: List<Message>): InternetIntent.Weather? =
+        prompt.trim().replace(Regex("\\s+"), " ")
+            .takeIf { it.matches(Regex("[\\p{L}][\\p{L} .'’-]{1,60}")) }
+            ?.let { city ->
+                history.lastOrNull()
+                    ?.takeIf { last ->
+                        last.role == MessageRole.ASSISTANT &&
+                            last.content.trim().startsWith("Qual cidade você quer consultar?")
+                    }
+                    ?.let { InternetIntent.Weather(city, 0) }
+            }
 
     private suspend fun weatherReply(request: InternetIntent.Weather): String {
         try {
@@ -194,7 +197,10 @@ private sealed interface InternetIntent {
             if (url.containsMatchIn(text)) return UrlRejected
             val explicit = explicitSearch.find(text)?.groupValues?.getOrNull(1)?.trim()
             return when {
-                Regex("""^qual\s+(?:é\s+)?o\s+site\s+oficial\s+do\s+roblox\??$""", RegexOption.IGNORE_CASE).matches(text) -> OfficialSite
+                Regex(
+                    """^qual\s+(?:é\s+)?o\s+site\s+oficial\s+do\s+roblox\??$""",
+                    RegexOption.IGNORE_CASE
+                ).matches(text) -> OfficialSite
                 !explicit.isNullOrEmpty() -> Search(explicit)
                 weatherSignal.containsMatchIn(text) -> {
                     val city = weatherCity.find(text)?.groupValues?.get(1)
