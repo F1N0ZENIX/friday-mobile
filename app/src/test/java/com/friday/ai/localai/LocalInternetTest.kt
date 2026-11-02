@@ -168,13 +168,42 @@ class LocalInternetConversationTest {
     }
 
     @Test
-    fun `official Roblox site is direct grounded answer without search or model`() = runTest {
+    fun `official site questions search generically with current prompt only`() = runTest {
+        val backend = LocalInternetTest.FakeSearch(
+            SearchResult.Found(listOf(SearchItem("Minecraft", "Site oficial", "https://www.minecraft.net/")))
+        )
+        val internet = LocalInternet.create(search = backend)
+        val history = listOf(
+            Message(content = "Meu dado privado", role = MessageRole.USER),
+            Message(content = "Resposta privada", role = MessageRole.ASSISTANT)
+        )
+
+        val minecraft = internet.request("qual o site oficial do Minecraft?", history)
+        val mojang = internet.reply("onde encontro o site oficial da Mojang?")
+        val roblox = internet.reply("qual é o site oficial do Roblox?")
+
+        assertTrue(minecraft is LocalInternetReply.SearchSources)
+        assertTrue(mojang!!.contains("https://www.minecraft.net/"))
+        assertTrue(roblox!!.contains("https://www.minecraft.net/"))
+        assertEquals(
+            listOf(
+                "qual o site oficial do Minecraft",
+                "onde encontro o site oficial da Mojang",
+                "qual é o site oficial do Roblox"
+            ),
+            backend.queries
+        )
+        assertTrue(backend.queries.none { it.contains("privado") })
+    }
+
+    @Test
+    fun `official site questions still reject supplied URLs`() = runTest {
         val backend = LocalInternetTest.FakeSearch()
         val internet = LocalInternet.create(search = backend)
 
-        assertEquals(
-            "O site oficial do Roblox é https://www.roblox.com/",
-            internet.reply("qual o site oficial do roblox?")
+        assertTrue(
+            internet.reply("qual o site oficial do Minecraft https://example.test?")!!
+                .contains("link enviado")
         )
         assertEquals(emptyList<String>(), backend.queries)
     }
