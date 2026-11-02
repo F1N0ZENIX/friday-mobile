@@ -30,6 +30,24 @@ class LocalResponseQualityTest {
     }
 
     @Test
+    fun `rejects short repeated token loops from local completion`() {
+        assertRejected("como está o tempo?", "controle de controle de controle de controle de")
+        assertRejected("oi", "ajuda ajuda ajuda ajuda")
+        assertRejected("oi", "não sei não sei não sei")
+        assertRejected("oi", "isso é um teste isso é um teste isso é um teste")
+    }
+
+    @Test
+    fun `uses a helpful neutral fallback for rejected output`() {
+        val fallback = LocalResponseQuality.checked("como está o tempo?", "controle de controle de controle de")
+
+        assertEquals(
+            "A resposta local travou em repetição e foi descartada. Tente novamente ou reformule o pedido.",
+            fallback
+        )
+    }
+
+    @Test
     fun `rejects cyrillic only when prompt did not use it`() {
         assertRejected("oi", "Привет")
         assertEquals("Привет", LocalResponseQuality.checked("Escreva Привет", "Привет"))
@@ -45,12 +63,14 @@ class LocalResponseQualityTest {
     }
 
     @Test
-    fun `preserves normal answers`() {
+    fun `preserves normal answers and arithmetic`() {
         assertEquals("Sou Friday.", LocalResponseQuality.checked("quem é você?", " Sou Friday. "))
         assertEquals("Olá! Como posso ajudar?", LocalResponseQuality.checked("Olá", "Olá! Como posso ajudar?"))
+        assertEquals("2 + 2 = 4.", LocalResponseQuality.checked("quanto é 2 + 2?", "2 + 2 = 4."))
+        assertEquals("12 x 3 = 36.", LocalResponseQuality.checked("quanto é 12 x 3?", "12 x 3 = 36."))
     }
 
     private fun assertRejected(prompt: String, answer: String) {
-        assertTrue(LocalResponseQuality.checked(prompt, answer).contains("resposta repetida"))
+        assertTrue(LocalResponseQuality.checked(prompt, answer).contains("travou em repetição"))
     }
 }
