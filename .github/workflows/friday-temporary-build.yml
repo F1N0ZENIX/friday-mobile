@@ -26,8 +26,9 @@ jobs:
           git apply /tmp/friday.patch
           git apply --check .toqi-build/detekt-fix.patch
           git apply .toqi-build/detekt-fix.patch
-          git apply --check .toqi-build/conversation-improvements.patch
-          git apply .toqi-build/conversation-improvements.patch
+          base64 -d .toqi-build/conversation-improvements.patch.gz.b64 | gzip -d > /tmp/friday-conversation.patch
+          git apply --check /tmp/friday-conversation.patch
+          git apply /tmp/friday-conversation.patch
           git diff --check
       - uses: actions/setup-java@v4
         with:
