@@ -55,8 +55,23 @@ class AssistantRepositoryImpl(
     override suspend fun sendMessage(
         prompt: String,
         history: List<Message>,
-        mode: AssistantMode
+        mode: AssistantMode,
+        research: Boolean
     ): Flow<String> {
+        // This is deliberately the first branch. Research sends only this turn
+        // to the fixed local search boundary; it must not reach Groq, memory,
+        // commands, or chat history regardless of the selected chat mode.
+        if (research) {
+            return flow {
+                val internet = localInternet?.request("pesquise $prompt")
+                val answer = when (internet) {
+                    is LocalInternetReply.Direct -> internet.text
+                    is LocalInternetReply.SearchSources -> groundedLocalReply(prompt, emptyList(), internet)
+                    null -> "A pesquisa local não está disponível neste aparelho."
+                }
+                emit(LocalResponseQuality.checked(prompt, answer))
+            }
+        }
         LocalArithmetic.reply(prompt)?.let { answer -> return flow { emit(answer) } }
         // This must stay before every collaborator below: catalog, prompt,
         // memory and agent can initiate cloud work or construct tool prompts.
