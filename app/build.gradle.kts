@@ -218,7 +218,6 @@ dependencies {
 
     // Unit Tests
     testImplementation("junit:junit:4.13.2")
-    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     // Real JSONObject on the JVM test classpath — the android.jar one is a stub.
     testImplementation("org.json:json:20240303")
     testImplementation("io.mockk:mockk:1.13.13")
