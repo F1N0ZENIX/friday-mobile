@@ -55,11 +55,13 @@ class LocalInternetTest {
     }
 
     @Test
-    fun `weather supports tomorrow and dynamic home city`() = runTest {
+    fun `weather supports Portuguese today tomorrow and dynamic home city`() = runTest {
         var home = "Recife"
         val weather = FakeWeather()
         val internet = LocalInternet.create(weather::answer, homeCity = { home })
 
+        // This is the reported wording. It must initialize and route on Android too.
+        assertEquals("Clima em Recife 0", internet.reply("como tava o tempo hj"))
         assertEquals("Clima em Recife 1", internet.reply("vai chover amanhã?"))
         home = "Salvador"
         assertEquals("Clima em Salvador 0", internet.reply("como está o tempo?"))
