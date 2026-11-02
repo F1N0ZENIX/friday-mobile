@@ -21,7 +21,7 @@ jobs:
       - name: Verificar e aplicar patch
         run: |
           cat .toqi-build/part-*.txt | base64 -d | gzip -dc > /tmp/friday.patch
-          echo 'd4d10211c919dd8073d1dbeb945b8bc41af3d3f697a52c9ae1abc2f02954061d  /tmp/friday.patch' | sha256sum -c -
+          echo '07f538d1dad5c89b19c24fa7a8cf503a4d1ecb969b50012fa838dfa274cc785f  /tmp/friday.patch' | sha256sum -c -
           git apply --check /tmp/friday.patch
           git apply /tmp/friday.patch
           git diff --check
