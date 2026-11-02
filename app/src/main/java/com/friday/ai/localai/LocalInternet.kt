@@ -126,7 +126,7 @@ private sealed interface InternetIntent {
             weatherWordsPattern(),
             RegexOption.IGNORE_CASE
         )
-        private val tomorrow = Regex("""\bamanh[aã]\b""", RegexOption.IGNORE_CASE)
+        private val tomorrow = Regex("""(?U)\bamanh[aã]\b""", RegexOption.IGNORE_CASE)
 
         private fun weatherWordsPattern(): String = listOf(
             """\bprevis[aã]o(?:\s+do\s+tempo)?\b""",
