@@ -62,7 +62,7 @@ class AssistantRepositoryImpl(
         // memory and agent can initiate cloud work or construct tool prompts.
         if (LocalChatRouting.useLocal(localPreferences?.mode)) {
             return flow {
-                val internet = localInternet?.request(prompt)
+                val internet = localInternet?.request(prompt, history)
                 val answer = when (internet) {
                     is LocalInternetReply.Direct -> internet.text
                     is LocalInternetReply.SearchSources -> groundedLocalReply(prompt, history, internet)
