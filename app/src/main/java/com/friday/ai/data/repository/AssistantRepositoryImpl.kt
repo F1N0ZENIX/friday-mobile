@@ -119,7 +119,8 @@ class AssistantRepositoryImpl(
             null
         }
         val checked = generated?.let { LocalResponseQuality.checked(prompt, it) }
-        val rejected = checked == null || checked.startsWith("A resposta local travou")
+        val rejected = checked == null || checked.startsWith("A resposta local travou") ||
+            !LocalResponseQuality.isRelevantToSources(checked, sources)
         if (rejected) return fallback
         val links = sources.items.take(com.friday.ai.localai.MAX_GROUNDED_SOURCES)
             .joinToString("\n") { "Fonte: ${it.url}" }
