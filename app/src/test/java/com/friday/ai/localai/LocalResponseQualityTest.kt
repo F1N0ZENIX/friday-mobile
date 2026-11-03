@@ -20,6 +20,13 @@ class LocalResponseQualityTest {
     }
 
     @Test
+    fun `rejects copied local system instructions`() {
+        assertRejected("oi", LocalPrompt.SYSTEM_PROMPT)
+        assertRejected("oi", "Você é Friday, uma assistente local neste celular. " +
+            "Responda em português do Brasil, com respostas curtas e honestas.")
+    }
+
+    @Test
     fun `rejects repeated local model output`() {
         assertRejected("oi", "frase repetida\nfrase repetida\nfrase repetida")
         val repeatedSunday = "Sunday: Não consigo ajudar agora.\n" +
@@ -68,6 +75,21 @@ class LocalResponseQualityTest {
         assertEquals("Olá! Como posso ajudar?", LocalResponseQuality.checked("Olá", "Olá! Como posso ajudar?"))
         assertEquals("2 + 2 = 4.", LocalResponseQuality.checked("quanto é 2 + 2?", "2 + 2 = 4."))
         assertEquals("12 x 3 = 36.", LocalResponseQuality.checked("quanto é 12 x 3?", "12 x 3 = 36."))
+    }
+
+    @Test
+    fun `requires grounded summaries to use concrete source terms`() {
+        val sources = LocalInternetReply.SearchSources(listOf(SearchItem(
+            "Chuva forte atinge Salvador", "Defesa Civil alerta para alagamentos nesta terça-feira.",
+            "https://fonte.test/chuva"
+        )))
+
+        assertTrue(LocalResponseQuality.isRelevantToSources(
+            "A Defesa Civil alertou para alagamentos em Salvador.", sources
+        ))
+        assertTrue(!LocalResponseQuality.isRelevantToSources(
+            "Este portal traz notícias e informações atuais.", sources
+        ))
     }
 
     private fun assertRejected(prompt: String, answer: String) {
