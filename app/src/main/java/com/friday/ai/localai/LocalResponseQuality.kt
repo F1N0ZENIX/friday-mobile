@@ -15,7 +15,7 @@ object LocalResponseQuality {
     private fun hasInvalidContent(prompt: String, text: String): Boolean =
         leaksTurns(text) && !asksForDialogue(prompt) ||
             echoesInternalInstructions(text) ||
-            hasUnexpectedCyrillic(prompt, text) ||
+            (CYRILLIC.containsMatchIn(text) && !CYRILLIC.containsMatchIn(prompt)) ||
             repeatsLine(text) ||
             repeatsSentence(text) ||
             repeatsTokenSequence(prompt, text)
@@ -25,7 +25,9 @@ object LocalResponseQuality {
      * This rejects generic descriptions of a portal while allowing a source-derived summary.
      */
     fun isRelevantToSources(answer: String, sources: LocalInternetReply.SearchSources): Boolean {
-        val sourceTerms = sources.items.flatMap { item -> groundedContentTerms("${item.title} ${item.snippet}") }.toSet()
+        val sourceTerms = sources.items.flatMap { item ->
+            groundedContentTerms("${item.title} ${item.snippet}")
+        }.toSet()
         if (sourceTerms.isEmpty()) return false
         return groundedContentTerms(answer).toSet().intersect(sourceTerms).size >= MIN_GROUNDED_TERM_MATCHES
     }
@@ -35,9 +37,6 @@ object LocalResponseQuality {
 
     private fun asksForDialogue(prompt: String): Boolean =
         DIALOGUE_REQUEST.containsMatchIn(normalized(prompt))
-
-    private fun hasUnexpectedCyrillic(prompt: String, text: String): Boolean =
-        CYRILLIC.containsMatchIn(text) && !CYRILLIC.containsMatchIn(prompt)
 
     private fun repeatsLine(text: String): Boolean {
         val lines = text.lines().map(::normalized).filter { it.length >= MIN_REPEATED_LENGTH }
