@@ -109,7 +109,11 @@ class LocalInternet private constructor(
 sealed interface LocalInternetReply {
     data class Direct(val text: String) : LocalInternetReply
     data class SearchSources(val items: List<SearchItem>) : LocalInternetReply {
-        fun fallbackText(): String = items.take(MAX_GROUNDED_SOURCES).joinToString("\n\n") { item ->
+        /** Raw search results, explicitly labelled when no source-grounded summary is available. */
+        fun fallbackText(): String = items.take(MAX_GROUNDED_SOURCES).joinToString(
+            separator = "\n\n",
+            prefix = "Resultados da busca (sem resumo gerado):\n"
+        ) { item ->
             buildString {
                 append(item.title.trim().take(MAX_SOURCE_TITLE_CHARS))
                 item.snippet.trim().take(MAX_SOURCE_SNIPPET_CHARS).takeIf { it.isNotBlank() }
