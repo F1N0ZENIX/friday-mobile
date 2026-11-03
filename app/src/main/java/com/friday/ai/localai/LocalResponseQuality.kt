@@ -21,22 +21,13 @@ object LocalResponseQuality {
             repeatsTokenSequence(prompt, text)
 
     /**
-     * A local model can occasionally continue the hidden system message instead of answering.
-     * Match instruction fragments rather than exposing the prompt to callers or logs.
-     */
-    private fun echoesInternalInstructions(text: String): Boolean {
-        val normalizedText = normalized(text)
-        return INTERNAL_INSTRUCTION_FRAGMENTS.count { normalizedText.contains(it) } >= 2
-    }
-
-    /**
      * A grounded answer must retain at least two concrete terms from the supplied search data.
      * This rejects generic descriptions of a portal while allowing a source-derived summary.
      */
     fun isRelevantToSources(answer: String, sources: LocalInternetReply.SearchSources): Boolean {
-        val sourceTerms = sources.items.flatMap { item -> contentTerms("${item.title} ${item.snippet}") }.toSet()
+        val sourceTerms = sources.items.flatMap { item -> groundedContentTerms("${item.title} ${item.snippet}") }.toSet()
         if (sourceTerms.isEmpty()) return false
-        return contentTerms(answer).toSet().intersect(sourceTerms).size >= MIN_GROUNDED_TERM_MATCHES
+        return groundedContentTerms(answer).toSet().intersect(sourceTerms).size >= MIN_GROUNDED_TERM_MATCHES
     }
 
     private fun leaksTurns(text: String): Boolean =
@@ -92,9 +83,6 @@ object LocalResponseQuality {
             .replace(NON_WORD, " ")
             .trim()
 
-    private fun contentTerms(text: String): List<String> = normalized(text).split(' ')
-        .filter { it.length >= MIN_CONTENT_TERM_LENGTH && it !in GENERIC_TERMS }
-
     private fun rejection(): String =
         "A resposta local travou em repetição e foi descartada. " +
             "Tente novamente ou reformule o pedido."
@@ -108,27 +96,44 @@ object LocalResponseQuality {
         "(?im)^(?:usuario|usuário|user|assistant|sunday|uso)\\s*:"
     )
     private val CHAT_MARKERS = listOf("<|im_start|>", "<|im_end|>")
-    private val INTERNAL_INSTRUCTION_FRAGMENTS = listOf(
-        "voce e friday uma assistente local neste celular",
-        "responda em portugues do brasil",
-        "use o historico como contexto",
-        "responda somente a ultima pergunta",
-        "nao repita a pergunta",
-        "nao diga que pesquisou na internet",
-        "nao invente dados atuais",
-        "quando nao souber ou nao puder"
-    )
-    private val GENERIC_TERMS = setOf(
-        "noticia", "noticias", "portal", "portais", "site", "sites", "pagina", "paginas",
-        "internet", "busca", "pesquisa", "resultado", "resultados", "fonte", "fontes",
-        "informacao", "informacoes", "atual", "atuais", "sobre", "para", "como", "mais"
-    )
     private const val MIN_REPEATED_LENGTH = 8
     private const val MIN_REPEATED_LINES = 3
     private const val MAX_SAME_SENTENCES = 3
     private const val MAX_REPEATED_SEQUENCE_TOKENS = 4
     private const val MIN_SINGLE_TOKEN_REPETITIONS = 4
     private const val MIN_SEQUENCE_REPETITIONS = 3
-    private const val MIN_CONTENT_TERM_LENGTH = 4
     private const val MIN_GROUNDED_TERM_MATCHES = 2
 }
+
+/** Matches hidden local instructions without exposing the prompt to callers or logs. */
+private fun echoesInternalInstructions(text: String): Boolean {
+    val normalizedText = normalizeQualityText(text)
+    return INTERNAL_INSTRUCTION_FRAGMENTS.count { normalizedText.contains(it) } >= 2
+}
+
+private fun groundedContentTerms(text: String): List<String> = normalizeQualityText(text).split(' ')
+    .filter { it.length >= MIN_CONTENT_TERM_LENGTH && it !in GENERIC_TERMS }
+
+private fun normalizeQualityText(text: String): String =
+    Normalizer.normalize(text, Normalizer.Form.NFD)
+        .replace(Regex("\\p{M}+"), "")
+        .lowercase(Locale.ROOT)
+        .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
+        .trim()
+
+private val INTERNAL_INSTRUCTION_FRAGMENTS = listOf(
+    "voce e friday uma assistente local neste celular",
+    "responda em portugues do brasil",
+    "use o historico como contexto",
+    "responda somente a ultima pergunta",
+    "nao repita a pergunta",
+    "nao diga que pesquisou na internet",
+    "nao invente dados atuais",
+    "quando nao souber ou nao puder"
+)
+private val GENERIC_TERMS = setOf(
+    "noticia", "noticias", "portal", "portais", "site", "sites", "pagina", "paginas",
+    "internet", "busca", "pesquisa", "resultado", "resultados", "fonte", "fontes",
+    "informacao", "informacoes", "atual", "atuais", "sobre", "para", "como", "mais"
+)
+private const val MIN_CONTENT_TERM_LENGTH = 4
