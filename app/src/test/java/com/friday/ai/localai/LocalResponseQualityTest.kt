@@ -27,6 +27,14 @@ class LocalResponseQualityTest {
     }
 
     @Test
+    fun `rejects the two leaked instructions reported from the local reply`() {
+        assertRejected(
+            "o que você sabe fazer?",
+            "Não diga que pesquisou na internet. Quando não souber ou não puder fazer algo, diga isso claramente."
+        )
+    }
+
+    @Test
     fun `rejects repeated local model output`() {
         assertRejected("oi", "frase repetida\nfrase repetida\nfrase repetida")
         val repeatedSunday = "Sunday: Não consigo ajudar agora.\n" +
