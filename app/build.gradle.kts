@@ -62,14 +62,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
-        }
-    }
-
-    // Every phone Friday runs on is 64-bit ARM. The x86 and 32-bit copies
+        // Every phone Friday runs on is 64-bit ARM. The x86 and 32-bit copies
         // of the ONNX Runtime and Vosk libraries were a third of the APK.
         ndk { abiFilters += "arm64-v8a" }
         externalNativeBuild {
@@ -83,6 +76,13 @@ android {
                 cppFlags += "-O3"
                 targets += "llama_jni"
             }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
         }
     }
 
