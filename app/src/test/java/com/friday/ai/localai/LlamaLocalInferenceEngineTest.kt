@@ -6,6 +6,10 @@ import dev.ffmpegkit.llama.LlamaConfig
 import java.io.File
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -61,13 +65,36 @@ class LlamaLocalInferenceEngineTest {
         assertTrue(!native.receivedPrompt.endsWith("Friday:"))
     }
 
+
+    @Test
+    fun `streams native chunks incrementally and releases the model`() = runBlocking {
+        val native = FakeNative(streamChunks = listOf("Olá", ", mundo", "!"))
+
+        val chunks = engine(native).streamWithHistory("oi", emptyList()).toList()
+
+        assertEquals(listOf("Olá", ", mundo", "!"), chunks)
+        assertSame(native.handle, native.released)
+    }
+
+    @Test
+    fun `cancellation during token streaming releases the model`() = runBlocking {
+        val native = FakeNative(blockCompletion = true)
+        val job = launch { engine(native).streamWithHistory("oi", emptyList()).collect { } }
+        native.completionStarted.await()
+
+        job.cancelAndJoin()
+
+        assertSame(native.handle, native.released)
+    }
+
     private fun engine(native: NativeLlama) =
         LlamaLocalInferenceEngine(activeFile = { File("model.gguf") }, native = native)
 
     private class FakeNative(
         private val answer: String = "",
         val completionError: Throwable? = null,
-        private val blockCompletion: Boolean = false
+        private val blockCompletion: Boolean = false,
+        private val streamChunks: List<String> = listOf(answer)
     ) : NativeLlama {
         val handle = Any()
         var released: Any? = null
@@ -89,6 +116,20 @@ class LlamaLocalInferenceEngineTest {
             completionError?.let { throw it }
             if (blockCompletion) awaitCancellation()
             return answer
+        }
+
+        override fun stream(
+            model: Any,
+            prompt: String,
+            systemPrompt: String,
+            maxTokens: Int
+        ): Flow<String> = flow {
+            receivedPrompt = prompt
+            receivedSystem = systemPrompt
+            completionStarted.complete(Unit)
+            completionError?.let { throw it }
+            if (blockCompletion) awaitCancellation()
+            streamChunks.forEach { emit(it) }
         }
 
         override fun release(model: Any) {

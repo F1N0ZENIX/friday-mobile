@@ -5,11 +5,15 @@ import dev.ffmpegkit.llama.Llama
 import dev.ffmpegkit.llama.LlamaConfig
 import dev.ffmpegkit.llama.LlamaException
 import java.io.File
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 
 /**
@@ -19,6 +23,9 @@ import kotlinx.coroutines.withContext
 interface LocalInferenceEngine {
     suspend fun reply(prompt: String): String
     suspend fun replyWithHistory(prompt: String, history: List<Message>): String = reply(prompt)
+    fun streamWithHistory(prompt: String, history: List<Message>): Flow<String> = flow {
+        emit(replyWithHistory(prompt, history))
+    }
     /** Safe default: do not pass web text to an engine that cannot isolate it. */
     suspend fun replyWithGrounding(
         prompt: String,
@@ -50,6 +57,50 @@ class LlamaLocalInferenceEngine(
 
     override suspend fun replyWithHistory(prompt: String, history: List<Message>): String = inferenceMutex.withLock {
         complete(prompt, LocalPrompt.systemFor(prompt, history))
+    }
+
+    @Suppress("ThrowsCount", "LongMethod")
+    override fun streamWithHistory(prompt: String, history: List<Message>): Flow<String> = flow {
+        inferenceMutex.withLock {
+            currentCoroutineContext().ensureActive()
+            val modelFile = activeFile() ?: throw LocalInferenceException.ModelMissing()
+            val config = LlamaConfig(
+                contextSize = LocalInferenceLimits.CONTEXT_TOKENS,
+                threads = Runtime.getRuntime().availableProcessors().coerceIn(1, LocalInferenceLimits.MAX_CPU_THREADS),
+                gpuLayers = 0,
+                temperature = 0.0f,
+                seed = 42
+            )
+            var model: Any? = null
+            try {
+                model = withContext(NonCancellable) { native.load(modelFile, config) }
+                currentCoroutineContext().ensureActive()
+                native.stream(
+                    model = model,
+                    prompt = LocalPrompt.userTurn(prompt),
+                    systemPrompt = LocalPrompt.systemFor(prompt, history),
+                    maxTokens = LocalInferenceLimits.MAX_REPLY_TOKENS
+                ).collect { token ->
+                    currentCoroutineContext().ensureActive()
+                    emit(token)
+                }
+                currentCoroutineContext().ensureActive()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: LocalInferenceException) {
+                throw error
+            } catch (error: LlamaException.ModelLoadFailed) {
+                throw LocalInferenceException.LoadFailed(error)
+            } catch (error: LlamaException) {
+                throw LocalInferenceException.Failed("A inferência local falhou: ${error.message.orEmpty()}", error)
+            } catch (error: UnsatisfiedLinkError) {
+                throw LocalInferenceException.LibraryUnavailable(error)
+            } catch (error: OutOfMemoryError) {
+                throw LocalInferenceException.OutOfMemory(error)
+            } finally {
+                if (model != null) withContext(NonCancellable) { native.release(model) }
+            }
+        }
     }
 
     override suspend fun replyWithGrounding(
@@ -110,6 +161,9 @@ class LlamaLocalInferenceEngine(
 interface NativeLlama {
     suspend fun load(file: File, config: LlamaConfig): Any
     suspend fun complete(model: Any, prompt: String, systemPrompt: String, maxTokens: Int): String
+    fun stream(model: Any, prompt: String, systemPrompt: String, maxTokens: Int): Flow<String> = flow {
+        emit(complete(model, prompt, systemPrompt, maxTokens))
+    }
     fun release(model: Any)
 }
 
@@ -119,6 +173,9 @@ private object NativeLlamaApi : NativeLlama {
 
     override suspend fun complete(model: Any, prompt: String, systemPrompt: String, maxTokens: Int): String =
         Llama.complete(model as dev.ffmpegkit.llama.LlamaModel, prompt, systemPrompt, maxTokens).text
+
+    override fun stream(model: Any, prompt: String, systemPrompt: String, maxTokens: Int): Flow<String> =
+        Llama.stream(model as dev.ffmpegkit.llama.LlamaModel, prompt, systemPrompt, maxTokens)
 
     override fun release(model: Any) {
         Llama.releaseModel(model as dev.ffmpegkit.llama.LlamaModel)

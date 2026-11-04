@@ -51,6 +51,7 @@ android {
 
     namespace = "com.friday.ai"
     compileSdk = 35
+    ndkVersion = "27.2.12479018"
 
     defaultConfig {
         applicationId = "com.friday.ai"
@@ -61,9 +62,28 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Every phone Friday runs on is 64-bit ARM. The x86 and 32-bit copies
+        externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
+    }
+
+    // Every phone Friday runs on is 64-bit ARM. The x86 and 32-bit copies
         // of the ONNX Runtime and Vosk libraries were a third of the APK.
         ndk { abiFilters += "arm64-v8a" }
+        externalNativeBuild {
+            cmake {
+                arguments += listOf(
+                    "-DANDROID_STL=c++_shared", "-DGGML_NATIVE=OFF", "-DGGML_OPENMP=OFF",
+                    "-DGGML_VULKAN=OFF", "-DGGML_LLAMAFILE=OFF", "-DLLAMA_CURL=OFF",
+                    "-DLLAMA_BUILD_TESTS=OFF", "-DLLAMA_BUILD_EXAMPLES=OFF",
+                    "-DLLAMA_BUILD_SERVER=OFF", "-DLLAMA_BUILD_TOOLS=OFF"
+                )
+                cppFlags += "-O3"
+                targets += "llama_jni"
+            }
+        }
     }
 
     // The owner's signing key and its passwords are never committed: they come
@@ -147,9 +167,7 @@ android {
 }
 
 dependencies {
-    // CPU-only llama.cpp runtime for user-installed GGUF chat models. Models
-    // remain outside the APK in LocalModelStore.
-    implementation("dev.ffmpegkit-maintained:llama-android:0.1.1")
+    // llama.cpp is compiled from the pinned source submodule; GGUF files remain external.
 
     // Speaker verification. ONNX Runtime rather than TFLite: the wespeaker
     // model ships as ONNX, and converting it would add a step that could only

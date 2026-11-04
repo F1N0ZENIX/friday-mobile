@@ -21,11 +21,18 @@ jobs:
       FRIDAY_SIGNING_KEY_PASSWORD: ${{ secrets.FRIDAY_SIGNING_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
+
+      - name: Install llama.cpp Android NDK
+        run: |
+          yes | sdkmanager --licenses >/dev/null
+          sdkmanager "ndk;27.2.12479018"
 
       - uses: gradle/actions/setup-gradle@v4
 

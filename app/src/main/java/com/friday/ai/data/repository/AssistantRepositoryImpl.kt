@@ -23,11 +23,13 @@ import com.friday.ai.localai.LocalGroundedReplies
 import com.friday.ai.localai.LocalInternet
 import com.friday.ai.localai.LocalInternetReply
 import com.friday.ai.localai.LocalInferenceEngine
+import com.friday.ai.localai.LocalInferenceException
 import com.friday.ai.localai.LocalResponseQuality
 import com.friday.ai.service.FridayMemory
 import com.friday.ai.service.ModelCatalog
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
@@ -63,15 +65,31 @@ class AssistantRepositoryImpl(
         if (LocalChatRouting.useLocal(localPreferences?.mode)) {
             return flow {
                 val internet = localInternet?.request(prompt, history)
-                val answer = when (internet) {
-                    is LocalInternetReply.Direct -> internet.text
-                    is LocalInternetReply.SearchSources -> groundedLocalReply(prompt, history, internet)
-                    null -> LocalConversationFacts.reply(prompt, history)
-                        ?: LocalGroundedReplies.reply(prompt)
-                        ?: (localEngine ?: error("A IA local não está disponível neste aparelho."))
-                            .replyWithHistory(prompt, history)
+                when (internet) {
+                    is LocalInternetReply.Direct ->
+                        emit(LocalResponseQuality.checked(prompt, internet.text))
+                    is LocalInternetReply.SearchSources ->
+                        emit(groundedLocalReply(prompt, history, internet))
+                    null -> {
+                        val deterministic = LocalConversationFacts.reply(prompt, history)
+                            ?: LocalGroundedReplies.reply(prompt)
+                        if (deterministic != null) {
+                            emit(LocalResponseQuality.checked(prompt, deterministic))
+                        } else {
+                            val engine = localEngine
+                                ?: error("A IA local não está disponível neste aparelho.")
+                            val generated = StringBuilder()
+                            engine.streamWithHistory(prompt, history).collect { token ->
+                                generated.append(token)
+                                emit(token)
+                            }
+                            val checked = LocalResponseQuality.checked(prompt, generated.toString())
+                            if (checked.startsWith("A resposta local travou")) {
+                                throw LocalInferenceException.Failed(checked)
+                            }
+                        }
+                    }
                 }
-                emit(LocalResponseQuality.checked(prompt, answer))
             }
         }
         val apiKey = prefDao.get(PREF_API_KEY) ?: ""
