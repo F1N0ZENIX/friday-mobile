@@ -73,10 +73,11 @@ class LlamaLocalInferenceEngine(
             )
             var model: Any? = null
             try {
-                model = withContext(NonCancellable) { native.load(modelFile, config) }
+                val loadedModel = withContext(NonCancellable) { native.load(modelFile, config) }
+                model = loadedModel
                 currentCoroutineContext().ensureActive()
                 native.stream(
-                    model = model,
+                    model = loadedModel,
                     prompt = LocalPrompt.userTurn(prompt),
                     systemPrompt = LocalPrompt.systemFor(prompt, history),
                     maxTokens = LocalInferenceLimits.MAX_REPLY_TOKENS
@@ -98,7 +99,10 @@ class LlamaLocalInferenceEngine(
             } catch (error: OutOfMemoryError) {
                 throw LocalInferenceException.OutOfMemory(error)
             } finally {
-                if (model != null) withContext(NonCancellable) { native.release(model) }
+                val handleToRelease = model
+                if (handleToRelease != null) {
+                    withContext(NonCancellable) { native.release(handleToRelease) }
+                }
             }
         }
     }
