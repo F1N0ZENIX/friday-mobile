@@ -2,12 +2,11 @@ package com.friday.ai
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.compose.foundation.layout.fillMaxSize
-import com.friday.ai.ui.voice.InAppVoiceLayer
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
+import com.friday.ai.core.AiSetup
 import com.friday.ai.core.DeviceContext
 import com.friday.ai.data.local.dao.UserPreferenceDao
 import com.friday.ai.service.FridayWakeWordService
@@ -31,11 +30,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             FridayTheme {
-                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
-                    FridayNavGraph(activity = this@MainActivity)
-                    // A spoken exchange while Friday is open shows here, not in a window over her.
-                    InAppVoiceLayer()
-                }
+                FridayNavGraph(activity = this@MainActivity)
             }
         }
     }
@@ -54,7 +49,14 @@ class MainActivity : ComponentActivity() {
             // won't let a microphone service start itself in the background.
             // Opening Friday brings her back; if she is already listening,
             // this changes nothing.
-            if (prefs.get("wake_word_enabled") == "true") FridayWakeWordService.start(this@MainActivity)
+            val setup = getSharedPreferences("friday_ai_setup", MODE_PRIVATE)
+            if (
+                setup.getBoolean(AiSetup.PREF_COMPLETE, false) &&
+                setup.getString(AiSetup.PREF_MODE, null) != AiSetup.MODE_LOCAL &&
+                prefs.get("wake_word_enabled") == "true"
+            ) {
+                FridayWakeWordService.start(this@MainActivity)
+            }
         }
     }
 

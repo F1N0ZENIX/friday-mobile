@@ -148,4 +148,32 @@ class FridayMemorySessionTest {
             lazuriApi.createMemory(any(), any(), any(), any(), any(), any(), any())
         }
     }
+    @Test
+    fun `explicit local facts never enter online model context`() = runTest {
+        coEvery { memoryDao.getRecent(30) } returns listOf(
+            com.friday.ai.data.local.entity.MemoryEntity(
+                category = "fact", key = "name", value = "PRIVATE_LOCAL_NAME", source = "explicit_local"
+            ),
+            com.friday.ai.data.local.entity.MemoryEntity(
+                category = "fact", key = "hobby", value = "public hobby", source = "conversation"
+            )
+        )
+
+        val context = memory.buildMemoryContext()
+
+        assertTrue(!context.contains("PRIVATE_LOCAL_NAME"))
+        assertTrue(context.contains("public hobby"))
+    }
+
+    @Test
+    fun `only private facts produce empty online context`() = runTest {
+        coEvery { memoryDao.getRecent(30) } returns listOf(
+            com.friday.ai.data.local.entity.MemoryEntity(
+                category = "fact", key = "name", value = "PRIVATE_LOCAL_NAME", source = "explicit_local"
+            )
+        )
+
+        assertEquals("", memory.buildMemoryContext())
+    }
+
 }

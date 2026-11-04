@@ -64,6 +64,9 @@ class VoiceConversationTest {
         coEvery { session.apiKey() } returns "key"
         coEvery { session.russian() } returns true
         coEvery { commands.answerPending(any(), any()) } returns null
+        // A relaxed String? mock returns an empty String, not null. Only an
+        // explicitly recognised memory command should short-circuit routing.
+        coEvery { commands.memoryReply(any()) } returns null
         every { speaker.speak(any(), any()) } answers {
             said += firstArg<String>() to secondArg<(() -> Unit)?>()
         }
@@ -88,6 +91,59 @@ class VoiceConversationTest {
 
     private fun hears(vararg outcomes: VoiceTurn.Outcome) {
         coEvery { transcriber.recordAndTranscribe(any(), any()) } returnsMany outcomes.toList()
+    }
+
+    @Test
+    fun `Friday wake records commands in Portuguese instead of autodetecting`() = runTest {
+        val recording = CompletableDeferred<VoiceTurn.Outcome>()
+        coEvery { transcriber.recordAndTranscribe(any(), any()) } coAnswers { recording.await() }
+        val c = conversation()
+
+        c.onWake("friday")
+        advanceUntilIdle()
+        finishSpeaking(0)
+
+        coVerifyOrder {
+            transcriber.language = "pt"
+            transcriber.recordAndTranscribe(any(), any())
+        }
+        recording.complete(VoiceTurn.Outcome.Nothing)
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun `shortcut activation keeps Portuguese even with a legacy Russian preference`() = runTest {
+        val recording = CompletableDeferred<VoiceTurn.Outcome>()
+        coEvery { transcriber.recordAndTranscribe(any(), any()) } coAnswers { recording.await() }
+        val c = conversation()
+
+        c.onWake("", continuing = true)
+        advanceUntilIdle()
+
+        coVerifyOrder {
+            transcriber.language = "pt"
+            transcriber.recordAndTranscribe(any(), any())
+        }
+        recording.complete(VoiceTurn.Outcome.Nothing)
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun `first announcement follow-up records in Portuguese without a prior wake`() = runTest {
+        val recording = CompletableDeferred<VoiceTurn.Outcome>()
+        coEvery { transcriber.recordAndTranscribe(any(), any()) } coAnswers { recording.await() }
+        val c = conversation()
+
+        c.announce("Nova mensagem. Quer responder?", listenAfter = true)
+        advanceUntilIdle()
+        finishSpeaking(0)
+
+        coVerifyOrder {
+            transcriber.language = "pt"
+            transcriber.recordAndTranscribe(any(), any())
+        }
+        recording.complete(VoiceTurn.Outcome.Nothing)
+        advanceUntilIdle()
     }
 
     @Test
@@ -258,6 +314,44 @@ class VoiceConversationTest {
     }
 
     @Test
+    fun `explicit memory is answered before routing or the model`() = runTest {
+        hears(VoiceTurn.Outcome.Heard("meu nome é Antenor"), VoiceTurn.Outcome.Nothing)
+        coEvery { commands.memoryReply("meu nome é Antenor") } returns "Certo, salvei seu nome como Antenor."
+        val c = conversation()
+
+        c.onWake("friday")
+        advanceUntilIdle()
+        finishSpeaking(0)
+
+        assertEquals("Certo, salvei seu nome como Antenor.", said[1].first)
+        coVerify { session.mirror("meu nome é Antenor", "Certo, salvei seu nome como Antenor.") }
+        verify(exactly = 0) { commands.route(any()) }
+        coVerify(exactly = 0) { commands.execute(any(), any()) }
+        coVerify(exactly = 0) { answers.answer(any()) }
+        coVerify(exactly = 0) { session.log(any(), any(), any()) }
+        finishSpeaking(1)
+    }
+
+    @Test
+    fun `offline memory is answered locally without routing or a model`() = runTest {
+        every { offline.isOffline() } returns true
+        every { wake.modelPath } returns "/model"
+        coEvery { offline.listenForCommand("/model") } returns "qual meu nome"
+        coEvery { commands.memoryReply("qual meu nome") } returns "Seu nome salvo é Antenor."
+        val c = conversation()
+
+        c.onWake("friday")
+        advanceUntilIdle()
+        finishSpeaking(0)
+
+        assertEquals("Seu nome salvo é Antenor.", said[1].first)
+        verify(exactly = 0) { commands.route(any()) }
+        coVerify(exactly = 0) { commands.execute(any(), any()) }
+        coVerify(exactly = 0) { answers.answer(any()) }
+        coVerify(exactly = 0) { session.log(any(), any(), any()) }
+    }
+
+    @Test
     fun `no API key is said on screen instead of failing silently`() = runTest {
         coEvery { session.apiKey() } returns ""
         val c = conversation()
@@ -266,7 +360,7 @@ class VoiceConversationTest {
         advanceUntilIdle()
         finishSpeaking(0)
 
-        verify { overlay.error("Não foi configurada uma chave da API Groq. Abra as configurações do Friday.", any()) }
+        verify { overlay.error("Chave Groq não configurada. Abra as configurações do Friday.", any()) }
         coVerify(exactly = 0) { transcriber.recordAndTranscribe(any(), any()) }
     }
 

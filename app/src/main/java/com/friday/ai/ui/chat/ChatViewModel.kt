@@ -198,6 +198,11 @@ class ChatViewModel(
      * where the reply can be drawn as it arrives.
      */
     private suspend fun Request.dispatch(text: String) {
+        commands.memoryReply(text)?.let { answer ->
+            persist(text, MessageRole.USER)
+            persist(answer, MessageRole.ASSISTANT)
+            return
+        }
         val command = commands.route(text)
         // A silent quick link leaves nothing in the chat, not even what was typed.
         if (command is CommandResult.OpenLink && command.silent) {
@@ -251,7 +256,7 @@ class ChatViewModel(
                 stream(analyzeContent.analyzeImage(file.jpegBase64, "Analyze this image (${file.name}):"))
             is FileAnalyzer.Outcome.Text -> {
                 val text = if (file.truncated) {
-                    file.text + "\n\n[…обрезано: показаны первые ${FileAnalyzer.MAX_TEXT_CHARS} символов]"
+                    file.text + "\n\n[…truncado: exibindo os primeiros ${FileAnalyzer.MAX_TEXT_CHARS} caracteres]"
                 } else {
                     file.text
                 }

@@ -13,6 +13,11 @@ jobs:
     name: Compilar APK instalável
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      FRIDAY_SIGNING_KEYSTORE_BASE64: ${{ secrets.FRIDAY_SIGNING_KEYSTORE_BASE64 }}
+      FRIDAY_SIGNING_STORE_PASSWORD: ${{ secrets.FRIDAY_SIGNING_STORE_PASSWORD }}
+      FRIDAY_SIGNING_KEY_ALIAS: ${{ secrets.FRIDAY_SIGNING_KEY_ALIAS }}
+      FRIDAY_SIGNING_KEY_PASSWORD: ${{ secrets.FRIDAY_SIGNING_KEY_PASSWORD }}
     steps:
       - name: Baixar código
         uses: actions/checkout@v4
@@ -23,6 +28,8 @@ jobs:
           java-version: '21'
       - name: Preparar Gradle
         uses: gradle/actions/setup-gradle@v4
+      - name: Preparar assinatura e versão de CI
+        run: python3 scripts/prepare-ci-signing.py --require-signing
       - name: Compilar APK de depuração
         run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
       - name: Disponibilizar APK

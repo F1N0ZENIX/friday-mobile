@@ -46,7 +46,8 @@ class CommandExecutor(
     /** What the owner allows on a locked phone (settings). */
     private val lockLevel: suspend () -> LockPolicy.Level = { LockPolicy.Level.VOICE },
     /** Android's own unlock screen, when a command needs the phone unlocked. */
-    private val unlocker: Unlocker = Unlocker { Unlocker.Result.CANNOT_ASK }
+    private val unlocker: Unlocker = Unlocker { Unlocker.Result.CANNOT_ASK },
+    private val memory: com.friday.ai.service.FridayMemory? = null
 ) {
 
     /** What came of a command. Most are a reply; three need the caller. */
@@ -75,6 +76,11 @@ class CommandExecutor(
         fun isFailure(reply: String): Boolean = reply.startsWith(FAILED_RU) || reply.startsWith(FAILED_EN)
     }
 
+    /** Device-local memory is private: do not read or change it while locked. */
+    suspend fun memoryReply(text: String): String? = withContext(io) {
+        if (lock().first) null else memory?.replyToMemoryCommand(text)
+    }
+
     /** True when the last [route] was answered from what the model taught, not the patterns. */
     @Volatile
     var lastRouteLearned = false
@@ -97,7 +103,7 @@ class CommandExecutor(
             lastRouteLearned = false
             return it
         }
-        val routed = router.route(text)
+        val routed = com.friday.ai.core.PortugueseDeviceCommands.route(text) ?: router.route(text)
         val fromLesson = if (routed is CommandResult.ChatMessage) learned?.command(text, now()) else null
         lastRouteLearned = fromLesson != null
         return fromLesson ?: routed
@@ -156,11 +162,6 @@ class CommandExecutor(
         }
     }
 
-    /** A step inside a mode always yields words. */
-    private fun replyOf(outcome: Outcome, russian: Boolean): String =
-        (outcome as? Outcome.Reply)?.text
-            ?: if (russian) "Это нужно сделать отдельно." else "That needs doing on its own."
-
     private suspend fun single(command: CommandResult, russian: Boolean): Outcome {
         val (locked, verified) = lock()
         val decision = LockPolicy.decide(command, locked, verified, lockLevel())
@@ -183,7 +184,9 @@ class CommandExecutor(
                 is CommandResult.Sequence -> inOrder(command.steps, russian)
                 is CommandResult.Mode -> Outcome.Reply(
                     modes?.handle(command, russian, router = { router.route(it) }) { step ->
-                        replyOf(single(step, russian), russian)
+                        // A step inside a mode always yields words.
+                        (single(step, russian) as? Outcome.Reply)?.text
+                            ?: if (russian) "Это нужно сделать отдельно." else "That needs doing on its own."
                     }
                         ?: if (russian) "Режимы недоступны." else "Modes aren't available."
                 )

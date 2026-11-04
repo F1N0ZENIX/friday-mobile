@@ -1,5 +1,7 @@
 package com.friday.ai.data.remote
 
+import android.content.Context
+import com.friday.ai.core.AiSetup
 import com.friday.ai.core.GroqModels
 import com.friday.ai.data.remote.dto.ApiMessage
 import com.friday.ai.data.remote.dto.ChatCompletionChunk
@@ -39,7 +41,8 @@ import kotlin.coroutines.resumeWithException
 
 class GroqApiService private constructor(
     private val client: OkHttpClient,
-    private val json: Json
+    private val json: Json,
+    private val cloudAllowed: () -> Boolean
 ) {
 
     companion object {
@@ -57,18 +60,23 @@ class GroqApiService private constructor(
         /** Spoken replies are one or two sentences — anything more is a bug, not a feature. */
         const val VOICE_MAX_TOKENS = 150
 
-        fun create(): GroqApiService {
+        fun create(context: Context): GroqApiService {
             val client = OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(120, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)
                 .build()
-
-            return GroqApiService(client, groqJson)
+            val prefs = context.applicationContext.getSharedPreferences("friday_ai_setup", Context.MODE_PRIVATE)
+            return GroqApiService(client, groqJson) {
+                AiSetup.cloudAllowed(
+                    prefs.getBoolean(AiSetup.PREF_COMPLETE, false),
+                    prefs.getString(AiSetup.PREF_MODE, null)
+                )
+            }
         }
 
         /** With a client of the test's own (a fake server behind an interceptor). */
-        internal fun create(client: OkHttpClient): GroqApiService = GroqApiService(client, groqJson)
+        internal fun create(client: OkHttpClient): GroqApiService = GroqApiService(client, groqJson) { true }
     }
 
     fun streamCompletion(
@@ -91,6 +99,7 @@ class GroqApiService private constructor(
         maxTokens: Int = DEFAULT_MAX_TOKENS,
         tools: List<ToolDefinition>? = null
     ): Flow<ChatEvent> {
+        requireCloud()
         val offered = tools?.takeIf { it.isNotEmpty() }
         val thorough = offered != null
         val request = ChatCompletionRequest(
@@ -185,6 +194,7 @@ class GroqApiService private constructor(
             "Answer in the same language as the user's question.",
         model: String = GroqModels.fallback(GroqModels.Role.VISION)
     ): Flow<String> {
+        requireCloud()
         val messagesJson = JsonArray(listOf(
             JsonObject(mapOf(
                 "role" to JsonPrimitive("user"),
@@ -246,6 +256,7 @@ class GroqApiService private constructor(
      * Groq's side and only the finished answer is worth having.
      */
     suspend fun browse(apiKey: String, model: String, system: String, question: String): String {
+        requireCloud()
         val body = JsonObject(
             mapOf(
                 "model" to JsonPrimitive(model),
@@ -275,6 +286,7 @@ class GroqApiService private constructor(
 
     /** Ids of the models this key can use right now. */
     fun listModels(apiKey: String): Set<String> {
+        requireCloud()
         val request = Request.Builder().url(MODELS_URL).addHeader("Authorization", "Bearer $apiKey").get().build()
         client.newCall(request).execute().use { response ->
             val body = response.body?.string().orEmpty()
@@ -291,6 +303,7 @@ class GroqApiService private constructor(
         language: String? = null,
         prompt: String? = null
     ): String {
+        requireCloud()
         val fileBody = audioFile.asRequestBody("audio/wav".toMediaType())
 
         val multipartBuilder = MultipartBody.Builder()
@@ -316,6 +329,12 @@ class GroqApiService private constructor(
             if (!response.isSuccessful) throw failure(response)
             val body = response.body?.string() ?: throw GroqApiException(0, "Empty response")
             json.parseToJsonElement(body).jsonObject["text"]?.jsonPrimitive?.content ?: ""
+        }
+    }
+
+    private fun requireCloud() {
+        check(cloudAllowed()) {
+            "A IA na nuvem está desativada. Escolha Nuvem nas configurações para enviar dados ao Groq."
         }
     }
 

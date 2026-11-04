@@ -277,8 +277,8 @@ class DeviceController(private val knobs: DeviceKnobs) {
         knobs.setBrightnessPercent(wanted)
         val now = knobs.brightnessPercent()
         val verified = !knobs.brightnessAuto() && kotlin.math.abs(now - wanted) <= 1
-        val message = if (verified) say("Яркость $now%", "Brightness $now%")
-        else say("Яркость не изменилась", "The brightness didn't change")
+        val message = if (verified) say("Яркость $now%", "Brilho em $now%")
+        else say("Яркость не изменилась", "O brilho não mudou")
         val undo = if (wasAuto) undo(DeviceAction.BRIGHTNESS_AUTO) else undo(DeviceAction.BRIGHTNESS_SET, before)
         return DeviceActionResult.direct(verified, message, undo)
     }
@@ -286,14 +286,14 @@ class DeviceController(private val knobs: DeviceKnobs) {
     private fun autoBrightness(say: Say): DeviceActionResult {
         if (!knobs.canWriteSettings()) return needsWriteSettings(say)
         if (knobs.brightnessAuto()) {
-            val already = say("Автояркость уже включена", "Auto-brightness is already on")
+            val already = say("Автояркость уже включена", "O brilho automático já está ativado")
             return DeviceActionResult.direct(true, already, null)
         }
         val before = knobs.brightnessPercent()
         knobs.setBrightnessAuto(true)
         val verified = knobs.brightnessAuto()
-        val message = if (verified) say("Автояркость включена", "Auto-brightness on")
-        else say("Автояркость не включилась", "Auto-brightness didn't turn on")
+        val message = if (verified) say("Автояркость включена", "Brilho automático ativado")
+        else say("Автояркость не включилась", "O brilho automático não foi ativado")
         return DeviceActionResult.direct(verified, message, undo(DeviceAction.BRIGHTNESS_SET, before))
     }
 
@@ -302,7 +302,7 @@ class DeviceController(private val knobs: DeviceKnobs) {
         return DeviceActionResult(
             DeviceActionResult.Mode.NEEDS_PERMISSION, null,
             say("Чтобы менять яркость, разрешите Friday изменять системные настройки — открыла этот экран",
-                "To change brightness, allow Friday to modify system settings — I've opened that screen")
+                "Para mudar o brilho, permita que a Friday altere as configurações do sistema — abri essa tela")
         )
     }
 

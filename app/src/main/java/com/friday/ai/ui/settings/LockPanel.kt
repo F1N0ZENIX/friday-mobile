@@ -81,17 +81,17 @@ fun LockPanel(viewModel: LockLevelViewModel = koinViewModel()) {
         )
         HudReadout(
             "Notificações em tela cheia",
-            if (fullScreen) "РАЗРЕШЕНЫ" else "NÃO PERMITIDAS",
+            if (fullScreen) "PERMITIDAS" else "NÃO PERMITIDAS",
             valueColor = if (fullScreen) ArcCyan else ErrorColor
         )
-        HudReadout("Последний показ", outcomeText(outcome))
+        HudReadout("Última exibição", outcomeText(outcome))
         if (!fullScreen || !notifications) {
             HudNote(
-                "Чтобы показывать ответы и экран разблокировки поверх блокировки, " +
-                    "разрешите Friday полноэкранные уведомления."
+                "Para mostrar respostas e a tela de desbloqueio sobre a tela bloqueada, " +
+                    "permita notificações em tela cheia da Friday."
             )
             HudOutlinedButton(onClick = { openFullScreenSettings(context) }, modifier = Modifier.fillMaxWidth()) {
-                Text("Разрешить полноэкранные уведомления")
+                Text("Permitir notificações em tela cheia")
             }
         }
     }

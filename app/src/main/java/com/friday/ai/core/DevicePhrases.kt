@@ -28,9 +28,21 @@ internal object DevicePhrases {
             "ringer on|turn off silent)"
     )
 
-    private val brightnessSetPattern =
-        Regex("(?:яркост\\p{L}*|brightness)\\s*(?:на|to)?\\s*(\\d{1,3})\\s*(?:%|процент\\p{L}*)?")
-    private val autoBrightnessPattern = Regex("(?:автояркост|авто ?яркост|автоматическ\\p{L}* яркост|auto.?brightness)")
+    private val brightnessSetPattern = Regex(
+        "(?:яркост\\p{L}*|brightness|brilho)\\s*(?:на|to|para|em|no|na)?\\s*(\\d{1,3})(?![\\d.,])" +
+            "\\s*(?:%|процент\\p{L}*|por cento)?"
+    )
+    private val brightnessNegationPattern = Regex(
+        "(?:\\bне\\s+(?:меня|меняй|став|трог)|\\b(?:do not|don't|not)\\s+(?:change|set|adjust)|" +
+            "\\bn[aã]o(?:\\s+quero)?\\s+(?:mude|altere|ajuste|coloque|defina|aumente|aumentar|diminua|diminuir))"
+    )
+    private val brightnessExplanationPattern = Regex(
+        "(?:\\b(?:como|por que|porque|quando|qual|what|why|how|when|explain|explique)\\b|" +
+            "\\b(?:сказать|объясни|почему|зачем|как)\\b)"
+    )
+    private val autoBrightnessPattern = Regex(
+        "(?:автояркост|авто ?яркост|автоматическ\\p{L}* яркост|auto.?brightness|brilho autom[aá]tic\\p{L}*)"
+    )
 
     /** "Выключи …" / "включи …" / neither: which of the three a radio phrase asks for. */
     fun onOff(lower: String, on: DeviceAction, off: DeviceAction, neither: DeviceAction): DeviceAction = when {
@@ -50,26 +62,41 @@ internal object DevicePhrases {
         else -> null
     }
 
-    fun brightness(lower: String): CommandResult? {
-        val mentions = lower.contains("яркост") || lower.contains("brightness")
-        brightnessSetPattern.find(lower)?.let { m ->
-            m.groupValues[1].toIntOrNull()?.let {
-                return CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_SET, it.coerceIn(MIN_BRIGHTNESS, MAX_LEVEL))
-            }
-        }
-        return when {
-            autoBrightnessPattern.containsMatchIn(lower) -> CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_AUTO)
-            mentions && Regex("максим|полную|max").containsMatchIn(lower) ->
-                CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_SET, MAX_LEVEL)
-            mentions && Regex("миним|min").containsMatchIn(lower) ->
-                CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_SET, MIN_BRIGHTNESS)
-            Regex("(?:^|\\s)ярче(?:\\s|$)|экран ярче|brighter").containsMatchIn(lower) ||
-                mentions && Regex("прибав|увелич|повыс|up").containsMatchIn(lower) ->
-                CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_UP)
-            Regex("(?:^|\\s)темнее(?:\\s|$)|экран темнее|dimmer").containsMatchIn(lower) ||
-                mentions && Regex("убав|уменьш|пониз|down").containsMatchIn(lower) ->
-                CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_DOWN)
-            else -> null
-        }
+    fun brightness(lower: String): CommandResult? = when {
+        // Router input is also used for questions and quoted examples. Never turn those into a
+        // device write merely because they contain a brightness-shaped phrase.
+        lower.contains('"') || lower.contains('«') || lower.contains('»') || lower.contains('“') ||
+            lower.contains('”') || lower.contains('?') || brightnessNegationPattern.containsMatchIn(lower) ||
+            brightnessExplanationPattern.containsMatchIn(lower) -> null
+        else -> brightnessRequest(lower)
+    }
+
+    private fun brightnessRequest(lower: String): CommandResult? {
+        brightnessLevel(lower)?.let { return it }
+        val mentions = lower.contains("яркост") || lower.contains("brightness") || lower.contains("brilho")
+        return brightnessDirection(lower, mentions) ?: brightnessNamedRequest(lower, mentions)
+    }
+
+    private fun brightnessLevel(lower: String): CommandResult? = brightnessSetPattern.find(lower)
+        ?.groupValues?.get(1)?.toIntOrNull()
+        ?.let { CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_SET, it.coerceIn(0, MAX_LEVEL)) }
+
+    private fun brightnessNamedRequest(lower: String, mentions: Boolean): CommandResult? = when {
+        autoBrightnessPattern.containsMatchIn(lower) -> CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_AUTO)
+        mentions && Regex("максим|полную|max|m[aá]ximo").containsMatchIn(lower) ->
+            CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_SET, MAX_LEVEL)
+        mentions && Regex("миним|min|m[ií]nimo").containsMatchIn(lower) ->
+            CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_SET, MIN_BRIGHTNESS)
+        else -> null
+    }
+
+    private fun brightnessDirection(lower: String, mentions: Boolean): CommandResult? = when {
+        Regex("(?:^|\\s)ярче(?:\\s|$)|экран ярче|brighter").containsMatchIn(lower) ||
+            mentions && Regex("прибав|увелич|повыс|up|aument").containsMatchIn(lower) ->
+            CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_UP)
+        Regex("(?:^|\\s)темнее(?:\\s|$)|экран темнее|dimmer").containsMatchIn(lower) ||
+            mentions && Regex("убав|уменьш|пониз|down|diminu").containsMatchIn(lower) ->
+            CommandResult.DeviceControl(DeviceAction.BRIGHTNESS_DOWN)
+        else -> null
     }
 }

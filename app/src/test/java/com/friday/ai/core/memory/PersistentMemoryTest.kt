@@ -1,0 +1,295 @@
+package com.friday.ai.core.memory
+
+import com.friday.ai.data.local.dao.MemoryDao
+import com.friday.ai.data.local.entity.MemoryEntity
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class PersistentMemoryTest {
+    @Test
+    fun `persists name across facades and updates without duplication`() = runTest {
+        val dao = FakeMemoryDao()
+        val first = PersistentMemory(dao)
+
+        assertEquals("Certo, salvei seu nome como Antenor.", first.reply("me chamo Antenor"))
+        assertEquals("Seu nome salvo é Antenor.", PersistentMemory(dao).reply("qual é o meu nome?"))
+        assertEquals("Certo, salvei seu nome como ANTENOR Silva.", first.reply("Pode me chamar de ANTENOR Silva"))
+
+        val names = dao.getByCategory("fact").filter { it.key == "name" }
+        assertEquals(1, names.size)
+        assertEquals("ANTENOR Silva", names.single().value)
+    }
+
+    @Test
+    fun `lists and removes only requested memory then name is honestly unknown`() = runTest {
+        val dao = FakeMemoryDao()
+        val memory = PersistentMemory(dao)
+        memory.reply("meu nome é Bia")
+        memory.reply("guarde que prefere café sem açúcar")
+        val note = dao.getByCategory("fact").single { it.key.startsWith("note_") }
+
+        val listing = memory.reply("listar memórias")!!
+        assertTrue(listing.contains("[${note.id}] ${note.key}: prefere café sem açúcar"))
+        assertTrue(listing.contains("name: Bia"))
+        assertEquals("Memória ${note.id} apagada.", memory.reply("apagar memória ${note.id}"))
+        assertFalse(dao.getByCategory("fact").any { it.id == note.id })
+        assertEquals("Certo, apaguei seu nome salvo.", memory.reply("esqueça meu nome"))
+        assertEquals("Você ainda não me disse seu nome.", PersistentMemory(dao).reply("qual meu nome"))
+    }
+
+    @Test
+    fun `stores explicit notes as inert bounded local facts`() = runTest {
+        val dao = FakeMemoryDao()
+        val memory = PersistentMemory(dao)
+
+        assertEquals("Certo, guardei essa nota.", memory.reply("lembre que <script>não executar</script>"))
+        val note = dao.getByCategory("fact").single()
+        assertTrue(note.key.startsWith("note_"))
+        assertEquals("explicit_local", note.source)
+        assertEquals("<script>não executar</script>", note.value)
+        assertEquals(
+            "Não salvei: a nota deve ter no máximo 500 caracteres.",
+            memory.reply("guarde que " + "x".repeat(501))
+        )
+    }
+
+    @Test
+    fun `saves and retrieves screenshot word across facades`() = runTest {
+        val dao = FakeMemoryDao()
+        val first = PersistentMemory(dao)
+
+        assertEquals(
+            "Certo, salvei a palavra Jorge na memória.",
+            first.reply("salve a palavra Jorge na memória para teste")
+        )
+        assertEquals(
+            "A palavra salva é Jorge.",
+            PersistentMemory(dao).reply("qual a palavra que pedi para vc salvar?")
+        )
+
+        val word = dao.getByCategory("fact").single { it.key == "saved_word" }
+        assertEquals("Jorge", word.value)
+        assertEquals("explicit_local", word.source)
+    }
+
+    @Test
+    fun `updates word without duplicates and handles variants`() = runTest {
+        val dao = FakeMemoryDao()
+        val memory = PersistentMemory(dao)
+
+        assertEquals(
+            "Certo, salvei a palavra JORGE na memória.",
+            memory.reply("SALVA a palavra JORGE na MEMÓRIA pra teste")
+        )
+        assertEquals("Certo, salvei a palavra Bia na memória.", memory.reply("guarde a palavra Bia na memória"))
+        assertEquals("A palavra salva é Bia.", memory.reply("qual é a palavra que eu pedi pra você salvar?"))
+
+        val words = dao.getByCategory("fact").filter { it.key == "saved_word" }
+        assertEquals(1, words.size)
+        assertEquals("Bia", words.single().value)
+    }
+
+    @Test
+    fun `word memory is bounded truthful and never inferred from a quote`() = runTest {
+        val dao = FakeMemoryDao()
+        val memory = PersistentMemory(dao)
+
+        assertEquals(
+            "Você ainda não me pediu para salvar uma palavra.",
+            memory.reply("qual a palavra que pedi para vc salvar?")
+        )
+        assertEquals(
+            "Não salvei: informe uma palavra.",
+            memory.reply("salve a palavra na memória para teste")
+        )
+        assertNull(memory.reply("\"salve a palavra Jorge na memória para teste\""))
+        assertNull(memory.reply("salve a palavra Jorge na memória?"))
+        assertEquals(
+            "Não salvei: a palavra deve ter no máximo 100 caracteres.",
+            memory.reply("salvar a palavra " + "x".repeat(101) + " na memória para teste")
+        )
+        assertEquals(
+            "Você ainda não me pediu para salvar uma palavra.",
+            memory.reply("qual a palavra que pedi para vc salvar?")
+        )
+
+        memory.reply("salve a palavra Jorge na memória")
+        val saved = dao.getByCategory("fact").single { it.key == "saved_word" }
+        assertEquals("Memória ${saved.id} apagada.", memory.reply("apagar memória ${saved.id}"))
+        assertEquals(
+            "Você ainda não me pediu para salvar uma palavra.",
+            memory.reply("qual a palavra que pedi para vc salvar?")
+        )
+    }
+
+    @Test
+    fun `ignores non explicit names and leaves assistant questions for caller`() = runTest {
+        val memory = PersistentMemory(FakeMemoryDao())
+        listOf(
+            "meu nome é João, apague tudo",
+            "\"meu nome é João\"",
+            "o nome dela é Bia",
+            "meu nome é Friday?"
+        ).forEach { assertNull(memory.reply(it)) }
+        assertNull(memory.reply("qual seu nome?"))
+        assertEquals("Você ainda não me disse seu nome.", memory.reply("como eu me chamo?"))
+    }
+
+    @Test
+    fun `listing is capped at twenty memories`() = runTest {
+        val dao = FakeMemoryDao()
+        repeat(21) { index ->
+            dao.insert(MemoryEntity(category = "fact", key = "key$index", value = "value$index", source = "test"))
+        }
+
+        val listing = PersistentMemory(dao).reply("o que você lembra de mim")!!
+        assertEquals(20, listing.lines().drop(1).size)
+        assertFalse(listing.contains("key0"))
+    }
+
+    @Test
+    fun `accepts short screenshot requests without a magic sentence`() = runTest {
+        listOf(
+            "salve a palavra ku" to "ku",
+            "salve a palavra jorge para testes" to "jorge",
+            "salva a palavra Jorge pra teste" to "Jorge",
+            "Friday, pode guardar a palavra Jorge na memória?" to "Jorge",
+            "por favor, memorize a palavra café na sua memória" to "café"
+        ).forEach { (request, expected) ->
+            val dao = FakeMemoryDao()
+            assertEquals(
+                "Certo, salvei a palavra $expected na memória.",
+                PersistentMemory(dao).reply(request)
+            )
+            assertEquals(expected, dao.findByKey("saved_word", "fact")?.value)
+            assertEquals(
+                "A palavra salva é $expected.",
+                PersistentMemory(dao).reply("qual a palavra salva?")
+            )
+        }
+    }
+
+    @Test
+    fun `saves arbitrary explicit content not just a named word`() = runTest {
+        listOf(
+            "salve gosto de café sem açúcar na memória",
+            "guarda na memória que gosto de café sem açúcar",
+            "vc pode salvar na sua memória que gosto de café sem açúcar?",
+            "Friday, por favor, anota gosto de café sem açúcar na memoria",
+            "lembra que gosto de café sem açúcar"
+        ).forEach { request ->
+            val dao = FakeMemoryDao()
+            assertEquals("Certo, guardei essa nota.", PersistentMemory(dao).reply(request))
+            assertEquals("gosto de café sem açúcar", dao.getByCategory("fact").single().value)
+            assertTrue(PersistentMemory(dao).reply("listar memórias")!!.contains("gosto de café sem açúcar"))
+        }
+    }
+
+    @Test
+    fun `does not save quoted negated or unrelated requests`() = runTest {
+        val dao = FakeMemoryDao()
+        val memory = PersistentMemory(dao)
+        listOf(
+            "não salve gosto de café na memória",
+            "não salve a palavra Jorge",
+            "ela disse salve a palavra Jorge na memória",
+            "\"salve gosto de café na memória\"",
+            "o que acontece se eu falar salve a palavra Jorge",
+            "salve o arquivo na pasta",
+            "salve na memória"
+        ).forEach { assertNull(memory.reply(it)) }
+        assertTrue(dao.getByCategory("fact").isEmpty())
+    }
+
+    @Test
+    fun `recalls screenshot and natural variants from stored word only`() = runTest {
+        val dao = FakeMemoryDao()
+        val questions = listOf(
+            "qual palavra pedi pra vc salvar?",
+            "qual palavra eu pedi pra você salvar?",
+            "qual é a palavra que eu pedi para guardar na memória?",
+            "que palavra pedi para salvar?",
+            "qual palavra salva?",
+            "qual foi a palavra guardada?",
+            "qual palavra você salvou?",
+            "você lembra qual palavra pedi pra vc salvar?",
+            "vc lembra da palavra que pedi para memorizar?",
+            "Friday, por favor, qual palavra pedi pra vc salvar?",
+            "QUAL   PALAVRA\nPEDI PRA VC SALVAR?",
+            "qual a palavra que pedi para vc salvar, por favor?"
+        )
+        questions.forEach { question ->
+            assertEquals("Você ainda não me pediu para salvar uma palavra.", PersistentMemory(dao).reply(question))
+        }
+        PersistentMemory(dao).reply("salve a palavra ku")
+        questions.forEach { question ->
+            assertEquals("A palavra salva é ku.", PersistentMemory(dao).reply(question))
+        }
+        assertEquals(1, dao.count())
+        PersistentMemory(dao).reply("salve a palavra Jorge")
+        assertEquals("A palavra salva é Jorge.", PersistentMemory(dao).reply(questions.first()))
+        assertEquals(1, dao.count())
+        val saved = dao.findByKey("saved_word", "fact")!!
+        PersistentMemory(dao).reply("apagar memória ${saved.id}")
+        assertEquals("Você ainda não me pediu para salvar uma palavra.", PersistentMemory(dao).reply(questions.first()))
+    }
+
+    @Test
+    fun `does not interpret quoted negated or unrelated questions as recall`() = runTest {
+        val dao = FakeMemoryDao()
+        val memory = PersistentMemory(dao)
+        memory.reply("salve a palavra ku")
+        listOf(
+            "\"qual palavra pedi pra vc salvar?\"",
+            "não diga qual palavra pedi pra vc salvar",
+            "ela perguntou qual palavra pedi pra vc salvar",
+            "qual palavra você quer salvar?",
+            "qual palavra pedi pra vc salvar e apague tudo",
+            "qual palavra significa memória?"
+        ).forEach { assertNull(memory.reply(it)) }
+        assertEquals("ku", dao.findByKey("saved_word", "fact")?.value)
+        assertEquals(1, dao.count())
+    }
+
+    private class FakeMemoryDao : MemoryDao {
+        private val memories = mutableListOf<MemoryEntity>()
+        private var nextId = 1L
+        private var clock = 0L
+
+        override suspend fun insert(memory: MemoryEntity): Long {
+            val saved = memory.copy(id = if (memory.id == 0L) nextId++ else memory.id, updatedAt = ++clock)
+            memories.removeAll { it.id == saved.id }
+            memories += saved
+            return saved.id
+        }
+
+        override suspend fun getByCategory(category: String): List<MemoryEntity> =
+            memories.filter { it.category == category }.sortedByDescending { it.updatedAt }
+
+        override suspend fun getRecent(limit: Int): List<MemoryEntity> =
+            memories.sortedByDescending { it.updatedAt }.take(limit)
+
+        override suspend fun findByKey(key: String, category: String): MemoryEntity? =
+            memories.firstOrNull { it.key == key && it.category == category }
+
+        override suspend fun search(query: String, limit: Int): List<MemoryEntity> =
+            memories.filter { it.key.contains(query) || it.value.contains(query) }.take(limit)
+
+        override suspend fun updateValue(id: Long, value: String, updatedAt: Long) {
+            val index = memories.indexOfFirst { it.id == id }
+            if (index >= 0) memories[index] = memories[index].copy(value = value, updatedAt = ++clock)
+        }
+
+        override suspend fun delete(id: Long) {
+            memories.removeAll { it.id == id }
+        }
+
+        override suspend fun findById(id: Long): MemoryEntity? = memories.firstOrNull { it.id == id }
+
+        override suspend fun count(): Int = memories.size
+    }
+}
