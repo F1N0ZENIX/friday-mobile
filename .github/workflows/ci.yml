@@ -31,8 +31,10 @@ jobs:
 
       - name: Install llama.cpp Android NDK
         run: |
-          yes | sdkmanager --licenses >/dev/null
-          sdkmanager "ndk;27.2.12479018"
+          SDKMANAGER="$(find "$ANDROID_HOME" -type f -name sdkmanager -print -quit)"
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "ndk;27.2.12479018"
 
       - uses: gradle/actions/setup-gradle@v4
 
