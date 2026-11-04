@@ -63,34 +63,7 @@ class AssistantRepositoryImpl(
         // This must stay before every collaborator below: catalog, prompt,
         // memory and agent can initiate cloud work or construct tool prompts.
         if (LocalChatRouting.useLocal(localPreferences?.mode)) {
-            return flow {
-                val internet = localInternet?.request(prompt, history)
-                when (internet) {
-                    is LocalInternetReply.Direct ->
-                        emit(LocalResponseQuality.checked(prompt, internet.text))
-                    is LocalInternetReply.SearchSources ->
-                        emit(groundedLocalReply(prompt, history, internet))
-                    null -> {
-                        val deterministic = LocalConversationFacts.reply(prompt, history)
-                            ?: LocalGroundedReplies.reply(prompt)
-                        if (deterministic != null) {
-                            emit(LocalResponseQuality.checked(prompt, deterministic))
-                        } else {
-                            val engine = localEngine
-                                ?: error("A IA local não está disponível neste aparelho.")
-                            val generated = StringBuilder()
-                            engine.streamWithHistory(prompt, history).collect { token ->
-                                generated.append(token)
-                                emit(token)
-                            }
-                            val checked = LocalResponseQuality.checked(prompt, generated.toString())
-                            if (checked.startsWith("A resposta local travou")) {
-                                throw LocalInferenceException.Failed(checked)
-                            }
-                        }
-                    }
-                }
-            }
+            return localReplyFlow(prompt, history)
         }
         val apiKey = prefDao.get(PREF_API_KEY) ?: ""
         val model = catalog.model(com.friday.ai.core.GroqModels.Role.CHAT)
@@ -121,6 +94,35 @@ class AssistantRepositoryImpl(
                 responseBuilder.append(token)
                 token
             }
+    }
+
+    private fun localReplyFlow(prompt: String, history: List<Message>): Flow<String> = flow {
+        val internet = localInternet?.request(prompt, history)
+        when (internet) {
+            is LocalInternetReply.Direct ->
+                emit(LocalResponseQuality.checked(prompt, internet.text))
+            is LocalInternetReply.SearchSources ->
+                emit(groundedLocalReply(prompt, history, internet))
+            null -> {
+                val deterministic = LocalConversationFacts.reply(prompt, history)
+                    ?: LocalGroundedReplies.reply(prompt)
+                if (deterministic != null) {
+                    emit(LocalResponseQuality.checked(prompt, deterministic))
+                } else {
+                    val engine = localEngine
+                        ?: error("A IA local não está disponível neste aparelho.")
+                    val generated = StringBuilder()
+                    engine.streamWithHistory(prompt, history).collect { token ->
+                        generated.append(token)
+                        emit(token)
+                    }
+                    val checked = LocalResponseQuality.checked(prompt, generated.toString())
+                    if (checked.startsWith("A resposta local travou")) {
+                        throw LocalInferenceException.Failed(checked)
+                    }
+                }
+            }
+        }
     }
 
     private suspend fun groundedLocalReply(

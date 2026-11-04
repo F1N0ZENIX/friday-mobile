@@ -56,6 +56,7 @@ fun interface LlamaTokenCallback {
     fun onToken(bytes: ByteArray): Boolean
 }
 
+@Suppress("LongParameterList")
 internal object LlamaJNI {
     init {
         for (lib in listOf("ggml-base", "ggml-cpu", "ggml", "llama")) {
