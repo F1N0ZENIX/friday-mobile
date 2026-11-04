@@ -43,3 +43,6 @@
 
 # llama.cpp JNI looks up runtime classes and methods by their original names.
 -keep class dev.ffmpegkit.llama.** { *; }
+
+# JNI stream callback is looked up by method name from native code.
+-keep interface dev.ffmpegkit.llama.LlamaTokenCallback { *; }

@@ -303,7 +303,8 @@ val verifyReleaseKeepRules by tasks.registering {
             "com.google.i18n.phonenumbers.PhoneNumberUtil",
             // Names stored in the database
             "com.friday.ai.domain.model.CommandResult\$SetAlarm",
-            "com.friday.ai.service.MorningBriefWorker", "com.friday.ai.service.ErrandWatchWorker"
+            "com.friday.ai.service.MorningBriefWorker", "com.friday.ai.service.ErrandWatchWorker",
+            "dev.ffmpegkit.llama.LlamaJNI", "dev.ffmpegkit.llama.LlamaTokenCallback"
         )
         val renamed = mapping.get().asFile.useLines { lines ->
             lines.filter { !it.startsWith(" ") && it.contains(" -> ") }
