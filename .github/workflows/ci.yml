@@ -14,18 +14,62 @@ jobs:
     name: Unit tests & detekt
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      FRIDAY_SIGNING_KEYSTORE_BASE64: ${{ secrets.FRIDAY_SIGNING_KEYSTORE_BASE64 }}
+      FRIDAY_SIGNING_STORE_PASSWORD: ${{ secrets.FRIDAY_SIGNING_STORE_PASSWORD }}
+      FRIDAY_SIGNING_KEY_ALIAS: ${{ secrets.FRIDAY_SIGNING_KEY_ALIAS }}
+      FRIDAY_SIGNING_KEY_PASSWORD: ${{ secrets.FRIDAY_SIGNING_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
 
+      - name: Install llama.cpp Android NDK
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME" -type f -name sdkmanager -print -quit)"
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "ndk;27.2.12479018"
+
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Test signing preparation
+        run: python3 scripts/test_prepare_ci_signing.py
+
+      - name: Prepare signing and CI version
+        run: python3 scripts/prepare-ci-signing.py
+
       - name: Unit tests
-        run: ./gradlew testDebugUnitTest --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew testDebugUnitTest --stacktrace 2>&1 | tee /tmp/friday-unit-tests.log
+      - name: Publish build diagnostics
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          log = pathlib.Path('/tmp/friday-unit-tests.log')
+          if log.exists():
+              lines = log.read_text().splitlines()
+              start = next((i for i, line in enumerate(lines) if line.startswith('FAILURE:')), max(0, len(lines)-80))
+              selected = [line for i, line in enumerate(lines) if line.startswith('e:') or 'FAILED' in line or (i > 0 and 'FAILED' in lines[i-1])] + lines[start:start+25]
+              for line in selected[:80]:
+                  print('::error::' + line.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A'))
+          PY
+          python3 - <<'PY'
+          import pathlib, xml.etree.ElementTree as ET
+          for report in pathlib.Path('app/build/test-results').rglob('TEST-*.xml'):
+              root = ET.parse(report).getroot()
+              for case in root.findall('testcase'):
+                  for failure in case.findall('failure') + case.findall('error'):
+                      text = case.attrib.get('classname','') + ': ' + case.attrib.get('name','') + ': ' + failure.attrib.get('message','')
+                      print('::error::' + text.replace('%','%25').replace('\n','%0A'))
+          PY
 
       - name: Static analysis
         run: ./gradlew detekt
@@ -44,8 +88,8 @@ jobs:
 
       # R8 can break JNI-reached code without failing the build; the check
       # fails it instead (see verifyReleaseKeepRules in app/build.gradle.kts).
-      # CI has no signing secrets, so this release is unsigned on purpose: it
-      # proves the build, not a distributable APK (see keystore/README.md).
+      # Without repository signing secrets this release is unsigned on purpose:
+      # it proves the build, not a distributable APK (see keystore/README.md).
       - name: Release build + R8 keep-rule check
         run: ./gradlew assembleRelease verifyReleaseKeepRules
 

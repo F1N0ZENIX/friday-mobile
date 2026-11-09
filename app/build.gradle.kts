@@ -17,6 +17,11 @@ plugins {
 /** How the owner's builds are signed; null when this machine has not been given the key. */
 data class OwnerSigning(val storeFile: File, val storePassword: String, val keyAlias: String, val keyPassword: String)
 
+val ciVersionCode: Int = System.getenv("FRIDAY_VERSION_CODE")?.takeIf { it.isNotBlank() }?.let { raw ->
+    raw.toIntOrNull()?.takeIf { it in 1..2_100_000_000 }
+        ?: throw GradleException("FRIDAY_VERSION_CODE must be a positive integer no greater than 2100000000.")
+} ?: 23
+
 val ownerSigning: OwnerSigning? = run {
     val local = Properties().apply {
         rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
@@ -46,12 +51,13 @@ android {
 
     namespace = "com.friday.ai"
     compileSdk = 35
+    ndkVersion = "27.2.12479018"
 
     defaultConfig {
         applicationId = "com.friday.ai"
         minSdk = 26
         targetSdk = 35
-        versionCode = 23
+        versionCode = ciVersionCode
         versionName = "0.18.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -59,6 +65,25 @@ android {
         // Every phone Friday runs on is 64-bit ARM. The x86 and 32-bit copies
         // of the ONNX Runtime and Vosk libraries were a third of the APK.
         ndk { abiFilters += "arm64-v8a" }
+        externalNativeBuild {
+            cmake {
+                arguments += listOf(
+                    "-DANDROID_STL=c++_shared", "-DGGML_NATIVE=OFF", "-DGGML_OPENMP=OFF",
+                    "-DGGML_VULKAN=OFF", "-DGGML_LLAMAFILE=OFF", "-DLLAMA_CURL=OFF",
+                    "-DLLAMA_BUILD_TESTS=OFF", "-DLLAMA_BUILD_EXAMPLES=OFF",
+                    "-DLLAMA_BUILD_SERVER=OFF", "-DLLAMA_BUILD_TOOLS=OFF"
+                )
+                cppFlags += "-O3"
+                targets += "llama_jni"
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
     }
 
     // The owner's signing key and its passwords are never committed: they come
@@ -142,6 +167,8 @@ android {
 }
 
 dependencies {
+    // llama.cpp is compiled from the pinned source submodule; GGUF files remain external.
+
     // Speaker verification. ONNX Runtime rather than TFLite: the wespeaker
     // model ships as ONNX, and converting it would add a step that could only
     // introduce error.
@@ -276,7 +303,8 @@ val verifyReleaseKeepRules by tasks.registering {
             "com.google.i18n.phonenumbers.PhoneNumberUtil",
             // Names stored in the database
             "com.friday.ai.domain.model.CommandResult\$SetAlarm",
-            "com.friday.ai.service.MorningBriefWorker", "com.friday.ai.service.ErrandWatchWorker"
+            "com.friday.ai.service.MorningBriefWorker", "com.friday.ai.service.ErrandWatchWorker",
+            "dev.ffmpegkit.llama.LlamaJNI", "dev.ffmpegkit.llama.LlamaTokenCallback"
         )
         val renamed = mapping.get().asFile.useLines { lines ->
             lines.filter { !it.startsWith(" ") && it.contains(" -> ") }

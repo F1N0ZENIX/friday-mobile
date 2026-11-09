@@ -15,10 +15,22 @@ import com.friday.ai.domain.model.AssistantMode
 import com.friday.ai.domain.model.Message
 import com.friday.ai.domain.model.MessageRole
 import com.friday.ai.domain.repository.AssistantRepository
+import com.friday.ai.localai.LocalAiPreferences
+import com.friday.ai.localai.LocalArithmetic
+import com.friday.ai.localai.LocalChatRouting
+import com.friday.ai.localai.LocalConversationFacts
+import com.friday.ai.localai.LocalGroundedReplies
+import com.friday.ai.localai.LocalInternet
+import com.friday.ai.localai.LocalInternetReply
+import com.friday.ai.localai.LocalInferenceEngine
+import com.friday.ai.localai.LocalInferenceException
+import com.friday.ai.localai.LocalResponseQuality
 import com.friday.ai.service.FridayMemory
 import com.friday.ai.service.ModelCatalog
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 
@@ -32,7 +44,10 @@ class AssistantRepositoryImpl(
     private val promptBuilder: SystemPromptBuilder,
     private val memory: FridayMemory,
     private val catalog: ModelCatalog,
-    private val agent: FridayAgent
+    private val agent: FridayAgent,
+    private val localPreferences: LocalAiPreferences? = null,
+    private val localEngine: LocalInferenceEngine? = null,
+    private val localInternet: LocalInternet? = null
 ) : AssistantRepository {
 
     companion object {
@@ -44,6 +59,12 @@ class AssistantRepositoryImpl(
         history: List<Message>,
         mode: AssistantMode
     ): Flow<String> {
+        LocalArithmetic.reply(prompt)?.let { answer -> return flow { emit(answer) } }
+        // This must stay before every collaborator below: catalog, prompt,
+        // memory and agent can initiate cloud work or construct tool prompts.
+        if (LocalChatRouting.useLocal(localPreferences?.mode)) {
+            return localReplyFlow(prompt, history)
+        }
         val apiKey = prefDao.get(PREF_API_KEY) ?: ""
         val model = catalog.model(com.friday.ai.core.GroqModels.Role.CHAT)
         val memoryContext = memory.buildMemoryContext()
@@ -73,6 +94,57 @@ class AssistantRepositoryImpl(
                 responseBuilder.append(token)
                 token
             }
+    }
+
+    private fun localReplyFlow(prompt: String, history: List<Message>): Flow<String> = flow {
+        val internet = localInternet?.request(prompt, history)
+        when (internet) {
+            is LocalInternetReply.Direct ->
+                emit(LocalResponseQuality.checked(prompt, internet.text))
+            is LocalInternetReply.SearchSources ->
+                emit(groundedLocalReply(prompt, history, internet))
+            null -> {
+                val deterministic = LocalConversationFacts.reply(prompt, history)
+                    ?: LocalGroundedReplies.reply(prompt)
+                if (deterministic != null) {
+                    emit(LocalResponseQuality.checked(prompt, deterministic))
+                } else {
+                    val engine = localEngine
+                        ?: error("A IA local não está disponível neste aparelho.")
+                    val generated = StringBuilder()
+                    engine.streamWithHistory(prompt, history).collect { token ->
+                        generated.append(token)
+                        emit(token)
+                    }
+                    val checked = LocalResponseQuality.checked(prompt, generated.toString())
+                    if (checked.startsWith("A resposta local travou")) {
+                        throw LocalInferenceException.Failed(checked)
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun groundedLocalReply(
+        prompt: String,
+        history: List<Message>,
+        sources: com.friday.ai.localai.LocalInternetReply.SearchSources
+    ): String {
+        val fallback = sources.fallbackText()
+        val generated = try {
+            localEngine?.replyWithGrounding(prompt, history, sources)
+        } catch (error: kotlinx.coroutines.CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            null
+        }
+        val checked = generated?.let { LocalResponseQuality.checked(prompt, it) }
+        val rejected = checked == null || checked.startsWith("A resposta local travou") ||
+            !LocalResponseQuality.isRelevantToSources(checked, sources)
+        if (rejected) return fallback
+        val links = sources.items.take(com.friday.ai.localai.MAX_GROUNDED_SOURCES)
+            .joinToString("\n") { "Fonte: ${it.url}" }
+        return "$checked\n\nFontes:\n$links"
     }
 
     override fun getSessionMessages(sessionId: String): Flow<List<Message>> =

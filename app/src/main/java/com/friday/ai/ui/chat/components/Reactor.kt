@@ -133,7 +133,7 @@ fun ReactorMicButton(listening: Boolean, onClick: () -> Unit, modifier: Modifier
             .size(52.dp)
             .clip(CircleShape)
             .clickable(role = Role.Button, onClick = onClick)
-            .semantics { contentDescription = if (listening) "Остановить" else "Говорить" },
+            .semantics { contentDescription = if (listening) "Parar" else "Falar" },
         contentAlignment = Alignment.Center
     ) {
         Canvas(Modifier.fillMaxSize()) {

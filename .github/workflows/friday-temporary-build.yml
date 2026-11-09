@@ -1,0 +1,52 @@
+name: Friday build temporaria
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+jobs:
+  apk:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'feat/lightweight-local-ai'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      FRIDAY_SIGNING_KEYSTORE_BASE64: ${{ secrets.FRIDAY_SIGNING_KEYSTORE_BASE64 }}
+      FRIDAY_SIGNING_STORE_PASSWORD: ${{ secrets.FRIDAY_SIGNING_STORE_PASSWORD }}
+      FRIDAY_SIGNING_KEY_ALIAS: ${{ secrets.FRIDAY_SIGNING_KEY_ALIAS }}
+      FRIDAY_SIGNING_KEY_PASSWORD: ${{ secrets.FRIDAY_SIGNING_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          # AGP targets Java 17 and Kotlin/Detekt cannot parse the runner's
+          # Java 25 version string yet.
+          java-version: '17'
+      - name: Install llama.cpp Android NDK
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME" -type f -name sdkmanager -print -quit)"
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "ndk;27.2.12479018"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Preparar assinatura do Friday
+        run: python3 scripts/prepare-ci-signing.py --require-signing
+      - name: Compilar APK
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Validar assinatura
+        run: $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose --print-certs app/build/outputs/apk/debug/*.apk
+      - name: Disponibilizar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Friday-temporario-debug-APK
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
+      - name: Testes unitarios
+        run: ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace
+      - name: Analise estatica
+        if: always()
+        run: ./gradlew :app:detekt --no-daemon --stacktrace

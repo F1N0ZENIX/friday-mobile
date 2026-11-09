@@ -69,7 +69,7 @@ val appModule = module {
     }
 
     // Network
-    single { GroqApiService.create() }
+    single { GroqApiService.create(androidContext()) }
     single { LazuriApiService.create() }
     single { WeatherApiService.create() }
     single { NearbyPlacesService.create() }
@@ -206,7 +206,8 @@ val appModule = module {
             lockLevel = {
                 com.friday.ai.command.LockPolicy.Level.of(prefs.get(com.friday.ai.command.LockPolicy.Level.PREF))
             },
-            unlocker = com.friday.ai.service.lock.LockScreen.unlocker(androidContext())
+            unlocker = com.friday.ai.service.lock.LockScreen.unlocker(androidContext()),
+            memory = get()
         )
     }
     single {
@@ -220,6 +221,21 @@ val appModule = module {
     single { FridayMemory(get(), get(), get(), get(), get(), get()) }
     single { com.friday.ai.service.capture.ScreenCapture(androidContext()) }
     single { FileAnalyzer(androidContext()) }
+    single { com.friday.ai.localai.LocalAiPreferences(androidContext()) }
+    single { com.friday.ai.localai.LocalModelStore(androidContext()) }
+    single<com.friday.ai.localai.LocalInferenceEngine> {
+        com.friday.ai.localai.LlamaLocalInferenceEngine(get())
+    }
+
+    single { com.friday.ai.localai.LocalWeather(get()) }
+    single {
+        val weather = get<com.friday.ai.localai.LocalWeather>()
+        val city = get<com.friday.ai.service.WeatherHere>()
+        com.friday.ai.localai.LocalInternet.create(
+            weatherForCity = { name, day -> weather.reply(name, day) },
+            homeCity = { city.homeCity() }
+        )
+    }
 
     // Repository
     single<AssistantRepository> {
@@ -230,7 +246,10 @@ val appModule = module {
             promptBuilder = get(),
             memory = get(),
             catalog = get(),
-            agent = get()
+            agent = get(),
+            localPreferences = get(),
+            localEngine = get(),
+            localInternet = get()
         )
     }
 

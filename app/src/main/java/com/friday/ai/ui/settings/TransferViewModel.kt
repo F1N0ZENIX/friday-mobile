@@ -44,15 +44,15 @@ class TransferViewModel(
         val bytes = transfer.export(passphrase)
         withContext(Dispatchers.IO) {
             appContext.contentResolver.openOutputStream(uri, "wt")?.use { it.write(bytes) }
-                ?: error("Не удалось открыть файл для записи")
+                ?: error("Não foi possível abrir o arquivo para gravação")
         }
-        State.Done("Сохранено (${bytes.size / KB} КБ). Храните пароль отдельно от файла.")
+        State.Done("Salvo (${bytes.size / KB} KB). Guarde a senha separada do arquivo.")
     }
 
     fun open(uri: Uri, passphrase: CharArray) = work {
         val bytes = withContext(Dispatchers.IO) {
             appContext.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                ?: error("Не удалось открыть файл")
+                ?: error("Não foi possível abrir o arquivo")
         }
         val content = transfer.read(bytes, passphrase)
         pending = content
@@ -72,7 +72,7 @@ class TransferViewModel(
                 FridayWakeWordService.stop(appContext)
                 FridayWakeWordService.start(appContext)
             }
-            State.Done("Готово: настройки перенесены.")
+            State.Done("Pronto: configurações transferidas.")
         }
     }
 
@@ -90,16 +90,16 @@ class TransferViewModel(
                 State.Failed(describe(e))
             } catch (e: Exception) {
                 Log.e(TAG, "Transfer failed: ${e.javaClass.simpleName}")
-                State.Failed(e.message ?: "Не получилось")
+                State.Failed(e.message ?: "Não foi possível concluir")
             }
         }
     }
 
     private fun describe(failure: SettingsArchive.Failure): String = when (failure) {
-        is SettingsArchive.Failure.NotAnArchive -> "Это не файл настроек Пятницы"
-        is SettingsArchive.Failure.WrongPassphraseOrDamaged -> "Неверный пароль, или файл повреждён"
+        is SettingsArchive.Failure.NotAnArchive -> "Este não é um arquivo de configurações da Friday"
+        is SettingsArchive.Failure.WrongPassphraseOrDamaged -> "Senha incorreta ou arquivo corrompido"
         is SettingsArchive.Failure.NewerFormat ->
-            "Файл сделан более новой версией Пятницы — сначала обновите приложение"
+            "O arquivo foi criado por uma versão mais nova da Friday — atualize o app primeiro"
     }
 
     private companion object {
