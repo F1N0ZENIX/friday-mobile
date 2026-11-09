@@ -1,0 +1,135 @@
+name: ARM64 instrumentation
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# This is a required test job, not a continue-on-error diagnostic: a boot,
+# install, or connected-test failure fails this workflow. The only successful
+# "inconclusive" outcome is when this revision contains no androidTest source;
+# that fact is emitted explicitly rather than being presented as a passed test.
+jobs:
+  instrumentation:
+    name: ARM64 emulator instrumentation
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
+    env:
+      FRIDAY_SIGNING_KEYSTORE_BASE64: ${{ secrets.FRIDAY_SIGNING_KEYSTORE_BASE64 }}
+      FRIDAY_SIGNING_STORE_PASSWORD: ${{ secrets.FRIDAY_SIGNING_STORE_PASSWORD }}
+      FRIDAY_SIGNING_KEY_ALIAS: ${{ secrets.FRIDAY_SIGNING_KEY_ALIAS }}
+      FRIDAY_SIGNING_KEY_PASSWORD: ${{ secrets.FRIDAY_SIGNING_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install llama.cpp Android NDK
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_HOME" -type f -name sdkmanager -print -quit)"
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "ndk;27.2.12479018"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Prepare signing and CI version
+        run: python3 scripts/prepare-ci-signing.py
+
+      # GitHub-hosted Linux runners allow the current user to use KVM after
+      # this permission change (the same udev-equivalent setup recommended by
+      # ReactiveCircus). ARM system images on an x86 host cannot use KVM, so
+      # this workflow deliberately requests an ARM64 runner first.
+      - name: Detect and enable KVM
+        id: kvm
+        shell: bash
+        run: |
+          set -u
+          echo "runner architecture: $(uname -m)"
+          if [[ -e /dev/kvm ]] && sudo chmod a+rw /dev/kvm && [[ -r /dev/kvm && -w /dev/kvm ]]; then
+            ls -l /dev/kvm
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "KVM is available for the ARM64 emulator."
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::/dev/kvm is unavailable. Trying the ARM64 emulator with software QEMU acceleration disabled."
+          fi
+
+      - name: Run connected tests with KVM
+        if: steps.kvm.outputs.available == 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: arm64-v8a
+          profile: pixel_2
+          cores: 2
+          ram-size: 2048M
+          emulator-boot-timeout: 900
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect
+          disable-linux-hw-accel: false
+          script: |
+            set -o pipefail
+            ./gradlew connectedDebugAndroidTest --no-daemon --stacktrace 2>&1 | tee /tmp/friday-instrumentation.log
+            exit ${PIPESTATUS[0]}
+
+      - name: Run connected tests with software QEMU
+        if: steps.kvm.outputs.available != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: arm64-v8a
+          profile: pixel_2
+          cores: 2
+          ram-size: 2048M
+          emulator-boot-timeout: 900
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -accel off
+          disable-linux-hw-accel: true
+          script: |
+            set -o pipefail
+            ./gradlew connectedDebugAndroidTest --no-daemon --stacktrace 2>&1 | tee /tmp/friday-instrumentation.log
+            exit ${PIPESTATUS[0]}
+
+      - name: State instrumentation result honestly
+        if: always()
+        shell: bash
+        run: |
+          set -u
+          report_dir=app/build/outputs/androidTest-results/connected
+          test_count=0
+          if [[ -d "$report_dir" ]]; then
+            test_count=$(grep -RhoE 'tests="[0-9]+"' "$report_dir" 2>/dev/null | sed 's/[^0-9]//g' | awk '{n+=$1} END {print n+0}')
+          fi
+          if [[ "$test_count" == "0" ]]; then
+            echo "::notice title=Instrumentation inconclusive::The emulator attempt completed, but this revision has no executed androidTest cases. This is not evidence that instrumentation passed."
+            {
+              echo "## Instrumentation result: inconclusive"
+              echo
+              echo "The emulator was attempted, but no androidTest cases executed. This is **not** a passed instrumentation suite."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Executed $test_count instrumentation test case(s)."
+            echo "## Instrumentation result: $test_count test case(s) executed" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload instrumentation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arm64-instrumentation-reports
+          path: |
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+            /tmp/friday-instrumentation.log
+          if-no-files-found: warn
+          retention-days: 7
