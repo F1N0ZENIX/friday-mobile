@@ -32,6 +32,10 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # ARM runners do not preinstall Android command-line tools like the
+      # x86 Ubuntu images do, so provision a real SDK before locating sdkmanager.
+      - uses: android-actions/setup-android@v3
+
       - name: Install llama.cpp Android NDK
         run: |
           set -euo pipefail
