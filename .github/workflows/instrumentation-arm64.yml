@@ -128,11 +128,11 @@ jobs:
             test_count=$(grep -RhoE 'tests="[0-9]+"' "$report_dir" 2>/dev/null | sed 's/[^0-9]//g' | awk '{n+=$1} END {print n+0}')
           fi
           if [[ "$test_count" == "0" ]]; then
-            echo "::notice title=Instrumentation inconclusive::The emulator attempt completed, but this revision has no executed androidTest cases. This is not evidence that instrumentation passed."
+            echo "::notice title=Instrumentation inconclusive::No androidTest cases executed. This is not evidence that instrumentation passed; if an earlier step failed, the job conclusion remains the authoritative result."
             {
               echo "## Instrumentation result: inconclusive"
               echo
-              echo "The emulator was attempted, but no androidTest cases executed. This is **not** a passed instrumentation suite."
+              echo "No androidTest cases executed. This is **not** a passed instrumentation suite; a prior job failure remains a failure."
             } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "Executed $test_count instrumentation test case(s)."
