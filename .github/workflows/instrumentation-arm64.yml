@@ -32,9 +32,22 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # ARM runners do not preinstall Android command-line tools like the
-      # x86 Ubuntu images do, so provision a real SDK before locating sdkmanager.
-      - uses: android-actions/setup-android@v3
+      # The ARM image has no Android SDK. setup-android@v3 currently invokes
+      # the obsolete `sdkmanager tools` package there, so install Google's
+      # command-line tools directly instead of masking that failure.
+      - name: Install Android command-line tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="$HOME/android-sdk"
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
+          curl --fail --location --retry 3 --output /tmp/cmdline-tools.zip \
+            https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q /tmp/cmdline-tools.zip -d "$ANDROID_HOME/cmdline-tools"
+          mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
 
       - name: Install llama.cpp Android NDK
         run: |
